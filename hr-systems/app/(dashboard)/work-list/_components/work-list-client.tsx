@@ -5,13 +5,13 @@ import { useSession } from "next-auth/react";
 import {
   Plus, Pencil, Trash2, ChevronDown, Search,
   Clock, BarChart2, AlertCircle, CheckCircle2,
-  ExternalLink, CalendarDays, User, Timer,
+  ExternalLink, CalendarDays, User, Timer, Eye,
 } from "lucide-react";
 import { format, isAfter } from "date-fns";
-import { vi } from "date-fns/locale";
 import { cn, formatMinutes } from "@/lib/utils";
 import { WorkListFormModal } from "./work-list-form-modal";
 import { StatusUpdateModal } from "./status-update-modal";
+import { TaskDetailDrawer } from "./task-detail-drawer";
 import { EmptyState } from "@/components/shared/empty-state";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
@@ -86,6 +86,9 @@ export function WorkListClient({ initialItems, employees, customers }: Props) {
   const [editingItem, setEditingItem] = useState<WorkItem | null>(null);
   const [statusItem, setStatusItem] = useState<WorkItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [detailWlId, setDetailWlId] = useState<string | null>(null);
+
+  const detailItem = detailWlId ? items.find(i => i.wlId === detailWlId) ?? null : null;
 
   const filtered = useMemo(() => {
     return items.filter(item => {
@@ -234,11 +237,15 @@ export function WorkListClient({ initialItems, employees, customers }: Props) {
                     {group.map(item => (
                       <div key={item.wlId} className={cn(
                         "px-4 py-3 hover:bg-slate-50/70 transition",
-                        isOverdue(item) && "bg-red-50/30"
+                        isOverdue(item) && "bg-red-50/30",
+                        detailWlId === item.wlId && "bg-blue-50/40",
                       )}>
                         <div className="flex items-start justify-between gap-3">
-                          {/* Left */}
-                          <div className="flex-1 min-w-0">
+                          {/* Left — click to open detail */}
+                          <div
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => setDetailWlId(item.wlId)}
+                          >
                             <div className="flex items-center gap-2 flex-wrap mb-1">
                               <span className="text-[11px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{item.wlId}</span>
                               {item.taskCode && (
@@ -262,7 +269,9 @@ export function WorkListClient({ initialItems, employees, customers }: Props) {
                               )}
                             </div>
 
-                            <p className="text-[13.5px] font-semibold text-slate-900 truncate">{item.title}</p>
+                            <p className="text-[13.5px] font-semibold text-slate-900 truncate hover:text-blue-600 transition-colors">
+                              {item.title}
+                            </p>
 
                             {item.description && (
                               <p className="text-[12px] text-slate-500 mt-0.5 line-clamp-1">
@@ -330,8 +339,16 @@ export function WorkListClient({ initialItems, employees, customers }: Props) {
                           </div>
 
                           {/* Actions */}
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                              onClick={() => setDetailWlId(item.wlId)}
+                              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
+                              title="Xem chi tiết"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
                           {canEdit(item) && (
-                            <div className="flex items-center gap-1 flex-shrink-0">
+                            <>
                               <button
                                 onClick={() => setStatusItem(item)}
                                 className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition"
@@ -358,8 +375,9 @@ export function WorkListClient({ initialItems, employees, customers }: Props) {
                                   </button>
                                 </>
                               )}
-                            </div>
+                            </>
                           )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -386,6 +404,23 @@ export function WorkListClient({ initialItems, employees, customers }: Props) {
           item={statusItem}
           onClose={() => setStatusItem(null)}
           onSaved={handleSaved}
+        />
+      )}
+
+      {/* Task detail drawer */}
+      {detailWlId && (
+        <TaskDetailDrawer
+          wlId={detailWlId}
+          isManager={isManager}
+          onClose={() => setDetailWlId(null)}
+          onEdit={() => {
+            if (detailItem) { setEditingItem(detailItem); setFormOpen(true); }
+            setDetailWlId(null);
+          }}
+          onUpdateStatus={() => {
+            if (detailItem) setStatusItem(detailItem);
+            setDetailWlId(null);
+          }}
         />
       )}
     </div>

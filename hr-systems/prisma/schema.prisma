@@ -229,8 +229,8 @@ model WorkList {
   note2            String?
   customerId       Int?
   customer         Customer?    @relation(fields: [customerId], references: [id])
-  assignedToId     Int
-  assignedTo       Employee     @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedToId     Int?
+  assignedTo       Employee?    @relation("AssignedTo", fields: [assignedToId], references: [id])
   assignedById     Int
   assignedBy       Employee     @relation("AssignedBy", fields: [assignedById], references: [id])
   testerId         Int?
