@@ -37,9 +37,9 @@ export async function GET(req: NextRequest) {
       ...(department && { department }),
       ...(search && {
         OR: [
-          { taskId: { contains: search, mode: "insensitive" } },
-          { taskName: { contains: search, mode: "insensitive" } },
-          { description: { contains: search, mode: "insensitive" } },
+          { taskId: { contains: search, mode: "insensitive" as const } },
+          { taskName: { contains: search, mode: "insensitive" as const } },
+          { description: { contains: search, mode: "insensitive" as const } },
         ],
       }),
     },
