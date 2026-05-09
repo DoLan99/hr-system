@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import { X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -121,6 +121,25 @@ export function WorkListFormModal({ open, item, employees, customers, onClose, o
     setErrors({});
   }, [open, item]);
 
+  const codeAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (isEdit || !form.assignedToId) return;
+
+    const employee = employees.find(e => e.id === Number(form.assignedToId));
+    const dept = employee?.department ?? "";
+    const prefix = dept.replace(/[^A-Z0-9]/gi, "").slice(0, 3).toUpperCase() || "TASK";
+
+    codeAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    codeAbortRef.current = ctrl;
+
+    fetch(`/api/work-list/next-code?prefix=${prefix}`, { signal: ctrl.signal })
+      .then(r => r.json())
+      .then(data => { if (data.code) setForm(prev => ({ ...prev, taskCode: data.code })); })
+      .catch(() => {});
+  }, [form.assignedToId, employees, isEdit]);
+
   function set(field: string, value: any) {
     setForm(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: "" }));
@@ -129,7 +148,6 @@ export function WorkListFormModal({ open, item, employees, customers, onClose, o
   function validate() {
     const e: Record<string, string> = {};
     if (!form.title.trim()) e.title = "Bắt buộc";
-    if (!form.assignedToId) e.assignedToId = "Chọn nhân viên";
     return e;
   }
 
@@ -151,7 +169,7 @@ export function WorkListFormModal({ open, item, employees, customers, onClose, o
         linkTemplate: form.linkTemplate || undefined,
         note1: form.note1 || undefined,
         note2: form.note2 || undefined,
-        assignedToId: Number(form.assignedToId),
+        assignedToId: form.assignedToId ? Number(form.assignedToId) : undefined,
         testerId: form.testerId ? Number(form.testerId) : null,
         priority: form.priority,
         status: form.status,
@@ -166,7 +184,12 @@ export function WorkListFormModal({ open, item, employees, customers, onClose, o
         body: JSON.stringify(body),
       });
       const json = await res.json();
-      if (!res.ok) return;
+      if (!res.ok) {
+        if (res.status === 403) {
+          setErrors(prev => ({ ...prev, assignedToId: json.error ?? "Không có quyền assign cho nhân viên này" }));
+        }
+        return;
+      }
       onSaved(json.data);
     } finally {
       setSubmitting(false);
@@ -194,10 +217,10 @@ export function WorkListFormModal({ open, item, employees, customers, onClose, o
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Mã task</label>
               <input
+                readOnly
                 value={form.taskCode}
-                onChange={e => set("taskCode", e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="VD: DEV110, MKT001..."
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-500 cursor-not-allowed"
+                placeholder="Tự sinh khi chọn người xử lý"
               />
             </div>
             <div>
@@ -243,22 +266,18 @@ export function WorkListFormModal({ open, item, employees, customers, onClose, o
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Người xử lý <span className="text-red-500">*</span>
+                Người xử lý
               </label>
               <select
                 value={form.assignedToId}
                 onChange={e => set("assignedToId", e.target.value)}
-                className={cn(
-                  "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white",
-                  errors.assignedToId ? "border-red-400" : "border-slate-300"
-                )}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               >
                 <option value="">-- Chọn --</option>
                 {employees.map(e => (
                   <option key={e.id} value={e.id}>{e.fullName}</option>
                 ))}
               </select>
-              {errors.assignedToId && <p className="text-red-500 text-xs mt-1">{errors.assignedToId}</p>}
             </div>
 
             <div>

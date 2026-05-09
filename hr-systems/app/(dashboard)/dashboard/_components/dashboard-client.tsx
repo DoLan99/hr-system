@@ -60,20 +60,25 @@ const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
 type DailySeries = { date: string; created: number; completed: number };
 type StatusDist = { status: string; count: number };
 type Team = { id: number; name: string };
+type Handler = { id: number; name: string };
 
 interface DashboardData {
   unstartedCount: number;
+  inProgressCount: number;
   unassignedCount: number;
   statusDistribution: StatusDist[];
   dailySeries: DailySeries[];
   isManager: boolean;
+  isAdmin: boolean;
   categories: string[];
 }
 
 interface Props {
   userName: string;
   isManager: boolean;
+  isAdmin: boolean;
   teams: Team[];
+  handlers: Handler[];
 }
 
 function Select({
@@ -121,18 +126,22 @@ function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent
   );
 }
 
-export default function DashboardClient({ userName, isManager, teams }: Props) {
+export default function DashboardClient({ userName, isManager, isAdmin, teams, handlers }: Props) {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year] = useState(now.getFullYear());
   const [priority, setPriority] = useState("");
   const [status, setStatus] = useState("");
   const [teamId, setTeamId] = useState("");
+  const [handlerId, setHandlerId] = useState("");
   const [category, setCategory] = useState("");
   const [filterOpen, setFilterOpen] = useState(true);
   const [activeTeam, setActiveTeam] = useState<number | null>(null);
+  const [activeHandler, setActiveHandler] = useState<number | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isSubManager = isManager && !isAdmin;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -142,7 +151,9 @@ export default function DashboardClient({ userName, isManager, teams }: Props) {
         year: String(year),
         ...(priority ? { priority } : {}),
         ...(status ? { status } : {}),
-        ...(teamId ? { teamId } : activeTeam ? { teamId: String(activeTeam) } : {}),
+        ...(isAdmin
+          ? teamId ? { teamId } : activeTeam ? { teamId: String(activeTeam) } : {}
+          : handlerId ? { handlerId } : activeHandler ? { handlerId: String(activeHandler) } : {}),
         ...(category ? { category } : {}),
       });
       const res = await fetch(`/api/dashboard?${params}`);
@@ -151,7 +162,7 @@ export default function DashboardClient({ userName, isManager, teams }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [month, year, priority, status, teamId, activeTeam, category]);
+  }, [month, year, priority, status, teamId, activeTeam, handlerId, activeHandler, category, isAdmin]);
 
   useEffect(() => {
     fetchData();
@@ -174,6 +185,11 @@ export default function DashboardClient({ userName, isManager, teams }: Props) {
     ...teams.map((t) => ({ value: String(t.id), label: t.name })),
   ];
 
+  const handlerOptions = [
+    { value: "", label: "Tất cả" },
+    ...handlers.map((h) => ({ value: String(h.id), label: h.name })),
+  ];
+
   function handleTeamBtn(id: number) {
     if (activeTeam === id) {
       setActiveTeam(null);
@@ -181,6 +197,16 @@ export default function DashboardClient({ userName, isManager, teams }: Props) {
     } else {
       setActiveTeam(id);
       setTeamId(String(id));
+    }
+  }
+
+  function handleHandlerBtn(id: number) {
+    if (activeHandler === id) {
+      setActiveHandler(null);
+      setHandlerId("");
+    } else {
+      setActiveHandler(id);
+      setHandlerId(String(id));
     }
   }
 
@@ -199,20 +225,32 @@ export default function DashboardClient({ userName, isManager, teams }: Props) {
       {/* Top stat + Sub-team */}
       <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
         <div className="flex flex-wrap items-start gap-0">
-          {/* Unassigned count */}
+          {/* Unassigned count (admin only) */}
+          {isAdmin && (
+            <div className="pr-8 mr-8 border-r border-slate-200">
+              <p className="text-[12px] text-slate-500 mb-1">Task chưa được assign</p>
+              <div className="flex items-center gap-2">
+                <span className="text-[36px] font-bold text-slate-900 leading-none">
+                  {loading ? "—" : (data?.unassignedCount ?? 0)}
+                </span>
+                <button
+                  onClick={fetchData}
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                  title="Làm mới"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* In-progress count */}
           <div className="pr-8 mr-8 border-r border-slate-200">
-            <p className="text-[12px] text-slate-500 mb-1">Task chưa được assign</p>
+            <p className="text-[12px] text-slate-500 mb-1">Task đang làm</p>
             <div className="flex items-center gap-2">
-              <span className="text-[36px] font-bold text-slate-900 leading-none">
-                {loading ? "—" : (data?.unassignedCount ?? 0)}
+              <span className="text-[36px] font-bold text-blue-600 leading-none">
+                {loading ? "—" : (data?.inProgressCount ?? 0)}
               </span>
-              <button
-                onClick={fetchData}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
-                title="Làm mới"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </button>
             </div>
           </div>
 
@@ -223,11 +261,20 @@ export default function DashboardClient({ userName, isManager, teams }: Props) {
               <span className="text-[36px] font-bold text-slate-900 leading-none">
                 {loading ? "—" : (data?.unstartedCount ?? 0)}
               </span>
+              {!isAdmin && (
+                <button
+                  onClick={fetchData}
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                  title="Làm mới"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Sub-team buttons */}
-          {teams.length > 0 && (
+          {/* Sub-team buttons (admin only) */}
+          {isAdmin && teams.length > 0 && (
             <div className="flex-1">
               <p className="text-[12px] text-slate-500 mb-2">Sub-team</p>
               <div className="flex flex-wrap gap-2">
@@ -242,6 +289,28 @@ export default function DashboardClient({ userName, isManager, teams }: Props) {
                     }`}
                   >
                     {t.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Handler quick-select (sub-manager only) */}
+          {isSubManager && handlers.length > 0 && (
+            <div className="flex-1">
+              <p className="text-[12px] text-slate-500 mb-2">Người xử lý</p>
+              <div className="flex flex-wrap gap-2">
+                {handlers.map((h) => (
+                  <button
+                    key={h.id}
+                    onClick={() => handleHandlerBtn(h.id)}
+                    className={`px-4 py-1.5 rounded-md text-[13px] font-medium border transition-colors ${
+                      activeHandler === h.id
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-slate-700 border-slate-300 hover:border-blue-400 hover:text-blue-600"
+                    }`}
+                  >
+                    {h.name}
                   </button>
                 ))}
               </div>
@@ -292,15 +361,27 @@ export default function DashboardClient({ userName, isManager, teams }: Props) {
                 onChange={setPriority}
                 options={PRIORITY_OPTIONS}
               />
-              <Select
-                label="Team"
-                value={teamId}
-                onChange={(v) => {
-                  setTeamId(v);
-                  setActiveTeam(v ? Number(v) : null);
-                }}
-                options={teamOptions}
-              />
+              {isAdmin ? (
+                <Select
+                  label="Team"
+                  value={teamId}
+                  onChange={(v) => {
+                    setTeamId(v);
+                    setActiveTeam(v ? Number(v) : null);
+                  }}
+                  options={teamOptions}
+                />
+              ) : isSubManager ? (
+                <Select
+                  label="Người xử lý"
+                  value={handlerId}
+                  onChange={(v) => {
+                    setHandlerId(v);
+                    setActiveHandler(v ? Number(v) : null);
+                  }}
+                  options={handlerOptions}
+                />
+              ) : null}
               <Select
                 label="Loại công việc"
                 value={category}

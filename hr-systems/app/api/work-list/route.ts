@@ -3,8 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { getManagedEmployeeIds, buildAssignedScope, ADMIN_ROLES, SUB_MANAGER_ROLES } from "@/lib/managed-scope";
 
 const createSchema = z.object({
   title: z.string().min(1, "Bắt buộc"),
@@ -15,7 +14,7 @@ const createSchema = z.object({
   linkTemplate: z.string().optional(),
   note1: z.string().optional(),
   note2: z.string().optional(),
-  assignedToId: z.number().int(),
+  assignedToId: z.number().int().optional().nullable(),
   testerId: z.number().int().nullable().optional(),
   priority: z.enum(["CRITICAL", "HIGH", "NORMAL", "LOW"]).default("NORMAL"),
   status: z.enum(["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "COMPLETED", "CANCELLED"]).optional(),
@@ -38,17 +37,23 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
-  const assignedToId = searchParams.get("assignedToId");
+  const assignedToId = searchParams.get("assignedToId") ? Number(searchParams.get("assignedToId")) : null;
   const search = searchParams.get("search");
   const priority = searchParams.get("priority");
   const category = searchParams.get("category");
 
   const userId = Number(session.user.id);
-  const isManager = MANAGER_ROLES.includes(session.user.role);
+  const userRole = session.user.role;
+  const isManager = ADMIN_ROLES.includes(userRole) || SUB_MANAGER_ROLES.includes(userRole);
 
   const where: any = {};
-  if (!isManager) where.assignedToId = userId;
-  else if (assignedToId) where.assignedToId = Number(assignedToId);
+
+  if (isManager) {
+    const managedIds = await getManagedEmployeeIds(userId, userRole);
+    Object.assign(where, buildAssignedScope(managedIds, assignedToId));
+  } else {
+    where.assignedToId = userId;
+  }
 
   if (status) where.status = status;
   if (priority) where.priority = priority;
@@ -68,7 +73,8 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const isManager = MANAGER_ROLES.includes(session.user.role);
+  const userRole = session.user.role;
+  const isManager = ADMIN_ROLES.includes(userRole) || SUB_MANAGER_ROLES.includes(userRole);
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
@@ -92,7 +98,7 @@ export async function POST(req: NextRequest) {
       linkTemplate: d.linkTemplate,
       note1: d.note1,
       note2: d.note2,
-      assignedToId: d.assignedToId,
+      assignedToId: d.assignedToId ?? null,
       assignedById: Number(session.user.id),
       testerId: d.testerId ?? null,
       priority: d.priority,

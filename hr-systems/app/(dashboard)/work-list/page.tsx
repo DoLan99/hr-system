@@ -2,23 +2,28 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getManagedEmployeeIds, buildAssignedScope, ADMIN_ROLES, SUB_MANAGER_ROLES } from "@/lib/managed-scope";
 import { PageHeader } from "@/components/shared/page-header";
 import { WorkListClient } from "./_components/work-list-client";
 
 export const metadata = { title: "Work List — HR System" };
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
 
 export default async function WorkListPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
   const userId = Number(session.user.id);
-  const isManager = MANAGER_ROLES.includes(session.user.role);
+  const userRole = session.user.role;
+  const isAdmin = ADMIN_ROLES.includes(userRole);
+  const isSubManager = SUB_MANAGER_ROLES.includes(userRole);
+  const isManager = isAdmin || isSubManager;
+
+  const managedIds = isManager ? await getManagedEmployeeIds(userId, userRole) : [];
+  const taskScope = buildAssignedScope(managedIds, isManager ? null : userId);
 
   const [rawItems, employees, rawCustomers] = await Promise.all([
     prisma.workList.findMany({
-      where: isManager ? {} : { assignedToId: userId },
+      where: isManager ? (managedIds === null ? {} : taskScope) : { assignedToId: userId },
       include: {
         assignedTo: { select: { id: true, fullName: true, department: true } },
         assignedBy: { select: { id: true, fullName: true } },
@@ -29,9 +34,15 @@ export default async function WorkListPage() {
       orderBy: [{ status: "asc" }, { priority: "asc" }, { dueDate: "asc" }],
     }),
 
-    isManager
+    isAdmin
       ? prisma.employee.findMany({
           where: { status: "ACTIVE" },
+          select: { id: true, fullName: true, department: true },
+          orderBy: { fullName: "asc" },
+        })
+      : isSubManager && managedIds !== null && managedIds.length > 0
+      ? prisma.employee.findMany({
+          where: { id: { in: managedIds }, status: "ACTIVE" },
           select: { id: true, fullName: true, department: true },
           orderBy: { fullName: "asc" },
         })

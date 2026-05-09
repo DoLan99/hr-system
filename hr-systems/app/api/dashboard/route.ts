@@ -3,10 +3,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"];
+const SUB_MANAGER_ROLES = ["MANAGER", "TEAM_LEAD"];
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  try {
+    const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
@@ -16,28 +18,77 @@ export async function GET(req: NextRequest) {
   const priority = searchParams.get("priority") || null;
   const status = searchParams.get("status") || null;
   const teamId = searchParams.get("teamId") ? Number(searchParams.get("teamId")) : null;
+  const handlerId = searchParams.get("handlerId") ? Number(searchParams.get("handlerId")) : null;
   const category = searchParams.get("category") || null;
 
   const userId = Number(session.user.id);
-  const isManager = MANAGER_ROLES.includes(session.user.role);
+  const userRole = session.user.role;
+  const isAdmin = ADMIN_ROLES.includes(userRole);
+  const isSubManager = SUB_MANAGER_ROLES.includes(userRole);
+  const isManager = isAdmin || isSubManager;
 
   const startOfMonth = new Date(year, month - 1, 1);
   const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
   const daysInMonth = new Date(year, month, 0).getDate();
 
-  const scopeWhere: any = isManager ? {} : { assignedToId: userId };
-  if (teamId) scopeWhere.assignedTo = { teamId };
+  // Build base scope by role
+  const baseScope: any = {};
+
+  if (isAdmin) {
+    if (teamId) baseScope.assignedTo = { teamId };
+  } else if (isSubManager) {
+    let managedIds: number[] = [];
+    if (userRole === "TEAM_LEAD") {
+      const myTeam = await prisma.team.findFirst({
+        where: { leadId: userId, isActive: true },
+        select: { employees: { where: { status: "ACTIVE" }, select: { id: true } } },
+      });
+      managedIds = myTeam?.employees.map((e) => e.id) ?? [];
+    } else {
+      const subs = await prisma.employee.findMany({
+        where: { managerId: userId, status: "ACTIVE" },
+        select: { id: true },
+      });
+      managedIds = subs.map((e) => e.id);
+    }
+
+    if (managedIds.length === 0) {
+      return NextResponse.json({
+        unstartedCount: 0,
+        inProgressCount: 0,
+        unassignedCount: 0,
+        statusDistribution: [],
+        dailySeries: Array.from({ length: daysInMonth }, (_, i) => ({
+          date: `${String(i + 1).padStart(2, "0")}/${String(month).padStart(2, "0")}`,
+          created: 0,
+          completed: 0,
+        })),
+        isManager: true,
+        isAdmin: false,
+        categories: [],
+      });
+    }
+
+    if (handlerId && managedIds.includes(handlerId)) {
+      baseScope.assignedToId = handlerId;
+    } else {
+      baseScope.assignedToId = { in: managedIds };
+    }
+  } else {
+    baseScope.assignedToId = userId;
+  }
+
+  const scopeWhere: any = { ...baseScope };
   if (priority) scopeWhere.priority = priority;
   if (status) scopeWhere.status = status;
   if (category) scopeWhere.category = category;
 
-  // Status distribution scope (without status filter so we see all statuses)
-  const distWhere: any = isManager ? {} : { assignedToId: userId };
-  if (teamId) distWhere.assignedTo = { teamId };
+  // Status distribution: same base scope but without status filter
+  const distWhere: any = { ...baseScope };
   if (priority) distWhere.priority = priority;
   if (category) distWhere.category = category;
 
-  const [tasksCreated, tasksCompleted, statusCounts, unstartedCount, unassignedCount, categories] =
+  const [tasksCreated, tasksCompleted, statusCounts, unstartedCount, inProgressCount, unassignedCount, categories] =
     await Promise.all([
       prisma.workList.findMany({
         where: { ...scopeWhere, createdAt: { gte: startOfMonth, lte: endOfMonth } },
@@ -59,9 +110,14 @@ export async function GET(req: NextRequest) {
       prisma.workList.count({
         where: { ...distWhere, status: "NOT_STARTED" },
       }),
-      prisma.$queryRaw<[{ count: bigint }]>`SELECT COUNT(*)::bigint as count FROM "public"."work_list" WHERE "assignedToId" IS NULL`,
+      prisma.workList.count({
+        where: { ...distWhere, status: "IN_PROGRESS" },
+      }),
+      isAdmin
+        ? prisma.workList.count({ where: { assignedToId: null } })
+        : Promise.resolve(0),
       prisma.workList.findMany({
-        where: isManager ? {} : { assignedToId: userId },
+        where: baseScope,
         select: { category: true },
         distinct: ["category"],
         orderBy: { category: "asc" },
@@ -91,15 +147,21 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     unstartedCount,
-    unassignedCount: Number(unassignedCount[0]?.count ?? 0),
+    inProgressCount,
+    unassignedCount: Number(unassignedCount),
     statusDistribution: statusCounts.map((s) => ({
       status: s.status,
       count: s._count._all,
     })),
     dailySeries,
     isManager,
+    isAdmin,
     categories: categories
       .map((c) => c.category)
       .filter((c): c is string => !!c),
   });
+  } catch (error) {
+    console.error("[dashboard GET]", error);
+    return NextResponse.json({ error: String(error) }, { status: 500 });
+  }
 }

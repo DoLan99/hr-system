@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { Plus, Pencil, Trash2, Loader2, X } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
 
@@ -140,7 +139,7 @@ export function WorkRulesClient({ initialRules }: Props) {
       </div>
 
       <div className="space-y-2.5">
-        {rules.map((r, idx) => (
+        {rules.map((r, _idx) => (
           <div key={r.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-card group">
             <div className="flex items-start gap-4">
               <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-[13px] font-bold shrink-0 border border-blue-100">

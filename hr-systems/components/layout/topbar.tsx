@@ -3,6 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { Bell, LogOut, Settings, User, ChevronDown } from "lucide-react";
+import Image from "next/image";
 import { getInitials } from "@/lib/utils";
 import { useState } from "react";
 
@@ -72,10 +73,12 @@ export function Topbar() {
             className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg hover:bg-slate-100 transition"
           >
             {user?.avatarUrl ? (
-              <img
+              <Image
                 src={user.avatarUrl}
-                alt={user?.name}
-                className="w-7 h-7 rounded-full object-cover"
+                alt={user?.name ?? ""}
+                width={28}
+                height={28}
+                className="rounded-full object-cover"
               />
             ) : (
               <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-[11px] font-semibold flex items-center justify-center">

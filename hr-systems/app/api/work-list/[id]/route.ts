@@ -3,8 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { getManagedEmployeeIds, ADMIN_ROLES, SUB_MANAGER_ROLES } from "@/lib/managed-scope";
 
 const updateSchema = z.object({
   title: z.string().min(1).optional(),
@@ -56,9 +55,18 @@ export async function GET(
   if (!item) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
   const userId = Number(session.user.id);
-  const isManager = MANAGER_ROLES.includes(session.user.role);
-  if (!isManager && item.assignedToId !== userId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const userRole = session.user.role;
+  const isAdmin = ADMIN_ROLES.includes(userRole);
+
+  if (!isAdmin) {
+    if (SUB_MANAGER_ROLES.includes(userRole)) {
+      const managedIds = await getManagedEmployeeIds(userId, userRole);
+      if (!managedIds || (item.assignedToId !== null && !managedIds.includes(item.assignedToId))) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } else if (item.assignedToId !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   return NextResponse.json({ data: item });
@@ -76,11 +84,21 @@ export async function PUT(
   if (!existing) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
   const userId = Number(session.user.id);
-  const isManager = MANAGER_ROLES.includes(session.user.role);
+  const userRole = session.user.role;
+  const isAdmin = ADMIN_ROLES.includes(userRole);
+  const isSubManager = SUB_MANAGER_ROLES.includes(userRole);
+  const isManager = isAdmin || isSubManager;
 
-  // Employee chỉ được cập nhật status/progress/reasonNextAction của task mình
-  if (!isManager && existing.assignedToId !== userId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Check access to this task
+  if (!isAdmin) {
+    if (isSubManager) {
+      const managedIds = await getManagedEmployeeIds(userId, userRole);
+      if (!managedIds || (existing.assignedToId !== null && !managedIds.includes(existing.assignedToId))) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } else if (existing.assignedToId !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   const body = await req.json();
@@ -88,6 +106,14 @@ export async function PUT(
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
   const d = parsed.data;
+
+  // Sub-managers cannot reassign tasks outside their managed scope
+  if (isSubManager && d.assignedToId !== undefined) {
+    const managedIds = await getManagedEmployeeIds(userId, userRole);
+    if (!managedIds || !managedIds.includes(d.assignedToId)) {
+      return NextResponse.json({ error: "Không có quyền assign task cho nhân viên này" }, { status: 403 });
+    }
+  }
 
   // Employee chỉ update được status/progress/reason
   const data: any = {};
@@ -137,7 +163,7 @@ export async function DELETE(
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const isManager = MANAGER_ROLES.includes(session.user.role);
+  const isManager = ADMIN_ROLES.includes(session.user.role) || SUB_MANAGER_ROLES.includes(session.user.role);
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const existing = await prisma.workList.findUnique({ where: { wlId: params.id } });
