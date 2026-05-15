@@ -4,12 +4,12 @@ import { useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import {
   ChevronLeft, ChevronRight, RefreshCw, Star,
-  CheckCircle2, Clock, AlertTriangle, TrendingUp,
+  CheckCircle2, Clock,
   Loader2, BarChart2,
 } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 import { vi as viLocale } from "date-fns/locale";
-import { cn, formatCurrency, formatMinutes } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { SCORE_LABELS } from "@/lib/salary";
 import { useLocale } from "@/lib/i18n/context";
 import { ScoreModal } from "./score-modal";
@@ -125,21 +125,6 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
     } finally {
       setConfirmingId(null);
     }
-  }
-
-  async function savePaid() {
-    if (!paidEdit) return;
-    const res = await fetch(`/api/summary/${paidEdit.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        salaryPaid: Number(paidEdit.salaryPaid),
-        bonusPaid: Number(paidEdit.bonusPaid),
-        moneyReceived: Number(paidEdit.moneyReceived),
-      }),
-    });
-    const json = await res.json();
-    if (res.ok) { updateSummary(json.data); setPaidEdit(null); }
   }
 
   function updateSummary(item: SummaryItem) {

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { X, Clock, AlertCircle, Plus, Check } from "lucide-react";
 import { useLocale } from "@/lib/i18n/context";
 import { DEFAULT_LABEL_CONFIG, type LabelConfig } from "@/lib/system-labels";
-import { RichTextEditor, RichTextContent } from "@/components/shared/rich-text-editor";
+import { RichTextEditor } from "@/components/shared/rich-text-editor";
 
 type SubTask = { id: number; code: string; title: string; status: string; progressPct: number };
 type TimeLogEntry = {

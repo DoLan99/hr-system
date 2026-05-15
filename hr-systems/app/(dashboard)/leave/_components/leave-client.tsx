@@ -61,9 +61,6 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
   const [reviewingItem, setReviewingItem] = useState<LeaveItem | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
 
-  const month = viewDate.getMonth() + 1;
-  const year = viewDate.getFullYear();
-
   async function fetchLeaves(date: Date) {
     const m = date.getMonth() + 1;
     const y = date.getFullYear();

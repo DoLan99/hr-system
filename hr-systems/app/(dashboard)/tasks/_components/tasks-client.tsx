@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { Badge } from "@/components/shared/badge";
 import { TaskCreateDrawer } from "./task-create-drawer";
 import { TaskDetailDrawer } from "./task-detail-drawer";
 import { BoardView } from "./board-view";

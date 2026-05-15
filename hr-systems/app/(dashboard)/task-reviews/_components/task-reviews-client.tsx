@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Badge } from "@/components/shared/badge";
 import { useLocale } from "@/lib/i18n/context";
 import { SuggestionFormModal } from "./suggestion-form-modal";
 
