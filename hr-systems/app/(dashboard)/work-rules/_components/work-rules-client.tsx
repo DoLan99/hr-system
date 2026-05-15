@@ -25,7 +25,7 @@ function RuleModal({ rule, onClose, onSaved }: {
   onClose: () => void;
   onSaved: (r: any) => void;
 }) {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const [form, setForm] = useState({
     ruleNo: String(rule?.ruleNo ?? ""),
     title: rule?.title ?? "",

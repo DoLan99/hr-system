@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Badge } from "@/components/shared/badge";
 import { TASK_TYPE_COLORS } from "@/lib/time-logs";
 import { useLocale } from "@/lib/i18n/context";
 import { TemplateFormModal } from "./template-form-modal";

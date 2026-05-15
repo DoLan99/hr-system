@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Badge } from "@/components/shared/badge";
 import { TASK_TYPE_COLORS, approvalStatusLabel } from "@/lib/time-logs";
 import { useLocale } from "@/lib/i18n/context";
 import { TimeLogFormModal } from "./time-log-form-modal";

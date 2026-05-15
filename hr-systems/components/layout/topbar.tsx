@@ -22,11 +22,6 @@ function usePageTitle(): string {
   const { t } = useLocale();
   const pathname = usePathname();
 
-  const keys = Object.keys(
-    (t as any)("pageTitles") !== undefined
-      ? {}
-      : {}
-  );
   // Find the longest matching prefix in pageTitles
   const pageTitleKeys = [
     "/dashboard", "/tasks", "/time-logs", "/office-time",

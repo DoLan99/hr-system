@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { ADMIN_ROLES, SUB_MANAGER_ROLES } from "@/lib/managed-scope";
+import { ADMIN_ROLES } from "@/lib/managed-scope";
 
 const TASK_TYPES = ["NORMAL", "LEARNING", "NEW_RESEARCH", "MEETING", "ADMIN", "BILLABLE_CLIENT", "INTERNAL"] as const;
 

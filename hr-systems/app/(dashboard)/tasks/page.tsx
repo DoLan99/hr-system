@@ -80,7 +80,6 @@ export default async function TasksPage() {
     prisma.systemLabel.findMany({ orderBy: [{ category: "asc" }, { sortOrder: "asc" }] }),
   ]);
 
-  const activeCount = tasks.filter((t: any) => ["IN_PROGRESS", "BLOCKED", "REVIEW"].includes(t.status)).length;
   const labelConfig = buildLabelConfig(systemLabels);
 
   return (
