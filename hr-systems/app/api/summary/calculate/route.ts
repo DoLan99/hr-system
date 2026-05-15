@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { calcSalary, calcTotalScore, LEARN_TASK_IDS } from "@/lib/salary";
+import { calcSalary, calcTotalScore } from "@/lib/salary";
 import { z } from "zod";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
@@ -10,8 +10,11 @@ const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
 const schema = z.object({
   month: z.number().int().min(1).max(12),
   year: z.number().int().min(2020),
-  employeeId: z.number().int().optional(), // nếu không có → tính tất cả employees
+  employeeId: z.number().int().optional(),
 });
+
+// Approval statuses that count as "credited"
+const CREDITED_STATUSES = ["AUTO_APPROVED", "APPROVED"] as const;
 
 // POST /api/summary/calculate
 export async function POST(req: NextRequest) {
@@ -19,7 +22,6 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const isManager = MANAGER_ROLES.includes(session.user.role);
-  // Employee chỉ được recalc của mình
   const selfId = Number(session.user.id);
 
   const body = await req.json();
@@ -28,14 +30,13 @@ export async function POST(req: NextRequest) {
 
   const { month, year, employeeId } = parsed.data;
 
-  // Xác định danh sách employee cần tính
   let empIds: number[];
   if (isManager && !employeeId) {
     const emps = await prisma.employee.findMany({
       where: { status: "ACTIVE" },
       select: { id: true },
     });
-    empIds = emps.map(e => e.id);
+    empIds = emps.map((e) => e.id);
   } else {
     empIds = [employeeId ?? selfId];
   }
@@ -43,79 +44,103 @@ export async function POST(req: NextRequest) {
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 1);
 
-  const results = await Promise.all(empIds.map(empId => calculateOne(empId, month, year, start, end)));
+  const results = await Promise.all(empIds.map((empId) => calculateOne(empId, month, year, start, end)));
 
-  return NextResponse.json({ data: results, count: results.length });
+  return NextResponse.json({ data: results.filter(Boolean), count: results.filter(Boolean).length });
 }
 
 async function calculateOne(empId: number, month: number, year: number, start: Date, end: Date) {
-  // Lấy thông tin employee
   const emp = await prisma.employee.findUnique({
     where: { id: empId },
     select: {
-      payType: true, hourlyRate: true, monthlySalary: true,
-      bonusMPct: true, bonusAPct: true, bonusTPct: true,
+      payType: true,
+      hourlyRate: true,
+      monthlySalary: true,
+      bonusMPct: true,
+      bonusAPct: true,
+      bonusTPct: true,
     },
   });
   if (!emp) return null;
 
-  // 1. Credited time từ work_reports trong tháng
-  const wrAgg = await prisma.workReport.aggregate({
-    where: { employeeId: empId, date: { gte: start, lt: end } },
-    _sum: { creditedTime: true, actualTime: true },
-  });
-  const creditedMinutes = wrAgg._sum.creditedTime ?? 0;
-
-  // 2. Learn hours (task 2001/2002)
-  const learnAgg = await prisma.workReport.aggregate({
+  // 1. Credited minutes from time_logs (only auto_approved + approved)
+  const creditedAgg = await prisma.timeLog.aggregate({
     where: {
       employeeId: empId,
       date: { gte: start, lt: end },
-      taskId: { in: LEARN_TASK_IDS },
+      approvalStatus: { in: [...CREDITED_STATUSES] },
     },
-    _sum: { creditedTime: true },
+    _sum: { creditedMinutes: true, durationMinutes: true },
   });
-  const learnMinutes = learnAgg._sum.creditedTime ?? 0;
+  const creditedMinutes = creditedAgg._sum.creditedMinutes ?? 0;
+  const totalActualMinutes = creditedAgg._sum.durationMinutes ?? 0;
 
-  // 3. Missing tasks approved trong tháng
-  const mtAgg = await prisma.missingTask.aggregate({
+  // 2. Learn minutes — duration of LEARNING task type (regardless of approval)
+  const learnLogs = await prisma.timeLog.findMany({
     where: {
       employeeId: empId,
       date: { gte: start, lt: end },
-      status: "APPROVED",
+      task: { taskType: "LEARNING" },
     },
-    _sum: { approvedTime: true, bonusTime: true },
+    select: { durationMinutes: true, creditedMinutes: true, approvalStatus: true },
   });
-  const missingApprovedMinutes =
-    (mtAgg._sum.approvedTime ?? 0) + (mtAgg._sum.bonusTime ?? 0);
+  const learnMinutes = learnLogs
+    .filter((l) => CREDITED_STATUSES.includes(l.approvalStatus as any))
+    .reduce((s, l) => s + (l.creditedMinutes ?? l.durationMinutes), 0);
 
-  // 4. Office time (giờ thực làm) trong tháng
+  // 3. Billable hours + amount (credited only, billable tasks)
+  const billableLogs = await prisma.timeLog.findMany({
+    where: {
+      employeeId: empId,
+      date: { gte: start, lt: end },
+      approvalStatus: { in: [...CREDITED_STATUSES] },
+      task: { billable: true },
+    },
+    select: {
+      creditedMinutes: true,
+      task: { select: { hourlyRateOverride: true } },
+    },
+  });
+  const billableMinutes = billableLogs.reduce((s, l) => s + (l.creditedMinutes ?? 0), 0);
+  const empRate = emp.hourlyRate ? Number(emp.hourlyRate) : 0;
+  const billableAmount = billableLogs.reduce((s, l) => {
+    const rate = l.task.hourlyRateOverride ? Number(l.task.hourlyRateOverride) : empRate;
+    return s + ((l.creditedMinutes ?? 0) / 60) * rate;
+  }, 0);
+
+  // 4. Office time
   const otAgg = await prisma.officeTime.aggregate({
     where: { employeeId: empId, date: { gte: start, lt: end } },
     _sum: { actualWorked: true },
   });
   const workHoursRealMinutes = otAgg._sum.actualWorked ?? 0;
 
-  // 5. Work list stats (trạng thái hiện tại của employee)
-  const [totalTasks, completedTasks, openTasks, overdueTasks] = await Promise.all([
-    prisma.workList.count({
+  // 5. Task stats (current state)
+  const [totalTasks, completedTasks, openTasks, overdueTasks, byType] = await Promise.all([
+    prisma.task.count({ where: { assignedToId: empId, status: { not: "CANCELLED" } } }),
+    prisma.task.count({ where: { assignedToId: empId, status: "DONE" } }),
+    prisma.task.count({
+      where: { assignedToId: empId, status: { in: ["BACKLOG", "IN_PROGRESS", "BLOCKED", "REVIEW"] } },
+    }),
+    prisma.task.count({
+      where: { assignedToId: empId, isOverdue: true, status: { notIn: ["DONE", "CANCELLED"] } },
+    }),
+    prisma.task.groupBy({
+      by: ["taskType"],
       where: { assignedToId: empId, status: { not: "CANCELLED" } },
-    }),
-    prisma.workList.count({
-      where: { assignedToId: empId, status: "COMPLETED" },
-    }),
-    prisma.workList.count({
-      where: { assignedToId: empId, status: { in: ["IN_PROGRESS", "BLOCKED"] } },
-    }),
-    prisma.workList.count({
-      where: { assignedToId: empId, isOverdue: true },
+      _count: { _all: true },
     }),
   ]);
 
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-  const totalActualTimeH = (wrAgg._sum.actualTime ?? 0) / 60;
+  const totalActualTimeH = totalActualMinutes / 60;
+  const totalCreditedTimeH = creditedMinutes / 60;
+  const tasksByType = byType.reduce<Record<string, number>>((acc, b) => {
+    acc[b.taskType] = b._count._all;
+    return acc;
+  }, {});
 
-  // 6. Tính lương
+  // 6. Salary
   const salaryResult = calcSalary({
     payType: emp.payType,
     hourlyRate: emp.hourlyRate ? Number(emp.hourlyRate) : null,
@@ -124,13 +149,14 @@ async function calculateOne(empId: number, month: number, year: number, start: D
     bonusAPct: Number(emp.bonusAPct),
     bonusTPct: Number(emp.bonusTPct),
     creditedMinutes,
-    missingApprovedMinutes,
     learnMinutes,
+    billableMinutes,
+    billableAmount,
   });
 
-  const deltaHours = salaryResult.creditedHours - workHoursRealMinutes / 60;
+  const deltaHours = workHoursRealMinutes / 60 - salaryResult.creditedHours;
 
-  // Lấy existing để giữ scores
+  // Preserve manual scores
   const existing = await prisma.salarySummary.findUnique({
     where: { employeeId_month_year: { employeeId: empId, month, year } },
   });
@@ -145,44 +171,31 @@ async function calculateOne(empId: number, month: number, year: number, start: D
       })
     : null;
 
-  // Upsert
+  const data = {
+    creditedHours: salaryResult.creditedHours,
+    workHoursReal: workHoursRealMinutes / 60,
+    learnHours: salaryResult.learnHours,
+    billableHours: salaryResult.billableHours,
+    billableAmount: salaryResult.billableAmount,
+    deltaHours,
+    salaryCalc: salaryResult.salaryCalc,
+    bonusCalc: salaryResult.bonusCalc,
+    totalCalc: salaryResult.totalCalc,
+    totalTasks,
+    completedTasks,
+    openTasks,
+    overdueTasks,
+    totalActualTimeH,
+    totalCreditedTimeH,
+    completionRate,
+    tasksByType,
+    ...(totalScore !== null && { totalScore }),
+  };
+
   const summary = await prisma.salarySummary.upsert({
     where: { employeeId_month_year: { employeeId: empId, month, year } },
-    create: {
-      employeeId: empId,
-      month,
-      year,
-      creditedHours: salaryResult.creditedHours,
-      workHoursReal: workHoursRealMinutes / 60,
-      learnHours: salaryResult.learnHours,
-      deltaHours,
-      salaryCalc: salaryResult.salaryCalc,
-      bonusCalc: salaryResult.bonusCalc,
-      totalCalc: salaryResult.totalCalc,
-      totalTasks,
-      completedTasks,
-      openTasks,
-      overdueTasks,
-      totalActualTimeH,
-      completionRate,
-      ...(totalScore !== null && { totalScore }),
-    },
-    update: {
-      creditedHours: salaryResult.creditedHours,
-      workHoursReal: workHoursRealMinutes / 60,
-      learnHours: salaryResult.learnHours,
-      deltaHours,
-      salaryCalc: salaryResult.salaryCalc,
-      bonusCalc: salaryResult.bonusCalc,
-      totalCalc: salaryResult.totalCalc,
-      totalTasks,
-      completedTasks,
-      openTasks,
-      overdueTasks,
-      totalActualTimeH,
-      completionRate,
-      ...(totalScore !== null && { totalScore }),
-    },
+    create: { employeeId: empId, month, year, ...data },
+    update: data,
     include: {
       employee: {
         select: { id: true, fullName: true, department: true, payType: true, hourlyRate: true, monthlySalary: true },

@@ -14,10 +14,10 @@ datasource db {
 
 model Role {
   id          Int        @id @default(autoincrement())
-  name        String     @unique // SUPER_ADMIN, ADMIN, MANAGER, TEAM_LEAD, EMPLOYEE, HR, ACCOUNTANT
+  name        String     @unique
   label       String
   description String?
-  color       String?    // hex color for UI badge
+  color       String?
   permissions Json       @default("{}")
   employees   Employee[]
   createdAt   DateTime   @default(now())
@@ -105,38 +105,43 @@ model Employee {
   manager         Employee?  @relation("ManagerEmployee", fields: [managerId], references: [id])
   subordinates    Employee[] @relation("ManagerEmployee")
   status          EmployeeStatus @default(ACTIVE)
+  locale          String    @default("en")
   passwordHash    String
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   // Department/Team head relations
-  departmentsLed      Department[]    @relation("DeptHead")
-  teamsLed            Team[]          @relation("TeamLead")
+  departmentsLed       Department[]          @relation("DeptHead")
+  teamsLed             Team[]                @relation("TeamLead")
 
-  // Relations
-  workListAssigned    WorkList[]      @relation("AssignedTo")
-  workListCreated     WorkList[]      @relation("AssignedBy")
-  workListTesting     WorkList[]      @relation("WLTester")
-  workReports         WorkReport[]
-  officeTimes         OfficeTime[]
-  missingTasks        MissingTask[]
-  timeChecks          TimeCheck[]
-  salarySummaries     SalarySummary[]
-  payments            Payment[]       @relation("PaymentEmployee")
-  paymentsCreated     Payment[]       @relation("PaymentCreator")
-  leaves              Leave[]
-  messages            Message[]
-  salaryHistory       SalaryHistory[]
-  auditLogs           AuditLog[]
-  vaultAccesses       VaultAccessLog[]
-  passwordVaultOwned  PasswordVault[] @relation("VaultOwner")
-  customersManaged    Customer[]      @relation("CustomerStaff")
-  approvedOfficeTimes OfficeTime[]    @relation("ApprovedBy")
-  approvedMissing     MissingTask[]   @relation("MissingReviewer")
-  approvedTimeChecks  TimeCheck[]     @relation("TimeCheckReviewer")
-  approvedLeaves      Leave[]         @relation("LeaveApprover")
-  confirmedSummaries  SalarySummary[] @relation("SummaryConfirmer")
-  salaryHistoryMaker  SalaryHistory[] @relation("SalaryHistoryChanger")
+  // Tasks & Time Logs
+  tasksAssigned        Task[]                @relation("TaskAssignee")
+  tasksCreated         Task[]                @relation("TaskCreator")
+  timeLogs             TimeLog[]             @relation("TimeLogEmployee")
+  approvedTimeLogs     TimeLog[]             @relation("TimeLogApprover")
+
+  // Templates & Reviews
+  templatesCreated     TaskTemplate[]        @relation("TemplateCreator")
+  templateSuggestions  TemplateSuggestion[]  @relation("SuggestionEmployee")
+  reviewedSuggestions  TemplateSuggestion[]  @relation("SuggestionReviewer")
+  reviewedFlags        EstimateFlag[]        @relation("FlagReviewer")
+
+  // Other relations
+  officeTimes          OfficeTime[]
+  salarySummaries      SalarySummary[]
+  payments             Payment[]             @relation("PaymentEmployee")
+  paymentsCreated      Payment[]             @relation("PaymentCreator")
+  leaves               Leave[]
+  messages             Message[]
+  salaryHistory        SalaryHistory[]
+  auditLogs            AuditLog[]
+  vaultAccesses        VaultAccessLog[]
+  passwordVaultOwned   PasswordVault[]       @relation("VaultOwner")
+  customersManaged     Customer[]            @relation("CustomerStaff")
+  approvedOfficeTimes  OfficeTime[]          @relation("ApprovedBy")
+  approvedLeaves       Leave[]               @relation("LeaveApprover")
+  confirmedSummaries   SalarySummary[]       @relation("SummaryConfirmer")
+  salaryHistoryMaker   SalaryHistory[]       @relation("SalaryHistoryChanger")
 
   @@map("employees")
 }
@@ -153,29 +158,6 @@ model SalaryHistory {
   changedAt  DateTime @default(now())
 
   @@map("salary_history")
-}
-
-// ─────────────────────────────────────────────────────────────
-// TASK LIBRARY
-// ─────────────────────────────────────────────────────────────
-
-model TaskLibrary {
-  id           Int          @id @default(autoincrement())
-  taskId       String       @unique // DEV01, ADM01, 1001, 2001
-  taskName     String
-  description  String?
-  stdTime      Int          // phút
-  department   String?
-  linkTemplate String?
-  note1        String?
-  note2        String?
-  isActive     Boolean      @default(true)
-  createdAt    DateTime     @default(now())
-
-  workReports  WorkReport[]
-  timeChecks   TimeCheck[]
-
-  @@map("task_library")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -203,8 +185,7 @@ model Customer {
   notes             String?
   createdAt         DateTime  @default(now())
 
-  workList      WorkList[]
-  workReports   WorkReport[]
+  tasks         Task[]
   messages      Message[]
   passwordVault PasswordVault[]
 
@@ -212,81 +193,128 @@ model Customer {
 }
 
 // ─────────────────────────────────────────────────────────────
-// WORK LIST
+// TASK TEMPLATES (optional shortcuts)
 // ─────────────────────────────────────────────────────────────
 
-model WorkList {
-  id               Int          @id @default(autoincrement())
-  wlId             String       @unique // WL-0001
-  dateAssigned     DateTime
-  title            String
-  description      String?      @db.Text
-  category         String?
-  taskCode         String?
-  stdTime          Int?
-  linkTemplate     String?
-  note1            String?
-  note2            String?
-  customerId       Int?
-  customer         Customer?    @relation(fields: [customerId], references: [id])
-  assignedToId     Int?
-  assignedTo       Employee?    @relation("AssignedTo", fields: [assignedToId], references: [id])
-  assignedById     Int
-  assignedBy       Employee     @relation("AssignedBy", fields: [assignedById], references: [id])
-  testerId         Int?
-  tester           Employee?    @relation("WLTester", fields: [testerId], references: [id])
-  priority         Priority     @default(NORMAL)
-  dueDate          DateTime?
-  status           WorkStatus   @default(NOT_STARTED)
-  progressPct      Int          @default(0)
-  lastUpdate       DateTime     @default(now())
-  reasonNextAction String?
-  totalActualTime  Int          @default(0)
-  completedDate    DateTime?
-  isOverdue        Boolean      @default(false)
-  createdAt        DateTime     @default(now())
+model TaskTemplate {
+  id                    Int       @id @default(autoincrement())
+  code                  String    @unique
+  title                 String
+  description           String?   @db.Text
+  defaultTaskType       TaskType  @default(NORMAL)
+  defaultEstimatedTime  Int?
+  defaultPriority       Priority  @default(NORMAL)
+  requiresVideo         Boolean?
+  department            String?
+  linkTemplate          String?
+  usageCount            Int       @default(0)
+  isActive              Boolean   @default(true)
+  createdById           Int?
+  createdBy             Employee? @relation("TemplateCreator", fields: [createdById], references: [id])
+  createdAt             DateTime  @default(now())
 
-  workReports WorkReport[]
+  tasks                 Task[]
+  estimateFlags         EstimateFlag[]
 
-  @@map("work_list")
+  @@index([isActive])
+  @@map("task_templates")
 }
 
 // ─────────────────────────────────────────────────────────────
-// WORK REPORT
+// TASKS (unified — replaces task_library + work_list)
 // ─────────────────────────────────────────────────────────────
 
-model WorkReport {
-  id             Int          @id @default(autoincrement())
-  date           DateTime
-  employeeId     Int
-  employee       Employee     @relation(fields: [employeeId], references: [id])
-  taskId         String?
-  task           TaskLibrary? @relation(fields: [taskId], references: [taskId])
-  quantity       Int          @default(1)
-  taskName       String?
-  description    String?
-  stdTime        Int?
-  actualTime     Int
-  delta          Int?
-  creditedTime   Int?
-  completionPct  Int          @default(100)
-  stdTimeIssue   Boolean      @default(false)
-  videoCount     Int          @default(0)
-  videoDuration  Int          @default(0)
-  videoLink      String?
-  note           String?
-  link           String?
-  link2          String?
-  link3          String?
-  link4          String?
-  wlId           String?
-  workList       WorkList?    @relation(fields: [wlId], references: [wlId])
-  customerId     Int?
-  customer       Customer?    @relation(fields: [customerId], references: [id])
-  rating         Int?
-  createdAt      DateTime     @default(now())
+model Task {
+  id                  Int        @id @default(autoincrement())
+  code                String     @unique // TSK-0001
+  title               String
+  description         String?    @db.Text
+  taskType            TaskType   @default(NORMAL)
+  priority            Priority   @default(NORMAL)
+  status              TaskStatus @default(BACKLOG)
+  estimatedTime       Int?       // phút
+  actualTimeTotal     Int        @default(0)
+  progressPct         Int        @default(0)
 
-  @@map("work_reports")
+  parentTaskId        Int?
+  parentTask          Task?      @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subTasks            Task[]     @relation("TaskHierarchy")
+
+  templateId          Int?
+  template            TaskTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  assignedToId        Int
+  assignedTo          Employee   @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  assignedById        Int
+  assignedBy          Employee   @relation("TaskCreator", fields: [assignedById], references: [id])
+
+  customerId          Int?
+  customer            Customer?  @relation(fields: [customerId], references: [id])
+  projectId           Int?
+
+  billable            Boolean    @default(false)
+  hourlyRateOverride  Decimal?   @db.Decimal(10, 2)
+  requiresVideo       Boolean    @default(false)
+
+  dateCreated         DateTime   @default(now())
+  dateStarted         DateTime?
+  dueDate             DateTime?
+  dateCompleted       DateTime?
+  isOverdue           Boolean    @default(false)
+  lastUpdate          DateTime   @default(now()) @updatedAt
+  reasonNextAction    String?
+
+  timeLogs            TimeLog[]
+
+  @@index([assignedToId, status])
+  @@index([customerId])
+  @@index([parentTaskId])
+  @@index([dueDate])
+  @@map("tasks")
+}
+
+// ─────────────────────────────────────────────────────────────
+// TIME LOGS (replaces work_reports)
+// ─────────────────────────────────────────────────────────────
+
+model TimeLog {
+  id                   Int                @id @default(autoincrement())
+  taskId               Int
+  task                 Task               @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  employeeId           Int
+  employee             Employee           @relation("TimeLogEmployee", fields: [employeeId], references: [id])
+
+  date                 DateTime
+  startTime            DateTime?
+  endTime              DateTime?
+  durationMinutes      Int
+  quantity             Int                @default(1)
+  note                 String?            @db.Text
+  completionPctAfter   Int?
+  taskStatusAfter      TaskStatus?
+
+  // proof
+  videoCount           Int                @default(0)
+  videoDuration        Int                @default(0)
+  videoLink            String?
+  proofLinks           Json               @default("[]")
+
+  // approval
+  creditedMinutes      Int?
+  approvalStatus       TimeLogApprovalStatus @default(PENDING)
+  approvedById         Int?
+  approvedBy           Employee?          @relation("TimeLogApprover", fields: [approvedById], references: [id])
+  approvedMinutes      Int?
+  approvedAt           DateTime?
+  rejectionReason      String?
+  rating               Int?
+
+  createdAt            DateTime           @default(now())
+
+  @@index([taskId])
+  @@index([employeeId, date])
+  @@index([approvalStatus])
+  @@map("time_logs")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -304,7 +332,7 @@ model OfficeTime {
   startAfternoonBreak  DateTime?
   startWork3           DateTime?
   endWorkday           DateTime?
-  workReportTotal      Int            @default(0)
+  timeLogsTotal        Int            @default(0)
   actualWorked         Int?
   delta                Int?
   explanation          String?
@@ -320,58 +348,48 @@ model OfficeTime {
 }
 
 // ─────────────────────────────────────────────────────────────
-// MISSING TASKS & TIME CHECK
+// TASK REVIEWS — Template Suggestions + Estimate Flags
 // ─────────────────────────────────────────────────────────────
 
-model MissingTask {
-  id            Int            @id @default(autoincrement())
-  date          DateTime
-  employeeId    Int
-  employee      Employee       @relation(fields: [employeeId], references: [id])
-  taskName      String
-  description   String?
-  quantity      Int            @default(1)
-  timeAllotted  Int?
-  videoLink     String
-  videoDuration Int?
-  dateRecorded  DateTime?
-  reasonNote    String?
-  status        ApprovalStatus @default(PENDING)
-  approvedTime  Int?
-  bonusTime     Int            @default(0)
-  reviewedById  Int?
-  reviewedBy    Employee?      @relation("MissingReviewer", fields: [reviewedById], references: [id])
-  decisionNote  String?
-  reviewedAt    DateTime?
-  createdAt     DateTime       @default(now())
+model TemplateSuggestion {
+  id                    Int            @id @default(autoincrement())
+  date                  DateTime       @default(now())
+  employeeId            Int
+  employee              Employee       @relation("SuggestionEmployee", fields: [employeeId], references: [id])
+  proposedCode          String
+  proposedTitle         String
+  description           String         @db.Text
+  proposedTaskType      TaskType
+  proposedEstimate      Int
+  evidenceVideoLink     String
+  exampleTaskIds        Json           @default("[]")
+  reasonNote            String         @db.Text
+  status                ApprovalStatus @default(PENDING)
+  reviewedById          Int?
+  reviewedBy            Employee?      @relation("SuggestionReviewer", fields: [reviewedById], references: [id])
+  createdTemplateId     Int?
+  decisionNote          String?
+  bonusTime             Int            @default(0)
+  reviewedAt            DateTime?
+  createdAt             DateTime       @default(now())
 
-  @@map("missing_tasks")
+  @@map("template_suggestions")
 }
 
-model TimeCheck {
-  id               Int            @id @default(autoincrement())
-  date             DateTime
-  employeeId       Int
-  employee         Employee       @relation(fields: [employeeId], references: [id])
-  taskId           String?
-  task             TaskLibrary?   @relation(fields: [taskId], references: [taskId])
-  currentStdTime   Int
-  actualTime       Int
-  proposedStdTime  Int
-  difference       Int?
-  reason           String?
-  videoLink        String
-  videoDuration    Int?
-  timeCheckType    TimeCheckType?
-  status           ApprovalStatus @default(PENDING)
-  reviewedById     Int?
-  reviewedBy       Employee?      @relation("TimeCheckReviewer", fields: [reviewedById], references: [id])
-  decisionNote     String?
-  approvedTime     Int?
-  reviewedAt       DateTime?
-  createdAt        DateTime       @default(now())
+model EstimateFlag {
+  id                    Int                @id @default(autoincrement())
+  templateId            Int
+  template              TaskTemplate       @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  flaggedAt             DateTime           @default(now())
+  currentEstimate       Int
+  suggestedEstimate     Int
+  sampleSize            Int
+  status                EstimateFlagStatus @default(OPEN)
+  reviewedById          Int?
+  reviewedBy            Employee?          @relation("FlagReviewer", fields: [reviewedById], references: [id])
+  reviewedAt            DateTime?
 
-  @@map("time_checks")
+  @@map("estimate_flags")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -379,41 +397,48 @@ model TimeCheck {
 // ─────────────────────────────────────────────────────────────
 
 model SalarySummary {
-  id                 Int       @id @default(autoincrement())
-  employeeId         Int
-  employee           Employee  @relation(fields: [employeeId], references: [id])
-  month              Int
-  year               Int
-  creditedHours      Decimal   @default(0) @db.Decimal(8, 2)
-  workHoursReal      Decimal   @default(0) @db.Decimal(8, 2)
-  learnHours         Decimal   @default(0) @db.Decimal(8, 2)
-  deltaHours         Decimal   @default(0) @db.Decimal(8, 2)
-  salaryCalc         Decimal   @default(0) @db.Decimal(10, 2)
-  bonusCalc          Decimal   @default(0) @db.Decimal(10, 2)
-  totalCalc          Decimal   @default(0) @db.Decimal(10, 2)
-  salaryPaid         Decimal   @default(0) @db.Decimal(10, 2)
-  bonusPaid          Decimal   @default(0) @db.Decimal(10, 2)
-  moneyReceived      Decimal   @default(0) @db.Decimal(10, 2)
-  deltaMoney         Decimal   @default(0) @db.Decimal(10, 2)
+  id                     Int       @id @default(autoincrement())
+  employeeId             Int
+  employee               Employee  @relation(fields: [employeeId], references: [id])
+  month                  Int
+  year                   Int
+  // Hours
+  creditedHours          Decimal   @default(0) @db.Decimal(8, 2)
+  workHoursReal          Decimal   @default(0) @db.Decimal(8, 2)
+  learnHours             Decimal   @default(0) @db.Decimal(8, 2)
+  billableHours          Decimal   @default(0) @db.Decimal(8, 2)
+  billableAmount         Decimal   @default(0) @db.Decimal(10, 2)
+  deltaHours             Decimal   @default(0) @db.Decimal(8, 2)
+  // Payroll (€)
+  salaryCalc             Decimal   @default(0) @db.Decimal(10, 2)
+  bonusCalc              Decimal   @default(0) @db.Decimal(10, 2)
+  totalCalc              Decimal   @default(0) @db.Decimal(10, 2)
+  salaryPaid             Decimal   @default(0) @db.Decimal(10, 2)
+  bonusPaid              Decimal   @default(0) @db.Decimal(10, 2)
+  moneyReceived          Decimal   @default(0) @db.Decimal(10, 2)
+  deltaMoney             Decimal   @default(0) @db.Decimal(10, 2)
   // Performance scores
-  scoreWorkSpeed     Decimal?  @db.Decimal(5, 2)
-  scoreQuality       Decimal?  @db.Decimal(5, 2)
-  scoreLearning      Decimal?  @db.Decimal(5, 2)
-  scoreDeadlines     Decimal?  @db.Decimal(5, 2)
-  scoreInitiative    Decimal?  @db.Decimal(5, 2)
-  totalScore         Decimal?  @db.Decimal(5, 2)
-  // Work list stats
-  totalTasks         Int       @default(0)
-  completedTasks     Int       @default(0)
-  openTasks          Int       @default(0)
-  overdueTasks       Int       @default(0)
-  totalActualTimeH   Decimal   @default(0) @db.Decimal(8, 2)
-  completionRate     Decimal   @default(0) @db.Decimal(5, 2)
-  confirmedById      Int?
-  confirmedBy        Employee? @relation("SummaryConfirmer", fields: [confirmedById], references: [id])
-  confirmedAt        DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  scoreWorkSpeed         Decimal?  @db.Decimal(5, 2)
+  scoreQuality           Decimal?  @db.Decimal(5, 2)
+  scoreLearning          Decimal?  @db.Decimal(5, 2)
+  scoreDeadlines         Decimal?  @db.Decimal(5, 2)
+  scoreInitiative        Decimal?  @db.Decimal(5, 2)
+  totalScore             Decimal?  @db.Decimal(5, 2)
+  // Task stats
+  totalTasks             Int       @default(0)
+  completedTasks         Int       @default(0)
+  openTasks              Int       @default(0)
+  overdueTasks           Int       @default(0)
+  totalActualTimeH       Decimal   @default(0) @db.Decimal(8, 2)
+  totalCreditedTimeH     Decimal   @default(0) @db.Decimal(8, 2)
+  completionRate         Decimal   @default(0) @db.Decimal(5, 2)
+  tasksByType            Json?
+  // Status
+  confirmedById          Int?
+  confirmedBy            Employee? @relation("SummaryConfirmer", fields: [confirmedById], references: [id])
+  confirmedAt            DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   @@unique([employeeId, month, year])
   @@map("salary_summary")
@@ -570,6 +595,24 @@ model AuditLog {
 }
 
 // ─────────────────────────────────────────────────────────────
+// SYSTEM CONFIG
+// ─────────────────────────────────────────────────────────────
+
+model SystemLabel {
+  id        Int      @id @default(autoincrement())
+  category  String
+  key       String
+  label     String
+  color     String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, key])
+  @@map("system_label")
+}
+
+// ─────────────────────────────────────────────────────────────
 // ENUMS
 // ─────────────────────────────────────────────────────────────
 
@@ -598,11 +641,22 @@ enum Priority {
   LOW
 }
 
-enum WorkStatus {
-  NOT_STARTED
+enum TaskType {
+  NORMAL
+  LEARNING
+  NEW_RESEARCH
+  MEETING
+  ADMIN
+  BILLABLE_CLIENT
+  INTERNAL
+}
+
+enum TaskStatus {
+  BACKLOG
   IN_PROGRESS
   BLOCKED
-  COMPLETED
+  REVIEW
+  DONE
   CANCELLED
 }
 
@@ -612,9 +666,17 @@ enum ApprovalStatus {
   REJECTED
 }
 
-enum TimeCheckType {
-  INCREASE
-  DECREASE
+enum TimeLogApprovalStatus {
+  AUTO_APPROVED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum EstimateFlagStatus {
+  OPEN
+  ACCEPTED
+  DISMISSED
 }
 
 enum PaymentType {

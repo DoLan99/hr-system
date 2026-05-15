@@ -78,7 +78,7 @@ export async function PUT(
 
   // Recalc
   const actualWorked = calcActualWorked(record);
-  const delta = actualWorked > 0 ? record.workReportTotal - actualWorked : null;
+  const delta = actualWorked > 0 ? record.timeLogsTotal - actualWorked : null;
 
   const updated = await prisma.officeTime.update({
     where: { id },

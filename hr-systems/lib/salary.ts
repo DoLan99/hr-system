@@ -1,4 +1,7 @@
-export const LEARN_TASK_IDS = ["2001", "2002"];
+import type { TaskType } from "@prisma/client";
+
+// Task types đếm vào "learn hours" cho KPI learning_ability
+export const LEARN_TASK_TYPES: TaskType[] = ["LEARNING"];
 
 export interface SalaryInput {
   payType: string;
@@ -7,24 +10,31 @@ export interface SalaryInput {
   bonusMPct: number;
   bonusAPct: number;
   bonusTPct: number;
-  creditedMinutes: number;      // từ work_reports.creditedTime trong tháng
-  missingApprovedMinutes: number; // từ missing_tasks approved trong tháng
-  learnMinutes: number;          // creditedTime cho task 2001/2002
+  /** Tổng credited_minutes từ time_logs trong tháng (đã được duyệt: AUTO_APPROVED hoặc APPROVED) */
+  creditedMinutes: number;
+  /** Tổng duration cho task type LEARNING (vào learn_hours, không vào salary) */
+  learnMinutes: number;
+  /** Tổng credited_minutes của task billable=TRUE */
+  billableMinutes?: number;
+  /** Tổng tiền billable (€) — tính sẵn từ billable_minutes × rate */
+  billableAmount?: number;
 }
 
 export interface SalaryResult {
   creditedHours: number;
   learnHours: number;
+  billableHours: number;
+  billableAmount: number;
   salaryCalc: number;
   bonusCalc: number;
   totalCalc: number;
 }
 
 export function calcSalary(p: SalaryInput): SalaryResult {
-  // Tổng giờ credited = work report + missing tasks approved
-  const totalCreditedMin = p.creditedMinutes + p.missingApprovedMinutes;
-  const creditedHours = totalCreditedMin / 60;
+  const creditedHours = p.creditedMinutes / 60;
   const learnHours = p.learnMinutes / 60;
+  const billableHours = (p.billableMinutes ?? 0) / 60;
+  const billableAmount = p.billableAmount ?? 0;
 
   let salaryCalc = 0;
   if (p.payType === "HOURLY" && p.hourlyRate) {
@@ -37,7 +47,7 @@ export function calcSalary(p: SalaryInput): SalaryResult {
   const bonusCalc = (salaryCalc * totalBonusPct) / 100;
   const totalCalc = salaryCalc + bonusCalc;
 
-  return { creditedHours, learnHours, salaryCalc, bonusCalc, totalCalc };
+  return { creditedHours, learnHours, billableHours, billableAmount, salaryCalc, bonusCalc, totalCalc };
 }
 
 export function calcTotalScore(scores: {

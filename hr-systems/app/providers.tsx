@@ -3,8 +3,15 @@
 import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { LocaleProvider } from "@/lib/i18n/context";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  children,
+  locale,
+}: {
+  children: React.ReactNode;
+  locale?: string;
+}) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -18,9 +25,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <SessionProvider>
+    <SessionProvider refetchInterval={5 * 60} refetchOnWindowFocus={true}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <LocaleProvider initialLocale={locale}>
+          {children}
+        </LocaleProvider>
       </QueryClientProvider>
     </SessionProvider>
   );

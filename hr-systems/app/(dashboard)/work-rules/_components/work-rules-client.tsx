@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Plus, Pencil, Trash2, Loader2, X } from "lucide-react";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi as viLocale } from "date-fns/locale";
+import { useLocale } from "@/lib/i18n/context";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
 
@@ -24,6 +25,7 @@ function RuleModal({ rule, onClose, onSaved }: {
   onClose: () => void;
   onSaved: (r: any) => void;
 }) {
+  const { t, locale } = useLocale();
   const [form, setForm] = useState({
     ruleNo: String(rule?.ruleNo ?? ""),
     title: rule?.title ?? "",
@@ -56,7 +58,9 @@ function RuleModal({ rule, onClose, onSaved }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h2 className="text-[15px] font-semibold text-slate-900">{rule ? "Sửa quy tắc" : "Thêm quy tắc"}</h2>
+          <h2 className="text-[15px] font-semibold text-slate-900">
+            {rule ? t("workRules.editRule") : t("workRules.addRule")}
+          </h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition">
             <X className="w-4 h-4" />
           </button>
@@ -64,33 +68,33 @@ function RuleModal({ rule, onClose, onSaved }: {
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-3.5">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[12px] font-medium text-slate-700 mb-1.5">Số thứ tự</label>
+              <label className="block text-[12px] font-medium text-slate-700 mb-1.5">{t("workRules.orderNumber")}</label>
               <input type="number" min={1} value={form.ruleNo}
                 onChange={e => setForm(p => ({ ...p, ruleNo: e.target.value }))}
                 required className="form-input" />
             </div>
             <div>
-              <label className="block text-[12px] font-medium text-slate-700 mb-1.5">Ngày hiệu lực</label>
+              <label className="block text-[12px] font-medium text-slate-700 mb-1.5">{t("workRules.effectiveDate")}</label>
               <input type="date" value={form.effectiveDate}
                 onChange={e => setForm(p => ({ ...p, effectiveDate: e.target.value }))}
                 className="form-input" />
             </div>
           </div>
           <div>
-            <label className="block text-[12px] font-medium text-slate-700 mb-1.5">Tiêu đề</label>
+            <label className="block text-[12px] font-medium text-slate-700 mb-1.5">{t("workRules.ruleTitle")}</label>
             <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-              required className="form-input" placeholder="Tiêu đề quy tắc..." />
+              required className="form-input" placeholder={t("workRules.titlePlaceholder")} />
           </div>
           <div>
-            <label className="block text-[12px] font-medium text-slate-700 mb-1.5">Nội dung</label>
+            <label className="block text-[12px] font-medium text-slate-700 mb-1.5">{t("workRules.ruleContent")}</label>
             <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
               rows={5} required className="form-input resize-none"
-              placeholder="Mô tả chi tiết quy tắc..." />
+              placeholder={t("workRules.contentPlaceholder")} />
           </div>
           <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose} className="btn-secondary">Hủy</button>
+            <button type="button" onClick={onClose} className="btn-secondary">{t("common.cancel")}</button>
             <button type="submit" disabled={loading} className="btn-primary">
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />} Lưu
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />} {t("common.save")}
             </button>
           </div>
         </form>
@@ -101,15 +105,17 @@ function RuleModal({ rule, onClose, onSaved }: {
 
 export function WorkRulesClient({ initialRules }: Props) {
   const { data: session } = useSession();
+  const { t, locale } = useLocale();
   const role = (session?.user as any)?.role ?? "";
   const isManager = MANAGER_ROLES.includes(role);
+  const dateFnsLocale = locale === "vi" ? viLocale : undefined;
 
   const [rules, setRules] = useState<Rule[]>(initialRules);
   const [creating, setCreating] = useState(false);
   const [editingRule, setEditingRule] = useState<Rule | null>(null);
 
   async function handleDelete(id: number) {
-    if (!confirm("Xóa quy tắc này?")) return;
+    if (!confirm(t("workRules.deleteConfirm"))) return;
     await fetch(`/api/work-rules/${id}`, { method: "DELETE" });
     setRules(prev => prev.filter(r => r.id !== id));
   }
@@ -128,12 +134,12 @@ export function WorkRulesClient({ initialRules }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">Quy tắc làm việc</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Quy định nội bộ của công ty</p>
+          <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">{t("workRules.title")}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">{t("workRules.subtitle")}</p>
         </div>
         {isManager && (
           <button onClick={() => setCreating(true)} className="btn-primary">
-            <Plus className="w-4 h-4" /> Thêm quy tắc
+            <Plus className="w-4 h-4" /> {t("workRules.addRule")}
           </button>
         )}
       </div>
@@ -152,7 +158,7 @@ export function WorkRulesClient({ initialRules }: Props) {
                       <h3 className="text-[13.5px] font-semibold text-slate-900">{r.title}</h3>
                       {r.effectiveDate && (
                         <span className="text-[11.5px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
-                          Hiệu lực {format(new Date(r.effectiveDate), "dd/MM/yyyy", { locale: vi })}
+                          {t("workRules.effective")} {format(new Date(r.effectiveDate), "dd/MM/yyyy", { locale: dateFnsLocale })}
                         </span>
                       )}
                     </div>
@@ -177,7 +183,7 @@ export function WorkRulesClient({ initialRules }: Props) {
         ))}
 
         {rules.length === 0 && (
-          <div className="text-center py-16 text-slate-400 text-sm">Chưa có quy tắc nào</div>
+          <div className="text-center py-16 text-slate-400 text-sm">{t("workRules.noRules")}</div>
         )}
       </div>
 

@@ -33,7 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     where: { id: Number(params.id) },
     include: {
       responsibleStaff: { select: { id: true, fullName: true } },
-      _count: { select: { workList: true, workReports: true, messages: true } },
+      _count: { select: { tasks: true, messages: true } },
     },
   });
 
@@ -62,7 +62,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     },
     include: {
       responsibleStaff: { select: { id: true, fullName: true } },
-      _count: { select: { workList: true, workReports: true, messages: true } },
+      _count: { select: { tasks: true, messages: true } },
     },
   });
 

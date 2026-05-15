@@ -1,14 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useSession } from "next-auth/react";
 import { Plus, Search, Pencil, Trash2, Eye, EyeOff, Copy, Lock, Globe, RotateCcw, CheckCheck } from "lucide-react";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/context";
 import { VaultFormModal } from "./vault-form-modal";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
 
 interface Employee { id: number; fullName: string }
 interface CustomerOption { id: number; customerName?: string | null; businessName?: string | null }
@@ -38,6 +34,7 @@ interface Props {
 }
 
 export function VaultClient({ initialVaults, employees, customers, isManager }: Props) {
+  const { t } = useLocale();
   const [vaults, setVaults] = useState<VaultItem[]>(initialVaults);
   const [search, setSearch] = useState("");
   const [filterScope, setFilterScope] = useState("ALL");
@@ -73,7 +70,7 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Xóa mục này?")) return;
+    if (!confirm(t("vault.deleteConfirm"))) return;
     await fetch(`/api/vault/${id}`, { method: "DELETE" });
     setVaults(prev => prev.filter(v => v.id !== id));
   }
@@ -91,12 +88,12 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">Password Vault</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Lưu trữ mật khẩu được mã hóa</p>
+          <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">{t("vault.title")}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">{t("vault.subtitle")}</p>
         </div>
         {isManager && (
           <button onClick={() => setCreating(true)} className="btn-primary">
-            <Plus className="w-4 h-4" /> Thêm
+            <Plus className="w-4 h-4" /> {t("common.add")}
           </button>
         )}
       </div>
@@ -105,15 +102,19 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
       <div className="flex flex-wrap gap-2.5">
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm kiếm..."
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t("vault.searchPlaceholder")}
             className="form-input pl-9" />
         </div>
         <div className="flex gap-1.5">
-          {["ALL", "COMPANY", "CUSTOMER"].map(s => (
-            <button key={s} onClick={() => setFilterScope(s)}
+          {[
+            { key: "ALL", label: t("vault.all") },
+            { key: "COMPANY", label: t("vault.company") },
+            { key: "CUSTOMER", label: t("vault.customer") },
+          ].map(s => (
+            <button key={s.key} onClick={() => setFilterScope(s.key)}
               className={cn("px-3 py-1.5 rounded-lg text-[12px] font-medium transition",
-                filterScope === s ? "bg-blue-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50")}>
-              {s === "ALL" ? "Tất cả" : s === "COMPANY" ? "Công ty" : "Khách hàng"}
+                filterScope === s.key ? "bg-blue-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50")}>
+              {s.label}
             </button>
           ))}
         </div>
@@ -125,6 +126,7 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
           const isRevealed = revealedId === v.id;
           const daysSinceUpdate = Math.floor((Date.now() - new Date(v.lastUpdated).getTime()) / 86400000);
           const isExpiring = v.rotationDays && daysSinceUpdate >= v.rotationDays;
+          const scopeLabel = v.scope === "COMPANY" ? t("vault.company") : t("vault.customer");
           return (
             <div key={v.id} className={cn(
               "bg-white rounded-xl border p-4 space-y-3 shadow-card transition hover:shadow-card-md",
@@ -135,7 +137,7 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={cn("text-[11px] px-2 py-0.5 rounded-md font-semibold",
                       v.scope === "COMPANY" ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-purple-50 text-purple-700 border border-purple-200")}>
-                      {v.scope === "COMPANY" ? "Công ty" : "Khách hàng"}
+                      {scopeLabel}
                     </span>
                     <p className="font-semibold text-slate-900 text-[13.5px] truncate">
                       {v.entityName || v.serviceApp || "—"}
@@ -163,19 +165,19 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
               <div className="space-y-1.5 text-[12px] text-slate-600">
                 {v.username && (
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400 w-16 shrink-0">Username</span>
+                    <span className="text-slate-400 w-16 shrink-0">{t("vault.username")}</span>
                     <span className="font-mono text-slate-700 truncate">{v.username}</span>
                   </div>
                 )}
                 {v.emailUsed && (
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400 w-16 shrink-0">Email</span>
+                    <span className="text-slate-400 w-16 shrink-0">{t("common.email")}</span>
                     <span className="truncate">{v.emailUsed}</span>
                   </div>
                 )}
                 {v.twoFaMethod && (
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400 w-16 shrink-0">2FA</span>
+                    <span className="text-slate-400 w-16 shrink-0">{t("vault.twoFa")}</span>
                     <span>{v.twoFaMethod}</span>
                   </div>
                 )}
@@ -188,7 +190,7 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
                   {isRevealed ? revealedPass : "••••••••••"}
                 </span>
                 <button onClick={() => handleReveal(v.id)}
-                  className="p-1 text-slate-400 hover:text-slate-700 transition" title={isRevealed ? "Ẩn" : "Hiện"}>
+                  className="p-1 text-slate-400 hover:text-slate-700 transition" title={isRevealed ? t("vault.hide") : t("vault.show")}>
                   {isRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 </button>
                 {isRevealed && (
@@ -206,13 +208,13 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
                 <div className="flex items-center gap-1.5">
                   {isExpiring && <RotateCcw className="w-3 h-3 text-amber-500" />}
                   <span className={isExpiring ? "text-amber-600 font-medium" : ""}>
-                    {daysSinceUpdate}d trước
+                    {t("common.daysAgo").replace("{n}", String(daysSinceUpdate))}
                   </span>
                 </div>
                 {v.loginUrl && (
                   <a href={v.loginUrl} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1 text-blue-600 hover:text-blue-700 hover:underline">
-                    <Globe className="w-3 h-3" /> Link
+                    <Globe className="w-3 h-3" /> {t("vault.url")}
                   </a>
                 )}
               </div>
@@ -222,7 +224,7 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-16 text-slate-400 text-sm">Không có mục nào</div>
+        <div className="text-center py-16 text-slate-400 text-sm">{t("vault.noItems")}</div>
       )}
 
       {(creating || editingVault) && (

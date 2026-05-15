@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { Plus, Search, Pencil, UserX, UserCheck, ExternalLink, Mail, Phone } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/context";
 import { EmployeeFormModal } from "./employee-form-modal";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
@@ -42,22 +43,17 @@ interface Props {
   teams: TeamOption[];
 }
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  ACTIVE: { label: "Đang làm", color: "bg-green-100 text-green-700" },
-  PROBATION: { label: "Thử việc", color: "bg-yellow-100 text-yellow-700" },
-  INACTIVE: { label: "Nghỉ việc", color: "bg-slate-100 text-slate-500" },
+const STATUS_COLOR: Record<string, string> = {
+  ACTIVE: "bg-green-100 text-green-700",
+  PROBATION: "bg-yellow-100 text-yellow-700",
+  INACTIVE: "bg-slate-100 text-slate-500",
 };
 
-const PAY_TYPE_LABELS: Record<string, string> = {
-  HOURLY: "Theo giờ",
-  MONTHLY: "Cố định",
-  CONTRACT: "HĐ",
-};
-
-const DEPARTMENTS = ["Tất cả", "Dev", "Design", "Admin", "HR", "Sales", "Support", "Management"];
+const DEPARTMENTS = ["All", "Dev", "Design", "Admin", "HR", "Sales", "Support", "Management"];
 
 export function EmployeesClient({ initialEmployees, roles, departments, teams }: Props) {
   const { data: session } = useSession();
+  const { t } = useLocale();
   const role = (session?.user as any)?.role ?? "";
   const isManager = MANAGER_ROLES.includes(role);
   const currentUserId = Number((session?.user as any)?.id ?? 0);
@@ -65,7 +61,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
   const [employees, setEmployees] = useState<EmployeeItem[]>(initialEmployees);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("ACTIVE");
-  const [filterDept, setFilterDept] = useState("Tất cả");
+  const [filterDept, setFilterDept] = useState("All");
   const [creating, setCreating] = useState(false);
   const [editingEmp, setEditingEmp] = useState<EmployeeItem | null>(null);
 
@@ -74,7 +70,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
   const filtered = useMemo(() => {
     return employees.filter(emp => {
       if (filterStatus !== "ALL" && emp.status !== filterStatus) return false;
-      if (filterDept !== "Tất cả" && emp.department !== filterDept) return false;
+      if (filterDept !== "All" && emp.department !== filterDept) return false;
       if (search) {
         const q = search.toLowerCase();
         return emp.fullName.toLowerCase().includes(q) ||
@@ -115,12 +111,12 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">Nhân viên</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Quản lý thông tin nhân sự</p>
+          <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">{t("employees.title")}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">{t("employees.subtitle")}</p>
         </div>
         {isManager && (
           <button onClick={() => setCreating(true)} className="btn-primary">
-            <Plus className="w-4 h-4" /> Thêm nhân viên
+            <Plus className="w-4 h-4" /> {t("employees.addEmployee")}
           </button>
         )}
       </div>
@@ -128,9 +124,9 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Đang làm", value: stats.active, color: "text-emerald-600" },
-          { label: "Thử việc", value: stats.probation, color: "text-amber-600" },
-          { label: "Nghỉ việc", value: stats.inactive, color: "text-slate-400" },
+          { label: t("employees.working"), value: stats.active, color: "text-emerald-600" },
+          { label: t("employees.probation"), value: stats.probation, color: "text-amber-600" },
+          { label: t("employees.resigned"), value: stats.inactive, color: "text-slate-400" },
         ].map(s => (
           <div key={s.label} className="stat-card">
             <p className="text-[11.5px] font-medium text-slate-500 uppercase tracking-wide">{s.label}</p>
@@ -144,7 +140,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Tìm kiếm nhân viên..."
+            placeholder={t("employees.searchPlaceholder")}
             className="form-input pl-9" />
         </div>
 
@@ -153,7 +149,11 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
             <button key={s} onClick={() => setFilterStatus(s)}
               className={cn("px-3 py-1.5 rounded-lg text-[12px] font-medium transition",
                 filterStatus === s ? "bg-blue-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50")}>
-              {s === "ALL" ? "Tất cả" : STATUS_LABELS[s]?.label ?? s}
+              {s === "ALL" ? t("common.all") : (
+                s === "ACTIVE" ? t("employees.working") :
+                s === "PROBATION" ? t("employees.probation") :
+                t("employees.resigned")
+              )}
             </button>
           ))}
         </div>
@@ -163,7 +163,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
             <button key={d} onClick={() => setFilterDept(d)}
               className={cn("px-3 py-1.5 rounded-lg text-[12px] font-medium transition",
                 filterDept === d ? "bg-slate-800 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50")}>
-              {d}
+              {d === "All" ? t("employees.allDepts") : d}
             </button>
           ))}
         </div>
@@ -172,7 +172,11 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {filtered.map(emp => {
-          const statusCfg = STATUS_LABELS[emp.status] ?? { label: emp.status, color: "bg-slate-100 text-slate-500" };
+          const statusColor = STATUS_COLOR[emp.status] ?? "bg-slate-100 text-slate-500";
+          const statusLabel = emp.status === "ACTIVE" ? t("employees.working") :
+            emp.status === "PROBATION" ? t("employees.probation") :
+            t("employees.resigned");
+          const payTypeLabel = t(`payType.${emp.payType}`) || emp.payType;
           const salaryText = emp.payType === "HOURLY" && emp.hourlyRate
             ? `${formatCurrency(Number(emp.hourlyRate))}/h`
             : emp.payType === "MONTHLY" && emp.monthlySalary
@@ -189,8 +193,8 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-slate-900 text-[13.5px] truncate">{emp.fullName}</p>
-                    <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-medium", statusCfg.color)}>
-                      {statusCfg.label}
+                    <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-medium", statusColor)}>
+                      {statusLabel}
                     </span>
                   </div>
                   <p className="text-[12px] text-slate-500 truncate mt-0.5">{emp.role.label}{emp.department ? ` · ${emp.department}` : ""}</p>
@@ -205,7 +209,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
                     {isManager && emp.id !== currentUserId && (
                       <button onClick={() => toggleStatus(emp)}
                         className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition"
-                        title={emp.status === "ACTIVE" ? "Vô hiệu hóa" : "Kích hoạt lại"}>
+                        title={emp.status === "ACTIVE" ? t("employees.disable") : t("employees.reactivate")}>
                         {emp.status === "ACTIVE" ? <UserX className="w-3.5 h-3.5 text-red-400" /> : <UserCheck className="w-3.5 h-3.5 text-emerald-500" />}
                       </button>
                     )}
@@ -228,7 +232,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
 
               {isManager && (
                 <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 text-[12px]">
-                  <span className="text-slate-500">{PAY_TYPE_LABELS[emp.payType] ?? emp.payType}</span>
+                  <span className="text-slate-500">{payTypeLabel}</span>
                   <span className="font-semibold text-slate-800">{salaryText}</span>
                   {totalBonus > 0 && <span className="text-blue-600 font-medium">+{totalBonus}%</span>}
                 </div>
@@ -246,7 +250,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-16 text-slate-400 text-sm">Không tìm thấy nhân viên nào</div>
+        <div className="text-center py-16 text-slate-400 text-sm">{t("employees.noEmployees")}</div>
       )}
 
       {(creating || editingEmp) && (

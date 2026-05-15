@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Plus, Pencil, Trash2, ChevronDown, Users, UserCheck, Building2, GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/context";
 import { DeptFormModal } from "./dept-form-modal";
 import { TeamFormModal } from "./team-form-modal";
 
@@ -41,6 +42,7 @@ interface Props {
 
 export function DepartmentsClient({ initialDepts, initialTeams, employees }: Props) {
   const { data: session } = useSession();
+  const { t } = useLocale();
   const role = (session?.user as any)?.role ?? "";
   const isManager = MANAGER_ROLES.includes(role);
 
@@ -75,13 +77,13 @@ export function DepartmentsClient({ initialDepts, initialTeams, employees }: Pro
   }
 
   async function deleteDept(id: number) {
-    if (!confirm("Xóa phòng ban này?")) return;
+    if (!confirm(t("common.confirmDelete"))) return;
     const res = await fetch(`/api/departments/${id}`, { method: "DELETE" });
     if (res.ok) setDepts(prev => prev.filter(d => d.id !== id));
   }
 
   async function deleteTeam(id: number) {
-    if (!confirm("Xóa nhóm này?")) return;
+    if (!confirm(t("common.confirmDelete"))) return;
     const res = await fetch(`/api/teams/${id}`, { method: "DELETE" });
     if (res.ok) setTeams(prev => prev.filter(t => t.id !== id));
   }
@@ -94,19 +96,19 @@ export function DepartmentsClient({ initialDepts, initialTeams, employees }: Pro
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">Phòng ban & Nhóm</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Quản lý cơ cấu tổ chức</p>
+          <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">{t("departments.title")}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">{t("departments.subtitle")}</p>
         </div>
         {isManager && (
           <div className="flex gap-2">
             {tab === "depts" && (
               <button onClick={() => setDeptModal({ open: true, item: null })} className="btn-primary">
-                <Plus className="w-4 h-4" /> Thêm phòng ban
+                <Plus className="w-4 h-4" /> {t("departments.addDepartment")}
               </button>
             )}
             {tab === "teams" && (
               <button onClick={() => setTeamModal({ open: true, item: null })} className="btn-primary">
-                <Plus className="w-4 h-4" /> Thêm nhóm
+                <Plus className="w-4 h-4" /> {t("departments.addTeam")}
               </button>
             )}
           </div>
@@ -116,9 +118,9 @@ export function DepartmentsClient({ initialDepts, initialTeams, employees }: Pro
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Phòng ban", value: depts.filter(d => d.isActive).length, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Nhóm", value: teams.filter(t => t.isActive).length, icon: GitBranch, color: "text-purple-600", bg: "bg-purple-50" },
-          { label: "Nhân viên", value: totalMembers, icon: Users, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: t("departments.departments"), value: depts.filter(d => d.isActive).length, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: t("departments.teams"), value: teams.filter(t => t.isActive).length, icon: GitBranch, color: "text-purple-600", bg: "bg-purple-50" },
+          { label: t("employees.title"), value: totalMembers, icon: Users, color: "text-emerald-600", bg: "bg-emerald-50" },
         ].map(s => (
           <div key={s.label} className="stat-card flex items-center gap-3">
             <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center flex-shrink-0`}>
@@ -134,8 +136,8 @@ export function DepartmentsClient({ initialDepts, initialTeams, employees }: Pro
 
       {/* Tabs */}
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
-        {([["depts", "Phòng ban", Building2], ["teams", "Nhóm", GitBranch]] as const).map(([key, label, Icon]) => (
-          <button key={key} onClick={() => setTab(key)}
+        {([["depts", t("departments.departments"), Building2], ["teams", t("departments.teams"), GitBranch]] as const).map(([key, label, Icon]) => (
+          <button key={key} onClick={() => setTab(key as "depts" | "teams")}
             className={cn(
               "flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium transition",
               tab === key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
@@ -150,7 +152,7 @@ export function DepartmentsClient({ initialDepts, initialTeams, employees }: Pro
       {tab === "depts" && (
         <div className="space-y-3">
           {depts.length === 0 && (
-            <div className="text-center py-16 text-slate-400 text-sm">Chưa có phòng ban nào.</div>
+            <div className="text-center py-16 text-slate-400 text-sm">{t("departments.noDepartments")}</div>
           )}
           {depts.map(dept => {
             const isExpanded = expandedDepts.has(dept.id);
@@ -173,15 +175,15 @@ export function DepartmentsClient({ initialDepts, initialTeams, employees }: Pro
                           <span className="text-[11px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">{dept.code}</span>
                         )}
                         {!dept.isActive && (
-                          <span className="text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Tạm ngưng</span>
+                          <span className="text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{t("departments.suspended")}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-3 mt-0.5 text-[12px] text-slate-400 flex-wrap">
                         {dept.head && (
                           <span className="flex items-center gap-1"><UserCheck style={{ width: 12, height: 12 }} /> {dept.head.fullName}</span>
                         )}
-                        <span className="flex items-center gap-1"><Users style={{ width: 12, height: 12 }} /> {dept._count.employees} thành viên</span>
-                        <span className="flex items-center gap-1"><GitBranch style={{ width: 12, height: 12 }} /> {linkedTeams.length} nhóm</span>
+                        <span className="flex items-center gap-1"><Users style={{ width: 12, height: 12 }} /> {dept._count.employees} {t("departments.members")}</span>
+                        <span className="flex items-center gap-1"><GitBranch style={{ width: 12, height: 12 }} /> {linkedTeams.length} {t("departments.teams").toLowerCase()}</span>
                       </div>
                     </div>
                     <ChevronDown style={{ width: 16, height: 16 }} className={cn("text-slate-400 flex-shrink-0 transition-transform", isExpanded && "rotate-180")} />
@@ -207,10 +209,10 @@ export function DepartmentsClient({ initialDepts, initialTeams, employees }: Pro
                       <p className="text-[12.5px] text-slate-500 mb-2.5">{dept.description}</p>
                     )}
                     {linkedTeams.length === 0 ? (
-                      <p className="text-[12px] text-slate-400 italic">Chưa có nhóm nào liên kết với phòng ban này</p>
+                      <p className="text-[12px] text-slate-400 italic">{t("departments.noLinkedTeams")}</p>
                     ) : (
                       <div className="flex flex-wrap gap-1.5">
-                        <span className="text-[11.5px] text-slate-400 mr-1 self-center">Nhóm liên kết:</span>
+                        <span className="text-[11.5px] text-slate-400 mr-1 self-center">{t("departments.linkedTeams")}</span>
                         {linkedTeams.map(t => (
                           <span key={t.id} className={cn(
                             "text-[12px] font-medium px-2.5 py-1 rounded-lg border",
@@ -236,7 +238,7 @@ export function DepartmentsClient({ initialDepts, initialTeams, employees }: Pro
       {tab === "teams" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           {teams.length === 0 && (
-            <div className="col-span-2 text-center py-16 text-slate-400 text-sm">Chưa có nhóm nào.</div>
+            <div className="col-span-2 text-center py-16 text-slate-400 text-sm">{t("departments.noTeams")}</div>
           )}
           {teams.map(team => (
             <div key={team.id} className={cn(
@@ -255,7 +257,7 @@ export function DepartmentsClient({ initialDepts, initialTeams, employees }: Pro
                         <span className="text-[11px] font-mono bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">{team.code}</span>
                       )}
                       {!team.isActive && (
-                        <span className="text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Tạm ngưng</span>
+                        <span className="text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{t("departments.suspended")}</span>
                       )}
                     </div>
                     {team.lead && (
@@ -283,13 +285,12 @@ export function DepartmentsClient({ initialDepts, initialTeams, employees }: Pro
                 <p className="text-[12.5px] text-slate-500">{team.description}</p>
               )}
 
-              {/* Department tags */}
               <div className="flex items-center flex-wrap gap-1.5 pt-2.5 border-t border-slate-100">
                 <span className="text-[11.5px] text-slate-400 flex items-center gap-1">
-                  <Users style={{ width: 12, height: 12 }} /> {team._count.employees} TV
+                  <Users style={{ width: 12, height: 12 }} /> {team._count.employees} {t("departments.members").slice(0, 2)}
                 </span>
                 {team.departments.length === 0 ? (
-                  <span className="text-[11.5px] text-slate-300 italic ml-2">Chưa liên kết phòng ban</span>
+                  <span className="text-[11.5px] text-slate-300 italic ml-2">{t("departments.notLinked")}</span>
                 ) : (
                   <>
                     <span className="text-slate-200 mx-1">|</span>

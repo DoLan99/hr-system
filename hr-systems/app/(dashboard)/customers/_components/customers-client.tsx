@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { Plus, Search, Pencil, Phone, Mail, Globe, UserCircle2, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/context";
 import { CustomerFormModal } from "./customer-form-modal";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
@@ -24,7 +25,7 @@ interface CustomerItem {
   responsibleStaffId?: number | null;
   notes?: string | null;
   responsibleStaff?: { id: number; fullName: string } | null;
-  _count?: { workList: number; workReports: number };
+  _count?: { tasks: number };
 }
 
 interface Props {
@@ -32,14 +33,15 @@ interface Props {
   employees: Employee[];
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  ACTIVE: { label: "Đang hoạt động", color: "bg-green-100 text-green-700" },
-  PROSPECT: { label: "Tiềm năng", color: "bg-blue-100 text-blue-700" },
-  INACTIVE: { label: "Không hoạt động", color: "bg-slate-100 text-slate-500" },
+const STATUS_COLOR: Record<string, string> = {
+  ACTIVE: "bg-green-100 text-green-700",
+  PROSPECT: "bg-blue-100 text-blue-700",
+  INACTIVE: "bg-slate-100 text-slate-500",
 };
 
 export function CustomersClient({ initialCustomers, employees }: Props) {
   const { data: session } = useSession();
+  const { t } = useLocale();
   const role = (session?.user as any)?.role ?? "";
   const isManager = MANAGER_ROLES.includes(role);
 
@@ -80,13 +82,13 @@ export function CustomersClient({ initialCustomers, employees }: Props) {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Khách hàng</h1>
-          <p className="text-sm text-slate-500">Danh sách khách hàng & đối tác</p>
+          <h1 className="text-xl font-bold text-slate-900">{t("customers.title")}</h1>
+          <p className="text-sm text-slate-500">{t("customers.subtitle")}</p>
         </div>
         {isManager && (
           <button onClick={() => setCreating(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition">
-            <Plus className="w-4 h-4" /> Thêm khách hàng
+            <Plus className="w-4 h-4" /> {t("customers.addCustomer")}
           </button>
         )}
       </div>
@@ -94,9 +96,9 @@ export function CustomersClient({ initialCustomers, employees }: Props) {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Đang hoạt động", value: stats.active, color: "text-green-600" },
-          { label: "Tiềm năng", value: stats.prospect, color: "text-blue-600" },
-          { label: "Không hoạt động", value: stats.inactive, color: "text-slate-500" },
+          { label: t("customerStatus.ACTIVE"), value: stats.active, color: "text-green-600" },
+          { label: t("customerStatus.PROSPECT"), value: stats.prospect, color: "text-blue-600" },
+          { label: t("customerStatus.INACTIVE"), value: stats.inactive, color: "text-slate-500" },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-100 p-4">
             <p className="text-xs text-slate-500">{s.label}</p>
@@ -110,7 +112,7 @@ export function CustomersClient({ initialCustomers, employees }: Props) {
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Tìm kiếm khách hàng..."
+            placeholder={t("customers.searchPlaceholder")}
             className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
         <div className="flex gap-1.5">
@@ -118,7 +120,7 @@ export function CustomersClient({ initialCustomers, employees }: Props) {
             <button key={s} onClick={() => setFilterStatus(s)}
               className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition",
                 filterStatus === s ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}>
-              {s === "ALL" ? "Tất cả" : (STATUS_CONFIG[s]?.label ?? s)}
+              {s === "ALL" ? t("common.all") : t(`customerStatus.${s}`)}
             </button>
           ))}
         </div>
@@ -127,7 +129,8 @@ export function CustomersClient({ initialCustomers, employees }: Props) {
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map(c => {
-          const statusCfg = STATUS_CONFIG[c.status] ?? { label: c.status, color: "bg-slate-100 text-slate-500" };
+          const statusColor = STATUS_COLOR[c.status] ?? "bg-slate-100 text-slate-500";
+          const statusLabel = t(`customerStatus.${c.status}`) || c.status;
           const displayName = c.customerName || c.businessName || c.custId || "—";
           return (
             <div key={c.id} className={cn(
@@ -138,8 +141,8 @@ export function CustomersClient({ initialCustomers, employees }: Props) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-slate-900 text-sm truncate">{displayName}</p>
-                    <span className={cn("text-xs px-1.5 py-0.5 rounded-full font-medium", statusCfg.color)}>
-                      {statusCfg.label}
+                    <span className={cn("text-xs px-1.5 py-0.5 rounded-full font-medium", statusColor)}>
+                      {statusLabel}
                     </span>
                   </div>
                   {c.businessName && c.customerName && (
@@ -183,12 +186,11 @@ export function CustomersClient({ initialCustomers, employees }: Props) {
                 )}
               </div>
 
-              {(c._count?.workList || c._count?.workReports || c.responsibleStaff) && (
+              {(c._count?.tasks || c.responsibleStaff) && (
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
                   {c.responsibleStaff && <span>{c.responsibleStaff.fullName}</span>}
                   <div className="flex gap-2 ml-auto">
-                    {(c._count?.workList ?? 0) > 0 && <span>{c._count!.workList} tasks</span>}
-                    {(c._count?.workReports ?? 0) > 0 && <span>{c._count!.workReports} reports</span>}
+                    {(c._count?.tasks ?? 0) > 0 && <span>{c._count!.tasks} tasks</span>}
                   </div>
                 </div>
               )}
@@ -198,7 +200,7 @@ export function CustomersClient({ initialCustomers, employees }: Props) {
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-16 text-slate-400 text-sm">Không tìm thấy khách hàng nào</div>
+        <div className="text-center py-16 text-slate-400 text-sm">{t("customers.noCustomers")}</div>
       )}
 
       {(creating || editingCustomer) && (

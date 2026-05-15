@@ -5,13 +5,14 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { NAV_START_EVENT } from "./navigation-progress";
+import { useLocale } from "@/lib/i18n/context";
 import {
   LayoutDashboard,
-  ClipboardList,
-  FileText,
+  ListTodo,
+  Clock4,
   Clock,
-  AlertCircle,
-  Timer,
+  Layers,
+  Inbox,
   BarChart3,
   CreditCard,
   CalendarOff,
@@ -23,6 +24,8 @@ import {
   ChevronRight,
   GitBranch,
   Shield,
+  SlidersHorizontal,
+  Settings,
 } from "lucide-react";
 
 interface NavItem {
@@ -39,83 +42,91 @@ interface NavSection {
 
 function useNavSections(): NavSection[] {
   const { data: session } = useSession();
+  const { t } = useLocale();
   const role = (session?.user as any)?.role ?? "";
 
   return [
     {
-      title: "Tổng quan",
+      title: t("nav.overview"),
       items: [
-        { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+        { label: t("nav.dashboard"), href: "/dashboard", icon: LayoutDashboard },
       ],
     },
     {
-      title: "Công việc",
+      title: t("nav.work"),
       items: [
-        { label: "Work List", href: "/work-list", icon: ClipboardList },
-        { label: "Work Report", href: "/work-report", icon: FileText },
-        { label: "Office Time", href: "/office-time", icon: Clock },
+        { label: t("nav.tasks"), href: "/tasks", icon: ListTodo },
+        { label: t("nav.timeLogs"), href: "/time-logs", icon: Clock4 },
+        { label: t("nav.officeTime"), href: "/office-time", icon: Clock },
       ],
     },
     {
-      title: "Quản lý Task",
+      title: t("nav.taskManagement"),
       items: [
-        { label: "Missing Tasks", href: "/missing-tasks", icon: AlertCircle },
-        { label: "Time Check", href: "/time-check", icon: Timer },
+        { label: t("nav.taskTemplates"), href: "/task-templates", icon: Layers },
+        { label: t("nav.taskReviews"), href: "/task-reviews", icon: Inbox },
       ],
     },
     {
-      title: "Lương & Phúc lợi",
+      title: t("nav.salaryBenefits"),
       items: [
         {
-          label: "Summary",
+          label: t("nav.summary"),
           href: "/summary",
           icon: BarChart3,
           roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD", "ACCOUNTANT", "EMPLOYEE"],
         },
         {
-          label: "Payments",
+          label: t("nav.payments"),
           href: "/payments",
           icon: CreditCard,
           roles: ["SUPER_ADMIN", "ADMIN", "ACCOUNTANT"],
         },
-        { label: "Nghỉ Phép", href: "/leave", icon: CalendarOff },
+        { label: t("nav.leave"), href: "/leave", icon: CalendarOff },
       ],
     },
     {
-      title: "Khách hàng",
+      title: t("nav.customers"),
       items: [
-        { label: "Customers", href: "/customers", icon: Users },
-        { label: "Messages", href: "/messages", icon: MessageSquare },
+        { label: t("nav.customers"), href: "/customers", icon: Users },
+        { label: t("nav.messages"), href: "/messages", icon: MessageSquare },
       ],
     },
     {
-      title: "Hệ thống",
+      title: t("nav.system"),
       items: [
         {
-          label: "Nhân Viên",
+          label: t("nav.employees"),
           href: "/employees",
           icon: Users,
           roles: ["SUPER_ADMIN", "ADMIN", "HR"],
         },
         {
-          label: "Phòng ban & Nhóm",
+          label: t("nav.departments"),
           href: "/departments",
           icon: GitBranch,
           roles: ["SUPER_ADMIN", "ADMIN", "MANAGER"],
         },
         {
-          label: "Vai trò",
+          label: t("nav.roles"),
           href: "/roles",
           icon: Shield,
           roles: ["SUPER_ADMIN", "ADMIN"],
         },
         {
-          label: "Passwords",
+          label: t("nav.vault"),
           href: "/vault",
           icon: Lock,
           roles: ["SUPER_ADMIN", "ADMIN", "MANAGER"],
         },
-        { label: "Work Rules", href: "/work-rules", icon: ScrollText },
+        { label: t("nav.workRules"), href: "/work-rules", icon: ScrollText },
+        {
+          label: t("nav.systemLabels"),
+          href: "/system-labels",
+          icon: SlidersHorizontal,
+          roles: ["SUPER_ADMIN", "ADMIN"],
+        },
+        { label: t("nav.settings"), href: "/settings", icon: Settings },
       ],
     },
   ].map((section) => ({

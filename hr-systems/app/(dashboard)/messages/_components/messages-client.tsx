@@ -4,8 +4,9 @@ import { useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { Plus, Search, Pencil, Trash2, ExternalLink, Clock, CheckCircle2, Circle } from "lucide-react";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi as viLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/context";
 import { MessageFormModal } from "./message-form-modal";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
@@ -43,9 +44,6 @@ interface Props {
   currentUserId: number;
 }
 
-const CHANNEL_LABELS: Record<string, string> = {
-  EMAIL: "Email", SLACK: "Slack", PHONE: "Phone", ZALO: "Zalo", CHAT: "Chat", OTHER: "Khác",
-};
 const CHANNEL_COLORS: Record<string, string> = {
   EMAIL: "bg-blue-100 text-blue-700",
   SLACK: "bg-purple-100 text-purple-700",
@@ -57,18 +55,21 @@ const CHANNEL_COLORS: Record<string, string> = {
 const VALUE_COLORS: Record<string, string> = {
   A: "bg-red-100 text-red-700",
   B: "bg-yellow-100 text-yellow-700",
-  C: "bg-slate-100 text-slate-600",
-};
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  OPEN: { label: "Mở", color: "text-blue-600", icon: <Circle className="w-3.5 h-3.5" /> },
-  IN_PROGRESS: { label: "Đang xử lý", color: "text-yellow-600", icon: <Clock className="w-3.5 h-3.5" /> },
-  CLOSED: { label: "Đã đóng", color: "text-green-600", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  C: "bg-slate-100 text-slate-500",
 };
 
 export function MessagesClient({ initialMessages, employees, customers, currentUserId }: Props) {
   const { data: session } = useSession();
+  const { t, locale } = useLocale();
   const role = (session?.user as any)?.role ?? "";
   const isManager = MANAGER_ROLES.includes(role);
+  const dateFnsLocale = locale === "vi" ? viLocale : undefined;
+
+  const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+    OPEN: { label: t("messageStatus.OPEN"), color: "text-blue-600", icon: <Circle className="w-3.5 h-3.5" /> },
+    IN_PROGRESS: { label: t("messageStatus.IN_PROGRESS"), color: "text-yellow-600", icon: <Clock className="w-3.5 h-3.5" /> },
+    CLOSED: { label: t("messageStatus.CLOSED"), color: "text-green-600", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  };
 
   const [messages, setMessages] = useState<MessageItem[]>(initialMessages);
   const [search, setSearch] = useState("");
@@ -91,7 +92,7 @@ export function MessagesClient({ initialMessages, employees, customers, currentU
   }), [messages, search, filterStatus, filterChannel]);
 
   async function handleDelete(id: number) {
-    if (!confirm("Xóa tin nhắn này?")) return;
+    if (!confirm(t("messages.deleteConfirm"))) return;
     await fetch(`/api/messages/${id}`, { method: "DELETE" });
     setMessages(prev => prev.filter(m => m.id !== id));
   }
@@ -128,22 +129,22 @@ export function MessagesClient({ initialMessages, employees, customers, currentU
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Tin nhắn</h1>
-          <p className="text-sm text-slate-500">Quản lý giao tiếp với khách hàng</p>
+          <h1 className="text-xl font-bold text-slate-900">{t("messages.title")}</h1>
+          <p className="text-sm text-slate-500">{t("messages.subtitle")}</p>
         </div>
         <button onClick={() => setCreating(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition">
-          <Plus className="w-4 h-4" /> Thêm
+          <Plus className="w-4 h-4" /> {t("messages.add")}
         </button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Mở", value: stats.open, color: "text-blue-600" },
-          { label: "Đang xử lý", value: stats.inProgress, color: "text-yellow-600" },
-          { label: "Đã đóng", value: stats.closed, color: "text-green-600" },
-          { label: "Net time (phút)", value: stats.totalNetTime, color: "text-slate-800" },
+          { label: t("messageStatus.OPEN"), value: stats.open, color: "text-blue-600" },
+          { label: t("messageStatus.IN_PROGRESS"), value: stats.inProgress, color: "text-yellow-600" },
+          { label: t("messageStatus.CLOSED"), value: stats.closed, color: "text-green-600" },
+          { label: t("messages.netTime"), value: stats.totalNetTime, color: "text-slate-800" },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-100 p-4">
             <p className="text-xs text-slate-500">{s.label}</p>
@@ -156,7 +157,7 @@ export function MessagesClient({ initialMessages, employees, customers, currentU
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm kiếm..."
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t("common.search")}
             className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
         <div className="flex gap-1.5 flex-wrap">
@@ -164,7 +165,7 @@ export function MessagesClient({ initialMessages, employees, customers, currentU
             <button key={s} onClick={() => setFilterStatus(s)}
               className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition",
                 filterStatus === s ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}>
-              {s === "ALL" ? "Tất cả" : STATUS_CONFIG[s]?.label ?? s}
+              {s === "ALL" ? t("common.all") : statusConfig[s]?.label ?? s}
             </button>
           ))}
         </div>
@@ -173,13 +174,13 @@ export function MessagesClient({ initialMessages, employees, customers, currentU
             <button onClick={() => setFilterChannel("ALL")}
               className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition",
                 filterChannel === "ALL" ? "bg-gray-800 text-white" : "bg-slate-100 text-slate-600")}>
-              Tất cả kênh
+              {t("messages.allChannels")}
             </button>
             {channels.map(c => (
               <button key={c} onClick={() => setFilterChannel(c)}
                 className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition",
                   filterChannel === c ? "bg-gray-800 text-white" : "bg-slate-100 text-slate-600")}>
-                {CHANNEL_LABELS[c] ?? c}
+                {t(`messageChannel.${c}`) || c}
               </button>
             ))}
           </div>
@@ -189,7 +190,7 @@ export function MessagesClient({ initialMessages, employees, customers, currentU
       {/* List */}
       <div className="space-y-2">
         {filtered.map(m => {
-          const statusCfg = STATUS_CONFIG[m.status] ?? STATUS_CONFIG.OPEN;
+          const statusCfg = statusConfig[m.status] ?? statusConfig.OPEN;
           const custName = m.customer?.customerName || m.customer?.businessName;
           const isOverdue = m.dueDate && m.status !== "CLOSED" && new Date(m.dueDate) < new Date();
           return (
@@ -206,7 +207,7 @@ export function MessagesClient({ initialMessages, employees, customers, currentU
                   <div className="flex items-center gap-2 flex-wrap">
                     {m.channel && (
                       <span className={cn("text-xs px-1.5 py-0.5 rounded font-medium", CHANNEL_COLORS[m.channel] ?? "bg-slate-100 text-slate-600")}>
-                        {CHANNEL_LABELS[m.channel]}
+                        {t(`messageChannel.${m.channel}`) || m.channel}
                       </span>
                     )}
                     {m.valueType && (
@@ -217,7 +218,7 @@ export function MessagesClient({ initialMessages, employees, customers, currentU
                     {m.subject && <span className="text-sm font-semibold text-slate-900 truncate">{m.subject}</span>}
                     {custName && <span className="text-xs text-slate-500">{custName}</span>}
                     <span className="text-xs text-slate-400 ml-auto shrink-0">
-                      {format(new Date(m.date), "dd/MM/yyyy", { locale: vi })}
+                      {format(new Date(m.date), "dd/MM/yyyy", { locale: dateFnsLocale })}
                     </span>
                   </div>
                   {m.messageSummary && (
@@ -227,12 +228,12 @@ export function MessagesClient({ initialMessages, employees, customers, currentU
                     {m.assignedTo && <span>{m.assignedTo.fullName}</span>}
                     {m.dueDate && (
                       <span className={isOverdue ? "text-red-500 font-medium" : ""}>
-                        Hạn: {format(new Date(m.dueDate), "dd/MM/yyyy", { locale: vi })}
+                        {t("messages.due")} {format(new Date(m.dueDate), "dd/MM/yyyy", { locale: dateFnsLocale })}
                       </span>
                     )}
                     {m.netTime !== null && m.netTime !== undefined && (
                       <span className={m.netTime >= 0 ? "text-green-600" : "text-red-500"}>
-                        net {m.netTime}p
+                        {t("messages.net")} {m.netTime}p
                       </span>
                     )}
                     {m.linkFile && (
@@ -261,7 +262,7 @@ export function MessagesClient({ initialMessages, employees, customers, currentU
         })}
 
         {filtered.length === 0 && (
-          <div className="text-center py-16 text-slate-400 text-sm">Không có tin nhắn nào</div>
+          <div className="text-center py-16 text-slate-400 text-sm">{t("messages.noMessages")}</div>
         )}
       </div>
 

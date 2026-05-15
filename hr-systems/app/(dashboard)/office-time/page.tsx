@@ -2,7 +2,6 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { PageHeader } from "@/components/shared/page-header";
 import { OfficeTimeClient } from "./_components/office-time-client";
 
 export const metadata = { title: "Office Time — HR System" };
@@ -51,23 +50,14 @@ export default async function OfficeTimePage({ searchParams }: Props) {
       : null,
   ]);
 
-  const title = targetEmployee
-    ? `Office Time — ${targetEmployee.fullName}`
-    : "Office Time";
-
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={title}
-        description="Chấm công & theo dõi giờ làm hằng ngày"
-      />
-      <OfficeTimeClient
-        initialRecords={records as any}
-        initialMonth={month}
-        initialYear={year}
-        employeeId={targetId}
-        employees={employees ?? undefined}
-      />
-    </div>
+    <OfficeTimeClient
+      initialRecords={records as any}
+      initialMonth={month}
+      initialYear={year}
+      employeeId={targetId}
+      employees={employees ?? undefined}
+      viewingName={targetEmployee?.fullName ?? null}
+    />
   );
 }

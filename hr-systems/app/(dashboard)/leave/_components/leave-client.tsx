@@ -3,9 +3,10 @@
 import { useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi as viLocale } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, CheckCircle2, Clock, XCircle, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/context";
 import { LeaveFormModal } from "./leave-form-modal";
 import { LeaveReviewModal } from "./leave-review-modal";
 
@@ -37,13 +38,6 @@ interface Props {
   currentUserId: number;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  VACATION: "Nghỉ phép",
-  HOLIDAY: "Nghỉ lễ",
-  ILLNESS: "Nghỉ bệnh",
-  OTHER: "Khác",
-};
-
 const TYPE_COLORS: Record<string, string> = {
   VACATION: "bg-blue-100 text-blue-700",
   HOLIDAY: "bg-purple-100 text-purple-700",
@@ -51,18 +45,14 @@ const TYPE_COLORS: Record<string, string> = {
   OTHER: "bg-slate-100 text-slate-700",
 };
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  PENDING: { label: "Chờ duyệt", color: "bg-yellow-100 text-yellow-700", icon: <Clock className="w-3.5 h-3.5" /> },
-  APPROVED: { label: "Đã duyệt", color: "bg-green-100 text-green-700", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-  REJECTED: { label: "Từ chối", color: "bg-red-100 text-red-700", icon: <XCircle className="w-3.5 h-3.5" /> },
-};
-
 const STATUS_ORDER = ["PENDING", "APPROVED", "REJECTED"];
 
 export function LeaveClient({ initialLeaves, initialMonth, initialYear, employees, currentUserId }: Props) {
   const { data: session } = useSession();
+  const { t, locale } = useLocale();
   const role = (session?.user as any)?.role ?? "";
   const isManager = MANAGER_ROLES.includes(role);
+  const dateFnsLocale = locale === "vi" ? viLocale : undefined;
 
   const [viewDate, setViewDate] = useState(new Date(initialYear, initialMonth - 1));
   const [leaves, setLeaves] = useState<LeaveItem[]>(initialLeaves);
@@ -89,7 +79,7 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Xóa đơn nghỉ này?")) return;
+    if (!confirm(t("leave.deleteConfirm"))) return;
     await fetch(`/api/leave/${id}`, { method: "DELETE" });
     setLeaves(prev => prev.filter(l => l.id !== id));
   }
@@ -121,27 +111,33 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
     totalHours: leaves.filter(l => l.status === "APPROVED").reduce((s, l) => s + Number(l.approvedHours ?? 0), 0),
   };
 
+  const statusConfig = {
+    PENDING: { label: t("leaveStatus.PENDING"), color: "bg-yellow-100 text-yellow-700", icon: <Clock className="w-3.5 h-3.5" /> },
+    APPROVED: { label: t("leaveStatus.APPROVED"), color: "bg-green-100 text-green-700", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+    REJECTED: { label: t("leaveStatus.REJECTED"), color: "bg-red-100 text-red-700", icon: <XCircle className="w-3.5 h-3.5" /> },
+  } as Record<string, { label: string; color: string; icon: React.ReactNode }>;
+
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Nghỉ phép</h1>
-          <p className="text-sm text-slate-500">Quản lý đơn xin nghỉ</p>
+          <h1 className="text-xl font-bold text-slate-900">{t("leave.title")}</h1>
+          <p className="text-sm text-slate-500">{t("leave.subtitle")}</p>
         </div>
         <button onClick={() => setCreating(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition">
-          <Plus className="w-4 h-4" /> Tạo đơn nghỉ
+          <Plus className="w-4 h-4" /> {t("leave.createLeave")}
         </button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Tổng đơn", value: stats.total, color: "text-slate-900" },
-          { label: "Chờ duyệt", value: stats.pending, color: "text-yellow-600" },
-          { label: "Đã duyệt", value: stats.approved, color: "text-green-600" },
-          { label: "Giờ nghỉ (duyệt)", value: `${stats.totalHours}h`, color: "text-blue-600" },
+          { label: t("leave.totalRequests"), value: stats.total, color: "text-slate-900" },
+          { label: t("leave.pendingRequests"), value: stats.pending, color: "text-yellow-600" },
+          { label: t("leave.approvedRequests"), value: stats.approved, color: "text-green-600" },
+          { label: t("leave.approvedHours"), value: `${stats.totalHours}h`, color: "text-blue-600" },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-100 p-4">
             <p className="text-xs text-slate-500">{s.label}</p>
@@ -152,16 +148,14 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
 
       {/* Controls */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        {/* Month navigator */}
         <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 px-3 py-2">
           <button onClick={() => navigate(-1)} className="p-1 hover:bg-slate-100 rounded"><ChevronLeft className="w-4 h-4" /></button>
           <span className="text-sm font-medium w-28 text-center">
-            {format(viewDate, "MMMM yyyy", { locale: vi })}
+            {format(viewDate, "MMMM yyyy", { locale: dateFnsLocale })}
           </span>
           <button onClick={() => navigate(1)} className="p-1 hover:bg-slate-100 rounded"><ChevronRight className="w-4 h-4" /></button>
         </div>
 
-        {/* Status filter */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {["ALL", ...STATUS_ORDER].map(s => (
             <button key={s} onClick={() => setFilterStatus(s)}
@@ -169,7 +163,7 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
                 "px-3 py-1.5 rounded-lg text-xs font-medium transition",
                 filterStatus === s ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               )}>
-              {s === "ALL" ? "Tất cả" : (STATUS_CONFIG[s]?.label ?? s)}
+              {s === "ALL" ? t("common.all") : (statusConfig[s]?.label ?? s)}
             </button>
           ))}
         </div>
@@ -180,14 +174,14 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
         {STATUS_ORDER.map(status => {
           const items = grouped[status] ?? [];
           if (items.length === 0) return null;
-          const cfg = STATUS_CONFIG[status];
+          const cfg = statusConfig[status];
           return (
             <div key={status}>
               <div className="flex items-center gap-2 mb-2">
                 <span className={cn("flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full", cfg.color)}>
                   {cfg.icon} {cfg.label}
                 </span>
-                <span className="text-xs text-slate-400">{items.length} đơn</span>
+                <span className="text-xs text-slate-400">{items.length}</span>
               </div>
               <div className="space-y-2">
                 {items.map(item => {
@@ -201,15 +195,15 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
                             <span className="text-sm font-semibold text-slate-900">{item.employee.fullName}</span>
                           )}
                           <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", TYPE_COLORS[item.type] ?? "bg-slate-100 text-slate-700")}>
-                            {TYPE_LABELS[item.type] ?? item.type}
+                            {t(`leaveType.${item.type}`) || item.type}
                           </span>
                           <span className="text-sm text-slate-700 font-medium">
-                            {format(new Date(item.date), "dd/MM/yyyy", { locale: vi })}
+                            {format(new Date(item.date), "dd/MM/yyyy", { locale: dateFnsLocale })}
                           </span>
                           <span className="text-sm text-slate-600">
-                            {Number(item.requestedHours)}h yêu cầu
+                            {Number(item.requestedHours)}h {t("leave.hoursRequested")}
                             {item.status === "APPROVED" && item.approvedHours != null && (
-                              <span className="text-green-600 ml-1">→ {Number(item.approvedHours)}h duyệt</span>
+                              <span className="text-green-600 ml-1">→ {Number(item.approvedHours)}h {t("leave.hoursApproved")}</span>
                             )}
                           </span>
                         </div>
@@ -222,14 +216,14 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
                         {item.evidenceLink && (
                           <a href={item.evidenceLink} target="_blank" rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-0.5">
-                            <ExternalLink className="w-3 h-3" /> Minh chứng
+                            <ExternalLink className="w-3 h-3" /> {t("leave.evidence")}
                           </a>
                         )}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         {canReview && (
                           <button onClick={() => setReviewingItem(item)}
-                            className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Duyệt">
+                            className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title={t("common.approve")}>
                             <CheckCircle2 className="w-4 h-4" />
                           </button>
                         )}
@@ -256,7 +250,7 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
 
         {filtered.length === 0 && (
           <div className="text-center py-16 text-slate-400">
-            <p className="text-sm">Không có đơn nghỉ nào</p>
+            <p className="text-sm">{t("leave.noLeave")}</p>
           </div>
         )}
       </div>

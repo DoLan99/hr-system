@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     where,
     include: {
       responsibleStaff: { select: { id: true, fullName: true } },
-      _count: { select: { workList: true, workReports: true } },
+      _count: { select: { tasks: true } },
     },
     orderBy: { customerName: "asc" },
   });
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     },
     include: {
       responsibleStaff: { select: { id: true, fullName: true } },
-      _count: { select: { workList: true, workReports: true } },
+      _count: { select: { tasks: true } },
     },
   });
 

@@ -1,25 +1,60 @@
-import type { Employee, Role, WorkList, WorkReport, TaskLibrary, SalarySummary } from "@prisma/client";
+import type {
+  Employee,
+  Role,
+  Task,
+  TimeLog,
+  TaskTemplate,
+  TemplateSuggestion,
+  EstimateFlag,
+  Customer,
+  SalarySummary,
+  TaskType,
+  TaskStatus,
+  TimeLogApprovalStatus,
+} from "@prisma/client";
 
 export type EmployeeWithRole = Employee & {
   role: Role;
   manager?: Employee | null;
 };
 
-export type WorkListWithRelations = WorkList & {
+export type TaskWithRelations = Task & {
   assignedTo: Pick<Employee, "id" | "fullName" | "avatarUrl">;
   assignedBy: Pick<Employee, "id" | "fullName">;
-  customer?: { id: number; customerName: string | null; businessName: string | null } | null;
+  customer?: Pick<Customer, "id" | "customerName" | "businessName"> | null;
+  template?: Pick<TaskTemplate, "id" | "code" | "title"> | null;
+  parentTask?: Pick<Task, "id" | "code" | "title"> | null;
+  _count?: { timeLogs: number; subTasks: number };
 };
 
-export type WorkReportWithRelations = WorkReport & {
+export type TimeLogWithRelations = TimeLog & {
   employee: Pick<Employee, "id" | "fullName" | "avatarUrl">;
-  task?: Pick<TaskLibrary, "taskId" | "taskName" | "stdTime"> | null;
-  workList?: Pick<WorkList, "wlId" | "title"> | null;
+  task: Pick<Task, "id" | "code" | "title" | "taskType" | "estimatedTime" | "billable" | "customerId"> & {
+    customer?: Pick<Customer, "id" | "customerName" | "businessName"> | null;
+  };
+  approvedBy?: Pick<Employee, "id" | "fullName"> | null;
+};
+
+export type TaskTemplateWithCount = TaskTemplate & {
+  _count?: { tasks: number };
+};
+
+export type TemplateSuggestionWithRelations = TemplateSuggestion & {
+  employee: Pick<Employee, "id" | "fullName" | "avatarUrl">;
+  reviewedBy?: Pick<Employee, "id" | "fullName"> | null;
+};
+
+export type EstimateFlagWithRelations = EstimateFlag & {
+  template: Pick<TaskTemplate, "id" | "code" | "title">;
+  reviewedBy?: Pick<Employee, "id" | "fullName"> | null;
 };
 
 export type SalarySummaryWithEmployee = SalarySummary & {
   employee: Pick<Employee, "id" | "fullName" | "avatarUrl" | "payType" | "hourlyRate" | "monthlySalary">;
 };
+
+// Re-export enums for convenience
+export type { TaskType, TaskStatus, TimeLogApprovalStatus };
 
 // Session user type
 export interface SessionUser {

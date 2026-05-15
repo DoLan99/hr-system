@@ -1,87 +1,151 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import PlaceholderExt from "@tiptap/extension-placeholder";
+import LinkExt from "@tiptap/extension-link";
+import UnderlineExt from "@tiptap/extension-underline";
+import {
+  Bold, Italic, Underline, Strikethrough,
+  List, ListOrdered, Quote, Undo2, Redo2,
+} from "lucide-react";
+import { useEffect } from "react";
 
 interface Props {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (html: string) => void;
+  onBlur?: () => void;
   placeholder?: string;
+  minHeight?: number;
+  readOnly?: boolean;
 }
 
-const CDN_SCRIPT = "https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js";
-const CDN_CSS = "https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.css";
-const SCRIPT_ID = "ck-cdn-script";
-
-let ckReady = false;
-const waiters: Array<() => void> = [];
-
-function loadCKEditor(cb: () => void) {
-  if (ckReady) { cb(); return; }
-  waiters.push(cb);
-  if (document.getElementById(SCRIPT_ID)) return;
-
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = CDN_CSS;
-  document.head.appendChild(link);
-
-  const script = document.createElement("script");
-  script.id = SCRIPT_ID;
-  script.src = CDN_SCRIPT;
-  script.onload = () => {
-    ckReady = true;
-    waiters.splice(0).forEach((fn) => fn());
-  };
-  document.head.appendChild(script);
+function Btn({
+  onClick, active, disabled, title, children,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  disabled?: boolean;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      title={title}
+      onMouseDown={(e) => { e.preventDefault(); if (!disabled) onClick(); }}
+      className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${
+        active
+          ? "bg-slate-700 text-white"
+          : "text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:opacity-30"
+      }`}
+    >
+      {children}
+    </button>
+  );
 }
 
-export function RichTextEditor({ value, onChange, placeholder }: Props) {
-  const mountRef = useRef<HTMLDivElement>(null);
-  const editorRef = useRef<any>(null);
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+function Divider() {
+  return <div className="w-px h-4 bg-slate-300 mx-0.5 self-center flex-shrink-0" />;
+}
 
+export function RichTextEditor({ value, onChange, onBlur, placeholder, minHeight = 120, readOnly = false }: Props) {
+  const editor = useEditor({
+    immediatelyRender: false,
+    extensions: [
+      StarterKit,
+      UnderlineExt,
+      PlaceholderExt.configure({
+        placeholder: placeholder ?? "Add a description...",
+      }),
+      LinkExt.configure({ openOnClick: false }),
+    ],
+    content: value || "",
+    editable: !readOnly,
+    onUpdate({ editor }) {
+      const html = editor.getHTML();
+      onChange(html === "<p></p>" ? "" : html);
+    },
+    onBlur() {
+      onBlur?.();
+    },
+  });
+
+  // Sync external value changes (e.g. form reset or switching tasks)
   useEffect(() => {
-    let destroyed = false;
-
-    loadCKEditor(() => {
-      if (destroyed || !mountRef.current) return;
-
-      (window as any).ClassicEditor.create(mountRef.current, {
-        initialData: value,
-        placeholder: placeholder ?? "Nhập mô tả chi tiết...",
-        toolbar: [
-          "bold", "italic", "underline", "|",
-          "bulletedList", "numberedList", "|",
-          "link", "blockQuote", "|",
-          "undo", "redo",
-        ],
-      }).then((editor: any) => {
-        if (destroyed) { editor.destroy(); return; }
-        editorRef.current = editor;
-        editor.model.document.on("change:data", () => {
-          onChangeRef.current(editor.getData());
-        });
-      });
-    });
-
-    return () => {
-      destroyed = true;
-      editorRef.current?.destroy();
-      editorRef.current = null;
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Sync khi form reset hoặc value thay đổi từ bên ngoài
-  useEffect(() => {
-    const editor = editorRef.current;
     if (!editor) return;
-    if (editor.getData() !== value) editor.setData(value ?? "");
-  }, [value]);
+    const current = editor.getHTML();
+    const incoming = value || "";
+    if (current !== incoming) {
+      editor.commands.setContent(incoming);
+    }
+  }, [value, editor]);
+
+  // Toggle editable when readOnly changes
+  useEffect(() => {
+    editor?.setEditable(!readOnly);
+  }, [readOnly, editor]);
+
+  if (!editor) return null;
 
   return (
-    <div className="ck-editor-wrap">
-      <div ref={mountRef} />
+    <div className={`border border-slate-200 rounded-lg overflow-hidden bg-white ${!readOnly ? "focus-within:ring-2 focus-within:ring-blue-200 focus-within:border-blue-300 transition-all" : ""}`}>
+      {/* Toolbar — hidden in read-only mode */}
+      {!readOnly && (
+        <div className="flex items-center gap-0.5 px-2 py-1.5 bg-slate-50 border-b border-slate-200 flex-wrap">
+          <Btn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold (Ctrl+B)">
+            <Bold className="w-3.5 h-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Italic (Ctrl+I)">
+            <Italic className="w-3.5 h-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")} title="Underline (Ctrl+U)">
+            <Underline className="w-3.5 h-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive("strike")} title="Strikethrough">
+            <Strikethrough className="w-3.5 h-3.5" />
+          </Btn>
+          <Divider />
+          <Btn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="Bullet list">
+            <List className="w-3.5 h-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="Numbered list">
+            <ListOrdered className="w-3.5 h-3.5" />
+          </Btn>
+          <Divider />
+          <Btn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} title="Blockquote">
+            <Quote className="w-3.5 h-3.5" />
+          </Btn>
+          <Divider />
+          <Btn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo (Ctrl+Z)">
+            <Undo2 className="w-3.5 h-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo (Ctrl+Y)">
+            <Redo2 className="w-3.5 h-3.5" />
+          </Btn>
+        </div>
+      )}
+
+      {/* Editor area */}
+      <div
+        className="px-3 py-2.5 prose prose-sm max-w-none cursor-text"
+        style={{ minHeight }}
+        onClick={() => editor.commands.focus()}
+      >
+        <EditorContent editor={editor} />
+      </div>
     </div>
+  );
+}
+
+/** Renders saved HTML as read-only prose — no editor overhead */
+export function RichTextContent({ html, className }: { html: string | null; className?: string }) {
+  if (!html) return null;
+  return (
+    <div
+      className={`prose prose-sm max-w-none ${className ?? ""}`}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }

@@ -16,7 +16,7 @@ export default async function CustomersPage() {
     prisma.customer.findMany({
       include: {
         responsibleStaff: { select: { id: true, fullName: true } },
-        _count: { select: { workList: true, workReports: true } },
+        _count: { select: { tasks: true } },
       },
       orderBy: { customerName: "asc" },
     }),

@@ -8,9 +8,10 @@ import {
   Loader2, BarChart2,
 } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi as viLocale } from "date-fns/locale";
 import { cn, formatCurrency, formatMinutes } from "@/lib/utils";
 import { SCORE_LABELS } from "@/lib/salary";
+import { useLocale } from "@/lib/i18n/context";
 import { ScoreModal } from "./score-modal";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
@@ -60,8 +61,10 @@ const h = (v: any) => n(v).toFixed(1);
 
 export function SummaryClient({ initialSummaries, initialMonth, initialYear, employeeId }: Props) {
   const { data: session } = useSession();
+  const { t, locale } = useLocale();
   const role = (session?.user as any)?.role ?? "";
   const isManager = MANAGER_ROLES.includes(role);
+  const dateFnsLocale = locale === "vi" ? viLocale : undefined;
 
   const [viewDate, setViewDate] = useState(new Date(initialYear, initialMonth - 1));
   const [summaries, setSummaries] = useState<SummaryItem[]>(initialSummaries);
@@ -143,7 +146,6 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
     setSummaries(prev => prev.map(s => s.id === item.id ? item : s));
   }
 
-  // Tổng cộng
   const totals = useMemo(() => ({
     salaryCalc: summaries.reduce((s, i) => s + n(i.salaryCalc), 0),
     bonusCalc: summaries.reduce((s, i) => s + n(i.bonusCalc), 0),
@@ -151,7 +153,6 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
     creditedHours: summaries.reduce((s, i) => s + n(i.creditedHours), 0),
   }), [summaries]);
 
-  // Employee tự xem — 1 record
   const myRecord = !isManager ? summaries.find(s => s.employeeId === employeeId) : null;
 
   return (
@@ -163,7 +164,7 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
           <ChevronLeft className="w-4 h-4" />
         </button>
         <span className="text-sm font-semibold text-slate-800 capitalize">
-          {format(viewDate, "MMMM yyyy", { locale: vi })}
+          {format(viewDate, "MMMM yyyy", { locale: dateFnsLocale })}
         </span>
         <button onClick={() => navigateMonth(1)}
           className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition">
@@ -179,20 +180,20 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
               disabled={calculating}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
               {calculating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Tính lại tất cả
+              {t("summary.recalculate")}
             </button>
             <p className="text-xs text-slate-400">
-              {summaries.length} nhân viên · Nhấn để recalculate từ dữ liệu thực tế
+              {summaries.length} {t("summary.recalculateHint")}
             </p>
           </div>
 
           {/* Totals row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: "Tổng giờ credited", value: `${totals.creditedHours.toFixed(1)}h`, color: "text-blue-600" },
-              { label: "Tổng lương cơ bản", value: formatCurrency(totals.salaryCalc, "€"), color: "text-slate-700" },
-              { label: "Tổng bonus", value: formatCurrency(totals.bonusCalc, "€"), color: "text-green-600" },
-              { label: "Tổng phải trả", value: formatCurrency(totals.totalCalc, "€"), color: "text-blue-700" },
+              { label: t("summary.totalCredited"), value: `${totals.creditedHours.toFixed(1)}h`, color: "text-blue-600" },
+              { label: t("summary.totalBase"), value: formatCurrency(totals.salaryCalc, "€"), color: "text-slate-700" },
+              { label: t("summary.totalBonus"), value: formatCurrency(totals.bonusCalc, "€"), color: "text-green-600" },
+              { label: t("summary.totalToPay"), value: formatCurrency(totals.totalCalc, "€"), color: "text-blue-700" },
             ].map(s => (
               <div key={s.label} className="bg-white border border-slate-200 rounded-xl px-4 py-3">
                 <p className="text-xs text-slate-500">{s.label}</p>
@@ -205,7 +206,7 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
           {summaries.length === 0 ? (
             <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
               <BarChart2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">Chưa có dữ liệu. Nhấn <strong>Tính lại tất cả</strong> để tính.</p>
+              <p className="text-sm text-slate-500">{t("summary.noData")}</p>
             </div>
           ) : (
             <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
@@ -213,17 +214,17 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      <th className="text-left px-4 py-2.5">Nhân viên</th>
-                      <th className="text-center px-3 py-2.5">Giờ TT</th>
-                      <th className="text-center px-3 py-2.5">Giờ Thực</th>
-                      <th className="text-center px-3 py-2.5">Δ</th>
-                      <th className="text-right px-3 py-2.5">Lương calc</th>
-                      <th className="text-right px-3 py-2.5">Bonus</th>
-                      <th className="text-right px-3 py-2.5">Tổng</th>
-                      <th className="text-center px-3 py-2.5">Score</th>
-                      <th className="text-center px-3 py-2.5">Tasks</th>
-                      <th className="text-center px-3 py-2.5">Xác nhận</th>
-                      <th className="text-right px-4 py-2.5">Thao tác</th>
+                      <th className="text-left px-4 py-2.5">{t("summary.colEmployee")}</th>
+                      <th className="text-center px-3 py-2.5">{t("summary.colCreditedHours")}</th>
+                      <th className="text-center px-3 py-2.5">{t("summary.colActualHours")}</th>
+                      <th className="text-center px-3 py-2.5">{t("summary.colDelta")}</th>
+                      <th className="text-right px-3 py-2.5">{t("summary.colCalcSalary")}</th>
+                      <th className="text-right px-3 py-2.5">{t("summary.colBonus")}</th>
+                      <th className="text-right px-3 py-2.5">{t("summary.colTotal")}</th>
+                      <th className="text-center px-3 py-2.5">{t("summary.colScore")}</th>
+                      <th className="text-center px-3 py-2.5">{t("summary.colTasks")}</th>
+                      <th className="text-center px-3 py-2.5">{t("summary.colConfirm")}</th>
+                      <th className="text-right px-4 py-2.5">{t("common.actions")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -266,11 +267,11 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
                           <td className="px-3 py-2.5 text-center">
                             {confirmed ? (
                               <span className="inline-flex items-center gap-1 text-xs text-green-600">
-                                <CheckCircle2 className="w-3 h-3" />Đã xác nhận
+                                <CheckCircle2 className="w-3 h-3" />{t("summary.confirmed")}
                               </span>
                             ) : (
                               <span className="text-xs text-slate-400 flex items-center justify-center gap-1">
-                                <Clock className="w-3 h-3" />Chưa
+                                <Clock className="w-3 h-3" />{t("summary.notConfirmed")}
                               </span>
                             )}
                           </td>
@@ -278,11 +279,11 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
                             <div className="flex items-center justify-end gap-1">
                               <button onClick={() => calculate(s.employeeId)}
                                 disabled={calculating}
-                                className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition" title="Tính lại">
+                                className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition" title={t("summary.recalculate")}>
                                 <RefreshCw className="w-3.5 h-3.5" />
                               </button>
                               <button onClick={() => setScoringItem(s)}
-                                className="p-1.5 rounded-lg hover:bg-yellow-50 text-yellow-500 transition" title="Đánh giá">
+                                className="p-1.5 rounded-lg hover:bg-yellow-50 text-yellow-500 transition" title={t("summary.performance")}>
                                 <Star className="w-3.5 h-3.5" />
                               </button>
                               {!confirmed && (
@@ -292,7 +293,7 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
                                   {confirmingId === s.id
                                     ? <Loader2 className="w-3 h-3 animate-spin" />
                                     : <CheckCircle2 className="w-3 h-3" />}
-                                  Xác nhận
+                                  {t("summary.confirm")}
                                 </button>
                               )}
                             </div>
@@ -314,19 +315,19 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
           {!myRecord ? (
             <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
               <BarChart2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">Chưa có dữ liệu tháng này. Manager sẽ tính sau khi kết thúc tháng.</p>
+              <p className="text-sm text-slate-500">{t("summary.noDataMonth")}</p>
             </div>
           ) : (
             <>
               {/* Hours section */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: "Giờ credited", value: `${h(myRecord.creditedHours)}h`, sub: "Work Report", color: "text-blue-600" },
-                  { label: "Giờ thực làm", value: `${h(myRecord.workHoursReal)}h`, sub: "Office Time", color: "text-slate-700" },
-                  { label: "Giờ học", value: `${h(myRecord.learnHours)}h`, sub: "Task 2001/2002", color: "text-purple-600" },
+                  { label: t("summary.creditedHours"), value: `${h(myRecord.creditedHours)}h`, sub: "Work Report", color: "text-blue-600" },
+                  { label: t("summary.actualHours"), value: `${h(myRecord.workHoursReal)}h`, sub: "Office Time", color: "text-slate-700" },
+                  { label: t("summary.learningHours"), value: `${h(myRecord.learnHours)}h`, sub: "Task 2001/2002", color: "text-purple-600" },
                   {
-                    label: "Chênh lệch", value: `${n(myRecord.deltaHours) >= 0 ? "+" : ""}${h(myRecord.deltaHours)}h`,
-                    sub: "Credited − Thực làm",
+                    label: t("summary.difference"), value: `${n(myRecord.deltaHours) >= 0 ? "+" : ""}${h(myRecord.deltaHours)}h`,
+                    sub: "Credited − Actual",
                     color: Math.abs(n(myRecord.deltaHours)) < 1 ? "text-green-600" : "text-orange-500",
                   },
                 ].map(c => (
@@ -340,15 +341,15 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
 
               {/* Salary section */}
               <div className="bg-white border border-slate-200 rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-slate-800 mb-3">Lương tháng {month}/{year}</h3>
+                <h3 className="text-sm font-semibold text-slate-800 mb-3">{t("summary.monthlySalary")} {month}/{year}</h3>
                 <div className="space-y-2">
                   {[
-                    { label: "Lương cơ bản (calc)", value: formatCurrency(n(myRecord.salaryCalc), "€") },
-                    { label: "Bonus", value: formatCurrency(n(myRecord.bonusCalc), "€"), color: "text-green-600" },
-                    { label: "Tổng (calc)", value: formatCurrency(n(myRecord.totalCalc), "€"), bold: true, color: "text-blue-700" },
-                    { label: "Đã nhận", value: formatCurrency(n(myRecord.moneyReceived), "€"), divider: true },
+                    { label: t("summary.calcSalary"), value: formatCurrency(n(myRecord.salaryCalc), "€") },
+                    { label: t("summary.bonus"), value: formatCurrency(n(myRecord.bonusCalc), "€"), color: "text-green-600" },
+                    { label: t("summary.calcTotal"), value: formatCurrency(n(myRecord.totalCalc), "€"), bold: true, color: "text-blue-700" },
+                    { label: t("summary.received"), value: formatCurrency(n(myRecord.moneyReceived), "€"), divider: true },
                     {
-                      label: "Chênh lệch",
+                      label: t("summary.difference"),
                       value: formatCurrency(n(myRecord.deltaMoney), "€"),
                       color: n(myRecord.deltaMoney) === 0 ? "text-green-600" : "text-orange-500",
                     },
@@ -368,13 +369,13 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
 
               {/* Work stats */}
               <div className="bg-white border border-slate-200 rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-slate-800 mb-3">Thống kê công việc</h3>
+                <h3 className="text-sm font-semibold text-slate-800 mb-3">{t("summary.colTasks")}</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
-                    { label: "Tổng tasks", value: myRecord.totalTasks },
-                    { label: "Hoàn thành", value: myRecord.completedTasks, color: "text-green-600" },
-                    { label: "Đang mở", value: myRecord.openTasks, color: "text-blue-600" },
-                    { label: "Quá hạn", value: myRecord.overdueTasks, color: myRecord.overdueTasks > 0 ? "text-red-500" : "text-slate-500" },
+                    { label: t("summary.totalTasks"), value: myRecord.totalTasks },
+                    { label: t("summary.completedTasks"), value: myRecord.completedTasks, color: "text-green-600" },
+                    { label: t("summary.openTasks"), value: myRecord.openTasks, color: "text-blue-600" },
+                    { label: t("summary.overdueTasks"), value: myRecord.overdueTasks, color: myRecord.overdueTasks > 0 ? "text-red-500" : "text-slate-500" },
                   ].map(s => (
                     <div key={s.label} className="text-center">
                       <p className={cn("text-2xl font-bold", s.color ?? "text-slate-700")}>{s.value}</p>
@@ -382,10 +383,9 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
                     </div>
                   ))}
                 </div>
-                {/* Completion rate bar */}
                 <div className="mt-3">
                   <div className="flex justify-between text-xs text-slate-500 mb-1">
-                    <span>Tỷ lệ hoàn thành</span>
+                    <span>{t("summary.completionRate")}</span>
                     <span className="font-medium">{n(myRecord.completionRate).toFixed(1)}%</span>
                   </div>
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -399,7 +399,7 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
               {myRecord.totalScore && (
                 <div className="bg-white border border-slate-200 rounded-xl p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-slate-800">Đánh giá hiệu suất</h3>
+                    <h3 className="text-sm font-semibold text-slate-800">{t("summary.performance")}</h3>
                     <span className={cn(
                       "text-xl font-bold",
                       n(myRecord.totalScore) >= 8 ? "text-green-600" : n(myRecord.totalScore) >= 6 ? "text-blue-600" : "text-orange-500"
@@ -430,13 +430,13 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
               {myRecord.confirmedAt ? (
                 <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 border border-green-200 rounded-xl px-4 py-3">
                   <CheckCircle2 className="w-4 h-4" />
-                  Đã xác nhận bởi {myRecord.confirmedBy?.fullName}
+                  {t("summary.confirmed")} · {myRecord.confirmedBy?.fullName}
                   {" · "}{format(new Date(myRecord.confirmedAt), "dd/MM/yyyy HH:mm")}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-yellow-600 text-sm bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3">
                   <Clock className="w-4 h-4" />
-                  Chờ manager xác nhận
+                  {t("summary.waitingConfirm")}
                 </div>
               )}
             </>

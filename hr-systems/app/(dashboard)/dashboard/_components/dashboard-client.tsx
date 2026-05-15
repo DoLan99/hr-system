@@ -16,46 +16,18 @@ import {
   Cell,
 } from "recharts";
 import { format } from "date-fns";
-
-const STATUS_LABELS: Record<string, string> = {
-  NOT_STARTED: "Chưa xử lý",
-  IN_PROGRESS: "Đang xử lý",
-  COMPLETED: "Đã xử lý",
-  BLOCKED: "Bị chặn",
-  CANCELLED: "Đã hủy",
-};
+import { useLocale } from "@/lib/i18n/context";
 
 const STATUS_COLORS: Record<string, string> = {
-  NOT_STARTED: "#f87171",
+  BACKLOG: "#94a3b8",
   IN_PROGRESS: "#3b82f6",
-  COMPLETED: "#22c55e",
-  BLOCKED: "#f59e0b",
-  CANCELLED: "#94a3b8",
+  BLOCKED: "#ef4444",
+  REVIEW: "#f59e0b",
+  DONE: "#22c55e",
+  CANCELLED: "#cbd5e1",
 };
 
-const STATUS_ORDER = ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "BLOCKED", "CANCELLED"];
-
-const PRIORITY_OPTIONS = [
-  { value: "", label: "Tất cả" },
-  { value: "CRITICAL", label: "Critical" },
-  { value: "HIGH", label: "High" },
-  { value: "NORMAL", label: "Normal" },
-  { value: "LOW", label: "Low" },
-];
-
-const STATUS_OPTIONS = [
-  { value: "", label: "Tất cả" },
-  { value: "NOT_STARTED", label: "Chưa xử lý" },
-  { value: "IN_PROGRESS", label: "Đang xử lý" },
-  { value: "COMPLETED", label: "Đã xử lý" },
-  { value: "BLOCKED", label: "Bị chặn" },
-  { value: "CANCELLED", label: "Đã hủy" },
-];
-
-const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
-  value: i + 1,
-  label: `Tháng ${i + 1}`,
-}));
+const STATUS_ORDER = ["BACKLOG", "IN_PROGRESS", "BLOCKED", "REVIEW", "DONE", "CANCELLED"];
 
 type DailySeries = { date: string; created: number; completed: number };
 type StatusDist = { status: string; count: number };
@@ -63,14 +35,16 @@ type Team = { id: number; name: string };
 type Handler = { id: number; name: string };
 
 interface DashboardData {
-  unstartedCount: number;
+  backlogCount: number;
   inProgressCount: number;
-  unassignedCount: number;
+  blockedCount: number;
+  reviewCount: number;
+  overdueCount: number;
   statusDistribution: StatusDist[];
   dailySeries: DailySeries[];
   isManager: boolean;
   isAdmin: boolean;
-  categories: string[];
+  taskTypes: string[];
 }
 
 interface Props {
@@ -127,14 +101,40 @@ function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent
 }
 
 export default function DashboardClient({ userName, isManager, isAdmin, teams, handlers }: Props) {
+  const { t, locale } = useLocale();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year] = useState(now.getFullYear());
+
+  const PRIORITY_OPTIONS = [
+    { value: "", label: t("common.all") },
+    { value: "CRITICAL", label: t("taskPriority.CRITICAL") },
+    { value: "HIGH", label: t("taskPriority.HIGH") },
+    { value: "NORMAL", label: t("taskPriority.NORMAL") },
+    { value: "LOW", label: t("taskPriority.LOW") },
+  ];
+
+  const STATUS_OPTIONS = [
+    { value: "", label: t("common.all") },
+    { value: "BACKLOG", label: t("taskStatus.BACKLOG") },
+    { value: "IN_PROGRESS", label: t("taskStatus.IN_PROGRESS") },
+    { value: "BLOCKED", label: t("taskStatus.BLOCKED") },
+    { value: "REVIEW", label: t("taskStatus.REVIEW") },
+    { value: "DONE", label: t("taskStatus.DONE") },
+    { value: "CANCELLED", label: t("taskStatus.CANCELLED") },
+  ];
+
+  const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
+    value: i + 1,
+    label: locale === "vi"
+      ? `${t("dashboard.month", { n: i + 1 })} ${year}`
+      : new Date(year, i).toLocaleString("en", { month: "long" }) + ` ${year}`,
+  }));
   const [priority, setPriority] = useState("");
   const [status, setStatus] = useState("");
   const [teamId, setTeamId] = useState("");
   const [handlerId, setHandlerId] = useState("");
-  const [category, setCategory] = useState("");
+  const [taskType, setTaskType] = useState("");
   const [filterOpen, setFilterOpen] = useState(true);
   const [activeTeam, setActiveTeam] = useState<number | null>(null);
   const [activeHandler, setActiveHandler] = useState<number | null>(null);
@@ -154,7 +154,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
         ...(isAdmin
           ? teamId ? { teamId } : activeTeam ? { teamId: String(activeTeam) } : {}
           : handlerId ? { handlerId } : activeHandler ? { handlerId: String(activeHandler) } : {}),
-        ...(category ? { category } : {}),
+        ...(taskType ? { taskType } : {}),
       });
       const res = await fetch(`/api/dashboard?${params}`);
       const json = await res.json();
@@ -162,7 +162,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
     } finally {
       setLoading(false);
     }
-  }, [month, year, priority, status, teamId, activeTeam, handlerId, activeHandler, category, isAdmin]);
+  }, [month, year, priority, status, teamId, activeTeam, handlerId, activeHandler, taskType, isAdmin]);
 
   useEffect(() => {
     fetchData();
@@ -175,18 +175,18 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
     count: data?.statusDistribution.find((d) => d.status === st)?.count ?? 0,
   })).filter((d) => d.count > 0);
 
-  const categoryOptions = [
-    { value: "", label: "Tất cả" },
-    ...(data?.categories ?? []).map((c) => ({ value: c, label: c })),
+  const taskTypeOptions = [
+    { value: "", label: t("common.all") },
+    ...(data?.taskTypes ?? []).map((c) => ({ value: c, label: t(`taskType.${c}`) || c })),
   ];
 
   const teamOptions = [
-    { value: "", label: "Tất cả" },
-    ...teams.map((t) => ({ value: String(t.id), label: t.name })),
+    { value: "", label: t("common.all") },
+    ...teams.map((team) => ({ value: String(team.id), label: team.name })),
   ];
 
   const handlerOptions = [
-    { value: "", label: "Tất cả" },
+    { value: "", label: t("common.all") },
     ...handlers.map((h) => ({ value: String(h.id), label: h.name })),
   ];
 
@@ -215,7 +215,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
       {/* Header */}
       <div>
         <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">
-          {isManager ? "Dashboard" : `Xin chào, ${userName}`}
+          {isManager ? "Dashboard" : t("dashboard.greeting", { name: userName })}
         </h1>
         <p className="text-slate-500 text-sm mt-1">
           {format(new Date(), "EEEE, dd/MM/yyyy")}
@@ -225,18 +225,18 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
       {/* Top stat + Sub-team */}
       <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
         <div className="flex flex-wrap items-start gap-0">
-          {/* Unassigned count (admin only) */}
+          {/* Overdue count (admin only) */}
           {isAdmin && (
             <div className="pr-8 mr-8 border-r border-slate-200">
-              <p className="text-[12px] text-slate-500 mb-1">Task chưa được assign</p>
+              <p className="text-[12px] text-slate-500 mb-1">{t("dashboard.overdueTasks")}</p>
               <div className="flex items-center gap-2">
-                <span className="text-[36px] font-bold text-slate-900 leading-none">
-                  {loading ? "—" : (data?.unassignedCount ?? 0)}
+                <span className="text-[36px] font-bold text-red-600 leading-none">
+                  {loading ? "—" : (data?.overdueCount ?? 0)}
                 </span>
                 <button
                   onClick={fetchData}
                   className="text-slate-400 hover:text-slate-600 transition-colors"
-                  title="Làm mới"
+                  title={t("dashboard.refresh")}
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                 </button>
@@ -246,7 +246,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
 
           {/* In-progress count */}
           <div className="pr-8 mr-8 border-r border-slate-200">
-            <p className="text-[12px] text-slate-500 mb-1">Task đang làm</p>
+            <p className="text-[12px] text-slate-500 mb-1">{t("dashboard.inProgressTasks")}</p>
             <div className="flex items-center gap-2">
               <span className="text-[36px] font-bold text-blue-600 leading-none">
                 {loading ? "—" : (data?.inProgressCount ?? 0)}
@@ -254,18 +254,18 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
             </div>
           </div>
 
-          {/* Unstarted count */}
+          {/* Backlog count */}
           <div className="pr-8 mr-8 border-r border-slate-200">
-            <p className="text-[12px] text-slate-500 mb-1">Task chưa bắt đầu</p>
+            <p className="text-[12px] text-slate-500 mb-1">{t("dashboard.backlogTasks")}</p>
             <div className="flex items-center gap-2">
               <span className="text-[36px] font-bold text-slate-900 leading-none">
-                {loading ? "—" : (data?.unstartedCount ?? 0)}
+                {loading ? "—" : (data?.backlogCount ?? 0)}
               </span>
               {!isAdmin && (
                 <button
                   onClick={fetchData}
                   className="text-slate-400 hover:text-slate-600 transition-colors"
-                  title="Làm mới"
+                  title={t("dashboard.refresh")}
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                 </button>
@@ -276,7 +276,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
           {/* Sub-team buttons (admin only) */}
           {isAdmin && teams.length > 0 && (
             <div className="flex-1">
-              <p className="text-[12px] text-slate-500 mb-2">Sub-team</p>
+              <p className="text-[12px] text-slate-500 mb-2">{t("dashboard.subTeam")}</p>
               <div className="flex flex-wrap gap-2">
                 {teams.map((t) => (
                   <button
@@ -298,7 +298,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
           {/* Handler quick-select (sub-manager only) */}
           {isSubManager && handlers.length > 0 && (
             <div className="flex-1">
-              <p className="text-[12px] text-slate-500 mb-2">Người xử lý</p>
+              <p className="text-[12px] text-slate-500 mb-2">{t("dashboard.handler")}</p>
               <div className="flex flex-wrap gap-2">
                 {handlers.map((h) => (
                   <button
@@ -324,14 +324,14 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
         {/* Section header */}
         <div className="px-5 pt-5 pb-4 border-b border-slate-100">
           <h2 className="text-[15px] font-semibold text-slate-800">
-            Khối lượng công việc tổng quan
+            {t("dashboard.workload")}
           </h2>
           <button
             onClick={() => setFilterOpen((o) => !o)}
             className="flex items-center gap-1.5 text-[13px] text-blue-600 hover:text-blue-700 mt-2 font-medium"
           >
             <Filter className="w-3.5 h-3.5" />
-            Bộ lọc Khối lượng công việc
+            {t("dashboard.workloadFilter")}
             {filterOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
         </div>
@@ -341,22 +341,22 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
           <div className="px-5 py-4 border-b border-slate-100">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-4">
               <Select
-                label="Thời gian tạo"
+                label={t("dashboard.createdPeriod")}
                 value={String(month)}
                 onChange={(v) => setMonth(Number(v))}
                 options={MONTH_OPTIONS.map((m) => ({
                   value: String(m.value),
-                  label: `${m.label} ${year}`,
+                  label: m.label,
                 }))}
               />
               <Select
-                label="Trạng thái"
+                label={t("common.status")}
                 value={status}
                 onChange={setStatus}
                 options={STATUS_OPTIONS}
               />
               <Select
-                label="Ưu tiên"
+                label={t("common.priority")}
                 value={priority}
                 onChange={setPriority}
                 options={PRIORITY_OPTIONS}
@@ -373,7 +373,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
                 />
               ) : isSubManager ? (
                 <Select
-                  label="Người xử lý"
+                  label={t("dashboard.handler")}
                   value={handlerId}
                   onChange={(v) => {
                     setHandlerId(v);
@@ -383,10 +383,10 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
                 />
               ) : null}
               <Select
-                label="Loại công việc"
-                value={category}
-                onChange={setCategory}
-                options={categoryOptions}
+                label={t("tasks.taskType")}
+                value={taskType}
+                onChange={setTaskType}
+                options={taskTypeOptions}
               />
             </div>
           </div>
@@ -395,10 +395,10 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
         {/* Line chart */}
         <div className="px-5 py-5">
           <p className="text-[13px] font-semibold text-slate-700 mb-4">
-            Tổng Task phát sinh và Đã xử lý
+            {t("dashboard.dailySeries")}
           </p>
           {loading ? (
-            <div className="h-[280px] flex items-center justify-center text-slate-400 text-sm">Đang tải...</div>
+            <div className="h-[280px] flex items-center justify-center text-slate-400 text-sm">{t("common.loading")}</div>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <LineChart
@@ -421,10 +421,10 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
                 />
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
-                  formatter={(value: number, name: string) => [value, name === "created" ? "Phát sinh" : "Đã xử lý"]}
+                  formatter={(value: number, name: string) => [value, name === "created" ? t("dashboard.created") : t("dashboard.completed")]}
                 />
                 <Legend
-                  formatter={(value) => value === "created" ? "Tổng task phát sinh" : "Đã xử lý"}
+                  formatter={(value) => value === "created" ? t("dashboard.totalCreated") : t("dashboard.completed")}
                   iconType="circle"
                   iconSize={8}
                   wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
@@ -439,11 +439,11 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
 
       {/* Donut chart */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-        <p className="text-[14px] font-semibold text-slate-800 mb-5">Phân bố trạng thái Task</p>
+        <p className="text-[14px] font-semibold text-slate-800 mb-5">{t("dashboard.statusDistribution")}</p>
         {loading ? (
-          <div className="h-[200px] flex items-center justify-center text-slate-400 text-sm">Đang tải...</div>
+          <div className="h-[200px] flex items-center justify-center text-slate-400 text-sm">{t("common.loading")}</div>
         ) : totalTasks === 0 ? (
-          <div className="h-[200px] flex items-center justify-center text-slate-400 text-sm">Chưa có task nào</div>
+          <div className="h-[200px] flex items-center justify-center text-slate-400 text-sm">{t("dashboard.noTasks")}</div>
         ) : (
           <div className="flex flex-col sm:flex-row items-center gap-8">
             <div className="flex-shrink-0">
@@ -465,7 +465,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
                   formatter={(value: number, _: any, props: any) => [
                     `${value} (${totalTasks > 0 ? ((value / totalTasks) * 100).toFixed(1) : 0}%)`,
-                    STATUS_LABELS[props.payload.status] ?? props.payload.status,
+                    t(`taskStatus.${props.payload.status}`) || props.payload.status,
                   ]}
                 />
               </PieChart>
@@ -482,7 +482,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
                         style={{ backgroundColor: STATUS_COLORS[entry.status] ?? "#cbd5e1" }}
                       />
                       <span className="text-[13px] text-slate-700 font-medium">
-                        {STATUS_LABELS[entry.status] ?? entry.status}
+                        {t(`taskStatus.${entry.status}`) || entry.status}
                       </span>
                     </div>
                     <div className="flex items-center gap-3">

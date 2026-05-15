@@ -12,6 +12,7 @@ declare module "next-auth" {
       permissions: Record<string, unknown>;
       department?: string | null;
       avatarUrl?: string | null;
+      locale?: string;
     };
   }
 
@@ -23,6 +24,7 @@ declare module "next-auth" {
     department?: string | null;
     avatarUrl?: string | null;
     status: string;
+    locale?: string;
   }
 }
 
@@ -35,5 +37,6 @@ declare module "next-auth/jwt" {
     department?: string | null;
     avatarUrl?: string | null;
     status: string;
+    locale?: string;
   }
 }

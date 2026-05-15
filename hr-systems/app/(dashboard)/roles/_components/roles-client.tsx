@@ -4,28 +4,27 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Pencil, X, Loader2, Shield, Users, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/context";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"];
 
-// Danh sách quyền theo module
 const PERMISSION_MODULES = [
   { key: "dashboard",     label: "Dashboard" },
-  { key: "work_list",     label: "Work List" },
-  { key: "work_report",   label: "Work Report" },
-  { key: "office_time",   label: "Office Time" },
-  { key: "task_library",  label: "Task Library" },
-  { key: "missing_tasks", label: "Missing Tasks" },
-  { key: "time_check",    label: "Time Check" },
-  { key: "summary",       label: "Summary / Lương" },
+  { key: "tasks",          label: "Tasks" },
+  { key: "time_logs",      label: "Time Logs" },
+  { key: "office_time",    label: "Office Time" },
+  { key: "task_templates", label: "Task Templates" },
+  { key: "task_reviews",   label: "Task Reviews" },
+  { key: "summary",       label: "Summary" },
   { key: "payments",      label: "Payments" },
-  { key: "leave",         label: "Nghỉ phép" },
+  { key: "leave",         label: "Leave" },
   { key: "customers",     label: "Customers" },
   { key: "messages",      label: "Messages" },
-  { key: "employees",     label: "Nhân viên" },
+  { key: "employees",     label: "Employees" },
   { key: "vault",         label: "Password Vault" },
   { key: "work_rules",    label: "Work Rules" },
-  { key: "departments",   label: "Phòng ban & Nhóm" },
-  { key: "roles",         label: "Quản lý vai trò" },
+  { key: "departments",   label: "Departments" },
+  { key: "roles",         label: "Roles" },
 ];
 
 const ROLE_COLORS: Record<string, string> = {
@@ -53,12 +52,13 @@ interface Props {
 }
 
 function RoleEditModal({ role, onClose, onSaved }: { role: RoleItem; onClose: () => void; onSaved: (r: RoleItem) => void }) {
+  const { t } = useLocale();
   const [label, setLabel] = useState(role.label);
   const [description, setDescription] = useState(role.description ?? "");
   const [perms, setPerms] = useState<Record<string, boolean>>(() => {
     const p: Record<string, boolean> = {};
     PERMISSION_MODULES.forEach(m => {
-      p[m.key] = role.permissions?.[m.key] !== false; // default true
+      p[m.key] = role.permissions?.[m.key] !== false;
     });
     return p;
   });
@@ -94,7 +94,7 @@ function RoleEditModal({ role, onClose, onSaved }: { role: RoleItem; onClose: ()
             <span className={cn("text-[12px] font-bold px-2.5 py-1 rounded-lg border", ROLE_COLORS[role.name] ?? "bg-slate-100 text-slate-600 border-slate-200")}>
               {role.name}
             </span>
-            <h2 className="text-[15px] font-semibold text-slate-900">Chỉnh sửa vai trò</h2>
+            <h2 className="text-[15px] font-semibold text-slate-900">{t("roles.editRole")}</h2>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition">
             <X className="w-4 h-4" />
@@ -104,20 +104,19 @@ function RoleEditModal({ role, onClose, onSaved }: { role: RoleItem; onClose: ()
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="block text-[12px] font-medium text-slate-700 mb-1.5">Tên hiển thị</label>
+              <label className="block text-[12px] font-medium text-slate-700 mb-1.5">{t("roles.displayName")}</label>
               <input value={label} onChange={e => setLabel(e.target.value)} required className="form-input" />
             </div>
             <div className="col-span-2">
-              <label className="block text-[12px] font-medium text-slate-700 mb-1.5">Mô tả vai trò</label>
+              <label className="block text-[12px] font-medium text-slate-700 mb-1.5">{t("roles.roleDescription")}</label>
               <textarea value={description} onChange={e => setDescription(e.target.value)}
-                rows={2} className="form-input resize-none" placeholder="Chức năng của vai trò này..." />
+                rows={2} className="form-input resize-none" placeholder={t("roles.descriptionPlaceholder")} />
             </div>
           </div>
 
-          {/* Permissions */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[12px] font-semibold text-slate-700 uppercase tracking-wide">Quyền truy cập</label>
+              <label className="text-[12px] font-semibold text-slate-700 uppercase tracking-wide">{t("roles.accessPermissions")}</label>
               <button type="button"
                 onClick={() => {
                   const next: Record<string, boolean> = {};
@@ -125,7 +124,7 @@ function RoleEditModal({ role, onClose, onSaved }: { role: RoleItem; onClose: ()
                   setPerms(next);
                 }}
                 className="text-[11.5px] text-blue-600 hover:underline">
-                {allOn ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                {allOn ? t("roles.deselectAll") : t("roles.selectAll")}
               </button>
             </div>
             <div className="grid grid-cols-2 gap-1.5">
@@ -152,11 +151,11 @@ function RoleEditModal({ role, onClose, onSaved }: { role: RoleItem; onClose: ()
         </form>
 
         <div className="flex justify-end gap-2 px-5 py-4 border-t border-slate-100 flex-shrink-0">
-          <button type="button" onClick={onClose} className="btn-secondary">Hủy</button>
+          <button type="button" onClick={onClose} className="btn-secondary">{t("common.cancel")}</button>
           <button
             onClick={e => { e.preventDefault(); handleSubmit(e as any); }}
             disabled={loading} className="btn-primary">
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />} Lưu thay đổi
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />} {t("roles.saveChanges")}
           </button>
         </div>
       </div>
@@ -166,6 +165,7 @@ function RoleEditModal({ role, onClose, onSaved }: { role: RoleItem; onClose: ()
 
 export function RolesClient({ initialRoles }: Props) {
   const { data: session } = useSession();
+  const { t } = useLocale();
   const currentRole = (session?.user as any)?.role ?? "";
   const isAdmin = ADMIN_ROLES.includes(currentRole);
 
@@ -180,14 +180,13 @@ export function RolesClient({ initialRoles }: Props) {
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">Quản lý vai trò</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Xem và phân quyền truy cập cho từng vai trò</p>
+        <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">{t("roles.title")}</h1>
+        <p className="text-sm text-slate-500 mt-0.5">{t("roles.subtitle")}</p>
       </div>
 
       {/* Role cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         {roles.map(r => {
-          // count modules that are NOT explicitly false (default = has access)
           const permCount = PERMISSION_MODULES.filter(m => r.permissions?.[m.key] !== false).length;
           const totalPerms = PERMISSION_MODULES.length;
           const pct = totalPerms > 0 ? Math.round((permCount / totalPerms) * 100) : 0;
@@ -218,15 +217,14 @@ export function RolesClient({ initialRoles }: Props) {
                 )}
               </div>
 
-              {/* Stats row */}
               <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100">
                 <div className="flex items-center gap-1.5 text-[12.5px] text-slate-500">
                   <Users className="w-3.5 h-3.5 text-slate-400" />
-                  <span><span className="font-semibold text-slate-700">{r._count.employees}</span> nhân viên</span>
+                  <span><span className="font-semibold text-slate-700">{r._count.employees}</span> {t("roles.employees")}</span>
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between text-[11.5px] text-slate-400 mb-1">
-                    <span>Quyền truy cập</span>
+                    <span>{t("roles.accessPermissions")}</span>
                     <span className="font-medium text-slate-600">{permCount}/{totalPerms}</span>
                   </div>
                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -235,7 +233,6 @@ export function RolesClient({ initialRoles }: Props) {
                 </div>
               </div>
 
-              {/* Permission badges */}
               <div className="flex flex-wrap gap-1 mt-2.5">
                 {PERMISSION_MODULES.map(m => {
                   const hasAccess = r.permissions?.[m.key] !== false;

@@ -1,38 +1,12 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Bell, LogOut, Settings, User, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import { getInitials } from "@/lib/utils";
 import { useState } from "react";
-
-const PAGE_TITLES: Record<string, string> = {
-  "/dashboard":     "Dashboard",
-  "/work-list":     "Work List",
-  "/work-report":   "Work Report",
-  "/office-time":   "Office Time",
-  "/task-library":  "Task Library",
-  "/missing-tasks": "Missing Tasks",
-  "/time-check":    "Time Check",
-  "/summary":       "Tổng kết lương",
-  "/payments":      "Payments",
-  "/leave":         "Nghỉ phép",
-  "/customers":     "Customers",
-  "/messages":      "Messages",
-  "/employees":     "Nhân viên",
-  "/departments":   "Phòng ban & Nhóm",
-  "/roles":         "Quản lý vai trò",
-  "/vault":         "Password Vault",
-  "/work-rules":    "Work Rules",
-};
-
-function getPageTitle(pathname: string): string {
-  const key = Object.keys(PAGE_TITLES)
-    .sort((a, b) => b.length - a.length)
-    .find((k) => pathname === k || pathname.startsWith(k + "/"));
-  return key ? PAGE_TITLES[key] : "HR System";
-}
+import { useLocale } from "@/lib/i18n/context";
 
 const ROLE_BADGE: Record<string, string> = {
   SUPER_ADMIN: "bg-purple-100 text-purple-700",
@@ -44,12 +18,36 @@ const ROLE_BADGE: Record<string, string> = {
   EMPLOYEE:    "bg-slate-100 text-slate-600",
 };
 
+function usePageTitle(): string {
+  const { t } = useLocale();
+  const pathname = usePathname();
+
+  const keys = Object.keys(
+    (t as any)("pageTitles") !== undefined
+      ? {}
+      : {}
+  );
+  // Find the longest matching prefix in pageTitles
+  const pageTitleKeys = [
+    "/dashboard", "/tasks", "/time-logs", "/office-time",
+    "/task-templates", "/task-reviews", "/summary", "/payments",
+    "/leave", "/customers", "/messages", "/employees", "/departments",
+    "/roles", "/vault", "/work-rules", "/system-labels", "/settings",
+  ];
+  const key = pageTitleKeys
+    .sort((a, b) => b.length - a.length)
+    .find((k) => pathname === k || pathname.startsWith(k + "/"));
+
+  return key ? t(`pageTitles.${key}`) : "HR System";
+}
+
 export function Topbar() {
   const { data: session } = useSession();
-  const pathname = usePathname();
+  const { t } = useLocale();
+  const router = useRouter();
   const user = session?.user as any;
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const pageTitle = getPageTitle(pathname);
+  const pageTitle = usePageTitle();
 
   return (
     <header className="h-[52px] bg-white border-b border-slate-200 flex items-center justify-between px-5 flex-shrink-0">
@@ -104,17 +102,20 @@ export function Topbar() {
                   </span>
                 </div>
                 <button className="flex items-center gap-2 w-full px-3.5 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition">
-                  <User className="w-3.5 h-3.5 text-slate-400" /> Hồ sơ cá nhân
+                  <User className="w-3.5 h-3.5 text-slate-400" /> {t("topbar.profile")}
                 </button>
-                <button className="flex items-center gap-2 w-full px-3.5 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition">
-                  <Settings className="w-3.5 h-3.5 text-slate-400" /> Cài đặt
+                <button
+                  onClick={() => { setDropdownOpen(false); router.push("/settings"); }}
+                  className="flex items-center gap-2 w-full px-3.5 py-2 text-[13px] text-slate-700 hover:bg-slate-50 transition"
+                >
+                  <Settings className="w-3.5 h-3.5 text-slate-400" /> {t("topbar.settings")}
                 </button>
                 <div className="border-t border-slate-100 mt-1" />
                 <button
                   onClick={() => signOut({ callbackUrl: "/login" })}
                   className="flex items-center gap-2 w-full px-3.5 py-2 text-[13px] text-red-600 hover:bg-red-50 transition"
                 >
-                  <LogOut className="w-3.5 h-3.5" /> Đăng xuất
+                  <LogOut className="w-3.5 h-3.5" /> {t("topbar.logout")}
                 </button>
               </div>
             </>

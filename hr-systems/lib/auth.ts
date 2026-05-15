@@ -42,6 +42,7 @@ export const authOptions: NextAuthOptions = {
           department: employee.department,
           avatarUrl: employee.avatarUrl,
           status: employee.status,
+          locale: (employee as any).locale ?? "en",
         } as any;
       },
     }),
@@ -56,6 +57,7 @@ export const authOptions: NextAuthOptions = {
         token.department = (user as any).department;
         token.avatarUrl = (user as any).avatarUrl;
         token.status = (user as any).status;
+        token.locale = (user as any).locale ?? "en";
       }
       return token;
     },
@@ -67,6 +69,7 @@ export const authOptions: NextAuthOptions = {
         session.user.permissions = token.permissions;
         session.user.department = token.department;
         session.user.avatarUrl = token.avatarUrl;
+        session.user.locale = token.locale as string ?? "en";
       }
       return session;
     },

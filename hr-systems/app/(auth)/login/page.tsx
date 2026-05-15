@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Building2, Loader2, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Building2, Loader2, AlertCircle, Clock } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Email không hợp lệ"),
@@ -32,6 +32,7 @@ function LoginFormContent() {
 
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const errorParam = searchParams.get("error");
+  const sessionExpired = searchParams.get("expired") === "1";
 
   const {
     register,
@@ -80,6 +81,13 @@ function LoginFormContent() {
         {/* Card */}
         <div className="bg-slate-900 rounded-2xl border border-slate-800 p-7 shadow-2xl">
           <h2 className="text-[16px] font-semibold text-white mb-5">Đăng nhập vào tài khoản</h2>
+
+          {sessionExpired && (
+            <div className="mb-4 flex items-start gap-2.5 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-400">
+              <Clock className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.</span>
+            </div>
+          )}
 
           {(error || errorParam === "inactive") && (
             <div className="mb-4 flex items-start gap-2.5 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400">
