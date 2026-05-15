@@ -71,7 +71,6 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
   const [calculating, setCalculating] = useState(false);
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
   const [scoringItem, setScoringItem] = useState<SummaryItem | null>(null);
-  const [paidEdit, setPaidEdit] = useState<{ id: number; salaryPaid: string; bonusPaid: string; moneyReceived: string } | null>(null);
 
   const month = viewDate.getMonth() + 1;
   const year = viewDate.getFullYear();

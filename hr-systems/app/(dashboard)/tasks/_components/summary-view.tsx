@@ -97,7 +97,7 @@ export function SummaryView({ items, labelConfig: lc }: { items: TaskItem[]; lab
       .slice(0, 8);
 
     return { total, done, active, overdue, createdThisWeek, dueSoon, statusData, priorityData, maxPriority, typeData, maxType, recent };
-  }, [items, labelConfig]);
+  }, [items, labelConfig, t]);
 
   return (
     <div className="space-y-5">

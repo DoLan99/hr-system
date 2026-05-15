@@ -80,7 +80,7 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
       }
       setError(null);
     }
-  }, [open, editing, currentUserId]);
+  }, [open, editing, currentUserId, initialStatus]);
 
   function applyTemplate(tplId: string) {
     const tpl = templates.find((t) => t.id.toString() === tplId);
