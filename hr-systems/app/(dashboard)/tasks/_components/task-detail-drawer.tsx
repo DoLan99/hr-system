@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useCurrentUser } from "@/lib/contexts/current-user-context";
 import { X, Clock, AlertCircle, Plus, Check } from "lucide-react";
 import { useLocale } from "@/lib/i18n/context";
 import { DEFAULT_LABEL_CONFIG, type LabelConfig } from "@/lib/system-labels";
 import { RichTextEditor } from "@/components/shared/rich-text-editor";
+import { TimerButton } from "@/components/tracking/timer-button";
 
 type SubTask = { id: number; code: string; title: string; status: string; progressPct: number };
 type TimeLogEntry = {
@@ -63,12 +65,12 @@ const PRIORITIES = ["CRITICAL", "HIGH", "NORMAL", "LOW"];
 const TASK_TYPES = ["NORMAL", "LEARNING", "NEW_RESEARCH", "MEETING", "ADMIN", "BILLABLE_CLIENT", "INTERNAL"];
 
 const STATUS_STYLE: Record<string, string> = {
-  BACKLOG:     "bg-slate-100 text-slate-700 border-slate-200",
-  IN_PROGRESS: "bg-blue-50 text-blue-700 border-blue-200",
-  BLOCKED:     "bg-red-50 text-red-700 border-red-200",
-  REVIEW:      "bg-amber-50 text-amber-700 border-amber-200",
-  DONE:        "bg-emerald-50 text-emerald-700 border-emerald-200",
-  CANCELLED:   "bg-slate-100 text-slate-400 border-slate-200",
+  BACKLOG:     "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200",
+  IN_PROGRESS: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200",
+  BLOCKED:     "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200",
+  REVIEW:      "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200",
+  DONE:        "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200",
+  CANCELLED:   "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200",
 };
 
 const PRIORITY_DOT: Record<string, string> = {
@@ -97,8 +99,8 @@ function formatMin(min: number | null | undefined) {
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 py-2.5 border-b border-slate-100 last:border-0">
-      <span className="text-[11px] text-slate-400 w-24 flex-shrink-0 pt-0.5 font-medium uppercase tracking-wide">{label}</span>
+    <div className="flex items-start gap-2 py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
+      <span className="text-[11px] text-slate-400 dark:text-slate-500 w-24 flex-shrink-0 pt-0.5 font-medium uppercase tracking-wide">{label}</span>
       <div className="flex-1 min-w-0 text-xs text-slate-700">{children}</div>
     </div>
   );
@@ -107,6 +109,8 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, isManager, labelConfig: lc, onSaved, onOpenTask }: Props) {
   const labelConfig = lc ?? DEFAULT_LABEL_CONFIG;
   const { t } = useLocale();
+  const authUser = useCurrentUser();
+  const currentUserId = authUser.employeeId;
 
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -239,13 +243,13 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
 
       {/* Drawer panel */}
-      <div className="relative z-10 w-full max-w-4xl bg-white shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-200">
+      <div className="relative z-10 w-full max-w-4xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 flex-shrink-0 bg-white">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700 flex-shrink-0 bg-white">
           <div className="flex items-center gap-3 text-xs">
-            <span className="font-mono text-slate-400 font-medium select-all">{task?.code ?? "..."}</span>
+            <span className="font-mono text-slate-400 dark:text-slate-500 font-medium select-all">{task?.code ?? "..."}</span>
             {task && (
-              <span className={`px-2 py-0.5 rounded-md border text-[11px] font-semibold ${STATUS_STYLE[task.status] ?? "bg-slate-100 text-slate-600"}`}>
+              <span className={`px-2 py-0.5 rounded-md border text-[11px] font-semibold ${STATUS_STYLE[task.status] ?? "bg-slate-100 dark:bg-slate-800 text-slate-600"}`}>
                 {t(`taskStatus.${task.status}`) || task.status}
               </span>
             )}
@@ -257,12 +261,26 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
             )}
           </div>
           <div className="flex items-center gap-2">
-            {saving && <span className="text-xs text-slate-400 animate-pulse">{t("common.saving")}</span>}
+            {saving && <span className="text-xs text-slate-400 dark:text-slate-500 animate-pulse">{t("common.saving")}</span>}
+            {task && currentUserId && (
+              <TimerButton
+                taskId={task.id}
+                assigneeId={task.assignedTo.id}
+                currentUserId={currentUserId}
+                onChange={() => {
+                  // refetch task để cập nhật actualTimeTotal/status
+                  fetch(`/api/tasks/${task.id}`)
+                    .then((r) => r.json())
+                    .then((j) => j.data && setTask(j.data))
+                    .catch(() => {});
+                }}
+              />
+            )}
             {task && (
               <Link
                 href={`/time-logs?taskId=${task.id}`}
                 onClick={onClose}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 font-medium transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 font-medium transition-colors"
               >
                 <Clock className="w-3.5 h-3.5" />
                 {t("tasks.logTime")}
@@ -270,7 +288,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
             )}
             <button
               onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -302,11 +320,11 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                       if (e.key === "Escape") setEditingTitle(false);
                     }}
                     rows={2}
-                    className="w-full text-2xl font-bold text-slate-900 leading-tight resize-none border border-blue-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-200"
+                    className="w-full text-2xl font-bold text-slate-900 dark:text-slate-100 leading-tight resize-none border border-blue-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-200"
                   />
                 ) : (
                   <h1
-                    className="text-2xl font-bold text-slate-900 leading-tight cursor-text hover:text-blue-700 transition-colors rounded-lg p-1 -m-1"
+                    className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-tight cursor-text hover:text-blue-700 transition-colors rounded-lg p-1 -m-1"
                     onClick={() => { setTitleDraft(task.title); setEditingTitle(true); }}
                   >
                     {task.title}
@@ -316,7 +334,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
 
               {/* Description */}
               <div>
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">{t("common.description")}</h3>
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">{t("common.description")}</h3>
                 <RichTextEditor
                   value={descHtml}
                   onChange={(html) => {
@@ -332,7 +350,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                     <button
                       onClick={cancelDesc}
                       disabled={descSaving}
-                      className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"
+                      className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
                     >
                       {t("common.cancel")}
                     </button>
@@ -349,8 +367,8 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
 
               {/* Blocked reason */}
               {task.status === "BLOCKED" && task.reasonNextAction && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-xs font-semibold text-red-700 mb-1">{t("tasks.reasonNextAction")}</p>
+                <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1">{t("tasks.reasonNextAction")}</p>
                   <p className="text-sm text-red-700">{task.reasonNextAction}</p>
                 </div>
               )}
@@ -358,7 +376,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
               {/* Subtasks */}
               <div>
                 <div className="flex items-center justify-between mb-2.5">
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     {t("tasks.subTasks")}
                     {task.subTasks?.length > 0 && (
                       <span className="ml-1.5 font-normal text-slate-400">({task.subTasks.length})</span>
@@ -367,7 +385,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                   {!addingSubtask && (
                     <button
                       onClick={openAddSubtask}
-                      className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                      className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       {t("tasks.addSubtask")}
@@ -382,7 +400,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                       <button
                         key={sub.id}
                         onClick={() => onOpenTask?.(sub.id)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 transition-colors text-left ${onOpenTask ? "hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer" : "cursor-default"}`}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors text-left ${onOpenTask ? "hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer" : "cursor-default"}`}
                       >
                         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
                           sub.status === "DONE"        ? "bg-emerald-500" :
@@ -390,13 +408,13 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                           sub.status === "BLOCKED"     ? "bg-red-500" :
                           sub.status === "REVIEW"      ? "bg-amber-400" : "bg-slate-400"
                         }`} />
-                        <span className="font-mono text-[10px] text-slate-400 flex-shrink-0">{sub.code}</span>
-                        <span className="text-xs text-slate-700 flex-1 min-w-0 truncate">{sub.title}</span>
+                        <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500 flex-shrink-0">{sub.code}</span>
+                        <span className="text-xs text-slate-700 dark:text-slate-300 flex-1 min-w-0 truncate">{sub.title}</span>
                         {sub.progressPct > 0 && sub.status !== "DONE" && (
-                          <span className="text-[10px] text-slate-400 flex-shrink-0">{sub.progressPct}%</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 flex-shrink-0">{sub.progressPct}%</span>
                         )}
                         <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium flex-shrink-0 ${
-                          labelConfig.taskStatus[sub.status]?.color ?? "bg-slate-100 text-slate-600"
+                          labelConfig.taskStatus[sub.status]?.color ?? "bg-slate-100 dark:bg-slate-800 text-slate-600"
                         }`}>
                           {t(`taskStatus.${sub.status}`) || sub.status}
                         </span>
@@ -407,7 +425,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
 
                 {/* Inline add form */}
                 {addingSubtask ? (
-                  <div className="border border-blue-200 bg-blue-50/30 rounded-lg p-3 space-y-2.5">
+                  <div className="border border-blue-200 dark:border-blue-800 bg-blue-50/30 rounded-lg p-3 space-y-2.5">
                     {/* Title */}
                     <input
                       ref={subTaskInputRef}
@@ -419,14 +437,14 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                         if (e.key === "Escape") setAddingSubtask(false);
                       }}
                       placeholder={t("tasks.subTaskTitlePlaceholder")}
-                      className="w-full text-sm bg-white border border-slate-200 rounded-md px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-slate-400"
+                      className="w-full text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-slate-400"
                     />
 
                     {/* Description toggle */}
                     {!subTaskDescOpen ? (
                       <button
                         onClick={() => setSubTaskDescOpen(true)}
-                        className="text-xs text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-1"
+                        className="text-xs text-slate-400 dark:text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" />
                         {t("common.description")}
@@ -445,7 +463,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                       <select
                         value={subTaskStatus}
                         onChange={(e) => setSubTaskStatus(e.target.value)}
-                        className="text-xs border border-slate-200 bg-white rounded-md px-2 py-1 outline-none flex-1"
+                        className="text-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-md px-2 py-1 outline-none flex-1"
                       >
                         {["BACKLOG", "IN_PROGRESS", "REVIEW", "DONE"].map((s) => (
                           <option key={s} value={s}>{t(`taskStatus.${s}`) || s}</option>
@@ -465,7 +483,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                       </button>
                       <button
                         onClick={() => setAddingSubtask(false)}
-                        className="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-200 rounded-md transition-colors"
+                        className="px-3 py-1.5 text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors"
                       >
                         {t("common.cancel")}
                       </button>
@@ -475,7 +493,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                   !task.subTasks?.length && (
                     <button
                       onClick={openAddSubtask}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 border-2 border-dashed border-slate-200 hover:border-blue-300 hover:bg-blue-50/30 rounded-lg text-slate-400 hover:text-blue-500 transition-colors text-xs"
+                      className="w-full flex items-center gap-2 px-3 py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50/30 rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-500 transition-colors text-xs"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       {t("tasks.addSubtask")}
@@ -488,7 +506,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
               {task.timeLogs?.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-2.5">
-                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                       {t("tasks.activity")}
                     </h3>
                     <span className="text-xs text-slate-400">
@@ -499,7 +517,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                     {task.timeLogs.slice(0, 15).map((log) => {
                       const grad = AVATAR_GRADIENTS[log.employee.id % AVATAR_GRADIENTS.length];
                       return (
-                        <div key={log.id} className="flex items-start gap-3 px-3 py-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                        <div key={log.id} className="flex items-start gap-3 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-100">
                           <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${grad} flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white shadow-sm`}>
                             {log.employee.fullName.charAt(0).toUpperCase()}
                           </div>
@@ -508,15 +526,15 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                               <span className="text-xs font-semibold text-slate-700">{log.employee.fullName}</span>
                               <span className="text-xs font-bold text-blue-600">{formatMin(log.durationMinutes)}</span>
                               <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${
-                                log.approvalStatus === "APPROVED" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
-                                log.approvalStatus === "REJECTED" ? "bg-red-50 text-red-600 border border-red-200" :
-                                "bg-amber-50 text-amber-700 border border-amber-200"
+                                log.approvalStatus === "APPROVED" ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200" :
+                                log.approvalStatus === "REJECTED" ? "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200" :
+                                "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200"
                               }`}>
                                 {t(`approvalStatus.${log.approvalStatus}`) || log.approvalStatus}
                               </span>
                             </div>
-                            {log.note && <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{log.note}</p>}
-                            <p className="text-[10px] text-slate-400 mt-0.5">{new Date(log.date).toLocaleDateString()}</p>
+                            {log.note && <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{log.note}</p>}
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{new Date(log.date).toLocaleDateString()}</p>
                           </div>
                         </div>
                       );
@@ -525,7 +543,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                       <Link
                         href={`/time-logs?taskId=${task.id}`}
                         onClick={onClose}
-                        className="block text-center text-xs text-blue-600 hover:text-blue-800 py-1"
+                        className="block text-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 py-1"
                       >
                         {t("common.viewAll")} ({task._count.timeLogs})
                       </Link>
@@ -536,15 +554,15 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
             </div>
 
             {/* ── Sidebar ── */}
-            <div className="w-[264px] flex-shrink-0 border-l border-slate-200 bg-slate-50/40 overflow-y-auto">
+            <div className="w-[264px] flex-shrink-0 border-l border-slate-200 dark:border-slate-700 bg-slate-50/40 overflow-y-auto">
               {/* Status selector */}
               <div className="px-4 pt-4 pb-3 border-b border-slate-200">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{t("common.status")}</p>
+                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5">{t("common.status")}</p>
                 <select
                   value={task.status}
                   onChange={(e) => patch({ status: e.target.value })}
                   disabled={saving}
-                  className={`w-full text-sm font-semibold px-3 py-2 rounded-lg border cursor-pointer outline-none transition-colors ${STATUS_STYLE[task.status] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}
+                  className={`w-full text-sm font-semibold px-3 py-2 rounded-lg border cursor-pointer outline-none transition-colors ${STATUS_STYLE[task.status] ?? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200"}`}
                 >
                   {STATUSES.map((s) => (
                     <option key={s} value={s}>{t(`taskStatus.${s}`) || s}</option>
@@ -555,10 +573,10 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
               {/* Progress bar */}
               <div className="px-4 py-3 border-b border-slate-200">
                 <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{t("tasks.progress")}</p>
+                  <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">{t("tasks.progress")}</p>
                   <span className="text-xs font-semibold text-slate-600">{task.progressPct}%</span>
                 </div>
-                <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${
                       task.progressPct >= 100 ? "bg-emerald-500" : task.progressPct >= 60 ? "bg-blue-500" : "bg-amber-400"
@@ -635,7 +653,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                 {/* Parent task */}
                 <DetailRow label={t("tasks.parentTask")}>
                   {task.parentTask ? (
-                    <span className="font-mono text-blue-600 text-[11px]">{task.parentTask.code}</span>
+                    <span className="font-mono text-blue-600 dark:text-blue-400 text-[11px]">{task.parentTask.code}</span>
                   ) : (
                     <span className="text-slate-400">{t("common.none")}</span>
                   )}
@@ -707,7 +725,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                         }}
                         disabled={saving}
                         placeholder="min"
-                        className="w-16 text-xs bg-white border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-blue-200"
+                        className="w-16 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-blue-200"
                       />
                     ) : (
                       <span>{formatMin(task.estimatedTime)}</span>
@@ -729,7 +747,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                       onChange={(e) => isManager && patch({ billable: e.target.checked })}
                       className="w-3.5 h-3.5 rounded"
                     />
-                    <span className={task.billable ? "text-emerald-600 font-semibold" : "text-slate-400"}>
+                    <span className={task.billable ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-slate-400"}>
                       {task.billable ? t("common.yes") : t("common.no")}
                     </span>
                   </label>
@@ -745,7 +763,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                       onChange={(e) => isManager && patch({ requiresVideo: e.target.checked })}
                       className="w-3.5 h-3.5 rounded"
                     />
-                    <span className={task.requiresVideo ? "text-blue-600 font-semibold" : "text-slate-400"}>
+                    <span className={task.requiresVideo ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-slate-400"}>
                       {task.requiresVideo ? t("common.yes") : t("common.no")}
                     </span>
                   </label>
@@ -761,7 +779,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                 )}
                 {task.dateCompleted && (
                   <DetailRow label={t("tasks.completedDate")}>
-                    <span className="text-emerald-600 font-semibold">{new Date(task.dateCompleted).toLocaleDateString()}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{new Date(task.dateCompleted).toLocaleDateString()}</span>
                   </DetailRow>
                 )}
                 <DetailRow label={t("tasks.createdDate")}>

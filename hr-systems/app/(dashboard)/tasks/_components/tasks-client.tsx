@@ -57,10 +57,10 @@ type View = "summary" | "board" | "list";
 
 const PRIORITIES = ["CRITICAL", "HIGH", "NORMAL", "LOW"];
 const PRIORITY_COLORS: Record<string, string> = {
-  CRITICAL: "bg-red-100 text-red-700 border-red-200",
-  HIGH: "bg-orange-100 text-orange-700 border-orange-200",
-  NORMAL: "bg-slate-100 text-slate-600 border-slate-200",
-  LOW: "bg-slate-50 text-slate-400 border-slate-200",
+  CRITICAL: "bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200",
+  HIGH: "bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200",
+  NORMAL: "bg-slate-100 text-slate-600 dark:text-slate-400 border-slate-200",
+  LOW: "bg-slate-50 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 border-slate-200",
 };
 
 export function TasksClient({ initialItems, employees, customers, templates, currentUserId, isManager, labelConfig: lc }: Props) {
@@ -146,14 +146,14 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
       </div>
 
       {/* Tab Bar + Filter Toggle */}
-      <div className="flex items-center border-b border-slate-200 mb-0">
+      <div className="flex items-center border-b border-slate-200 dark:border-slate-700 mb-0">
         <div className="flex items-center gap-0.5">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveView(tab.id)}
               className={`relative px-4 py-2.5 text-sm font-medium transition-colors ${
-                activeView === tab.id ? "text-blue-700" : "text-slate-500 hover:text-slate-800"
+                activeView === tab.id ? "text-blue-700" : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
               }`}
             >
               {tab.label}
@@ -169,8 +169,8 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors",
               filterOpen || activeFilterCount > 0
-                ? "bg-blue-50 text-blue-700 border-blue-200"
-                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200"
+                : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-300"
             )}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -186,7 +186,7 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
 
       {/* Filter Bar */}
       {filterOpen && (
-        <div className="bg-white border border-slate-200 border-t-0 rounded-b-xl px-4 py-3 flex flex-wrap items-center gap-3 mb-0">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 border-t-0 rounded-b-xl px-4 py-3 flex flex-wrap items-center gap-3 mb-0">
           {/* Search */}
           <div className="relative min-w-[200px] flex-1 max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
@@ -195,13 +195,13 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
               placeholder={t("common.search")}
               value={filter.search}
               onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-              className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
             />
           </div>
 
           {/* Task Type */}
           <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-xs text-slate-500 font-medium shrink-0">{t("common.type")}:</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium shrink-0">{t("common.type")}:</span>
             {["", ...Object.keys(labelConfig.taskType)].map((k) => {
               const label = k === "" ? t("common.all") : t(`taskType.${k}`) || k;
               return (
@@ -209,7 +209,7 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
                   className={cn("px-2.5 py-1 text-[11px] font-medium rounded-md border transition-colors",
                     filter.taskType === k
                       ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                      : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-300"
                   )}>
                   {label}
                 </button>
@@ -219,7 +219,7 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
 
           {/* Priority */}
           <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-xs text-slate-500 font-medium shrink-0">{t("common.priority")}:</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium shrink-0">{t("common.priority")}:</span>
             {["", ...PRIORITIES].map((p) => {
               const label = p === "" ? t("common.all") : t(`taskPriority.${p}`) || p;
               return (
@@ -227,7 +227,7 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
                   className={cn("px-2.5 py-1 text-[11px] font-medium rounded-md border transition-colors",
                     filter.priority === p
                       ? "bg-blue-600 text-white border-blue-600"
-                      : cn("bg-white border", p ? PRIORITY_COLORS[p] : "text-slate-600 border-slate-200 hover:border-slate-300")
+                      : cn("bg-white dark:bg-slate-900 border", p ? PRIORITY_COLORS[p] : "text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-300")
                   )}>
                   {label}
                 </button>
@@ -240,7 +240,7 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
             <select
               value={filter.assigneeId}
               onChange={(e) => setFilter({ ...filter, assigneeId: e.target.value })}
-              className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-200 text-slate-600"
+              className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-200 text-slate-600"
             >
               <option value="">{t("common.assignedTo")}: {t("common.all")}</option>
               {employees.map((e) => (
@@ -254,7 +254,7 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
             <span className="text-xs text-slate-400">{filtered.length} / {items.length}</span>
             {activeFilterCount > 0 && (
               <button onClick={clearFilters}
-                className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-500 transition-colors">
+                className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-red-500 transition-colors">
                 <X className="w-3 h-3" /> {t("common.reset")}
               </button>
             )}
@@ -264,7 +264,7 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
 
       {/* Views */}
       <div className="mt-4">
-        {activeView === "summary" && <SummaryView items={filtered} labelConfig={labelConfig} />}
+        {activeView === "summary" && <SummaryView items={filtered} labelConfig={labelConfig} currentUserId={currentUserId} />}
 
         {activeView === "board" && (
           <BoardView
@@ -273,13 +273,14 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
             onStatusChange={handleStatusChange}
             onCreateInColumn={openCreate}
             labelConfig={labelConfig}
+            currentUserId={currentUserId}
           />
         )}
 
         {activeView === "list" && (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-600 text-left border-b border-slate-200">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left border-b border-slate-200">
                 <tr>
                   <th className="px-3 py-2.5 font-medium text-xs uppercase tracking-wide text-slate-500">Code</th>
                   <th className="px-3 py-2.5 font-medium text-xs uppercase tracking-wide text-slate-500">{t("common.title")}</th>
@@ -289,19 +290,19 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
                   <th className="px-3 py-2.5 font-medium text-xs uppercase tracking-wide text-slate-500">Est / Actual</th>
                   <th className="px-3 py-2.5 font-medium text-xs uppercase tracking-wide text-slate-500">{t("common.assignedTo")}</th>
                   <th className="px-3 py-2.5 font-medium text-xs uppercase tracking-wide text-slate-500">{t("tasks.dueDate")}</th>
-                  <th className="px-3 py-2.5 font-medium text-xs uppercase tracking-wide text-slate-500 text-right">{t("common.actions")}</th>
+                  <th className="px-3 py-2.5 font-medium text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 text-right">{t("common.actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-3 py-12 text-center text-slate-400 text-sm">
+                    <td colSpan={9} className="px-3 py-12 text-center text-slate-400 dark:text-slate-500 text-sm">
                       {t("tasks.noTasks")}
                     </td>
                   </tr>
                 )}
                 {filtered.map((task) => (
-                  <tr key={task.id} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
+                  <tr key={task.id} className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                     <td className="px-3 py-2.5 font-mono text-xs text-slate-400">
                       <button onClick={() => openEdit(task)} className="hover:text-blue-600 hover:underline">
                         {task.code}
@@ -309,14 +310,14 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
                     </td>
                     <td className="px-3 py-2.5 max-w-xs">
                       <div className="flex items-center gap-1.5">
-                        {task.billable && <span className="text-[10px] text-emerald-600 font-bold border border-emerald-200 bg-emerald-50 rounded px-1">€</span>}
+                        {task.billable && <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 rounded px-1">€</span>}
                         {task.requiresVideo && <span className="text-[10px]">📹</span>}
-                        <button onClick={() => openEdit(task)} className="text-slate-800 hover:text-blue-600 text-left truncate font-medium">
+                        <button onClick={() => openEdit(task)} className="text-slate-800 dark:text-slate-200 hover:text-blue-600 text-left truncate font-medium">
                           {task.title}
                         </button>
                       </div>
                       {task.customer && (
-                        <div className="text-[11px] text-slate-400 mt-0.5 truncate">
+                        <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
                           {task.customer.businessName ?? task.customer.customerName}
                         </div>
                       )}
@@ -325,7 +326,7 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
                       {(() => {
                         const cfg = labelConfig.taskType[task.taskType];
                         return (
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${cfg?.color ?? "bg-slate-100 text-slate-700"}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${cfg?.color ?? "bg-slate-100 dark:bg-slate-800 text-slate-700"}`}>
                             {t(`taskType.${task.taskType}`) || cfg?.label || task.taskType}
                           </span>
                         );
@@ -335,7 +336,7 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
                       {(() => {
                         const cfg = labelConfig.taskPriority[task.priority];
                         return (
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${cfg?.color ?? "bg-slate-100 text-slate-700"}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${cfg?.color ?? "bg-slate-100 dark:bg-slate-800 text-slate-700"}`}>
                             {t(`taskPriority.${task.priority}`) || cfg?.label || task.priority}
                           </span>
                         );
@@ -345,7 +346,7 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
                       {(() => {
                         const cfg = labelConfig.taskStatus[task.status];
                         return (
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${cfg?.color ?? "bg-slate-100 text-slate-700"}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${cfg?.color ?? "bg-slate-100 dark:bg-slate-800 text-slate-700"}`}>
                             {t(`taskStatus.${task.status}`) || cfg?.label || task.status}
                           </span>
                         );
@@ -362,7 +363,7 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
                         <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0 text-[9px] font-bold text-white">
                           {task.assignedTo.fullName.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-slate-600 text-xs">{task.assignedTo.fullName}</span>
+                        <span className="text-slate-600 dark:text-slate-400 text-xs">{task.assignedTo.fullName}</span>
                       </div>
                     </td>
                     <td className="px-3 py-2.5 text-xs">
@@ -379,12 +380,12 @@ export function TasksClient({ initialItems, employees, customers, templates, cur
                       <div className="inline-flex gap-1">
                         {task.status !== "DONE" && task.status !== "CANCELLED" && (
                           <Link href={`/time-logs?taskId=${task.id}`}
-                            className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md hover:bg-emerald-100 font-medium">
+                            className="text-xs px-2 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded-md hover:bg-emerald-100 dark:hover:bg-emerald-900/40 font-medium">
                             Log
                           </Link>
                         )}
                         <button onClick={() => openEdit(task)}
-                          className="text-xs px-2 py-1 text-slate-500 hover:bg-slate-100 rounded-md">
+                          className="text-xs px-2 py-1 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md">
                           ✎
                         </button>
                       </div>

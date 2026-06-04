@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useCurrentUser } from "@/lib/contexts/current-user-context";
 import { Plus, Pencil, Trash2, Loader2, X } from "lucide-react";
 import { format } from "date-fns";
 import { vi as viLocale } from "date-fns/locale";
@@ -56,37 +56,37 @@ function RuleModal({ rule, onClose, onSaved }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <h2 className="text-[15px] font-semibold text-slate-900">
             {rule ? t("workRules.editRule") : t("workRules.addRule")}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 transition">
             <X className="w-4 h-4" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-3.5">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[12px] font-medium text-slate-700 mb-1.5">{t("workRules.orderNumber")}</label>
+              <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t("workRules.orderNumber")}</label>
               <input type="number" min={1} value={form.ruleNo}
                 onChange={e => setForm(p => ({ ...p, ruleNo: e.target.value }))}
                 required className="form-input" />
             </div>
             <div>
-              <label className="block text-[12px] font-medium text-slate-700 mb-1.5">{t("workRules.effectiveDate")}</label>
+              <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t("workRules.effectiveDate")}</label>
               <input type="date" value={form.effectiveDate}
                 onChange={e => setForm(p => ({ ...p, effectiveDate: e.target.value }))}
                 className="form-input" />
             </div>
           </div>
           <div>
-            <label className="block text-[12px] font-medium text-slate-700 mb-1.5">{t("workRules.ruleTitle")}</label>
+            <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t("workRules.ruleTitle")}</label>
             <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
               required className="form-input" placeholder={t("workRules.titlePlaceholder")} />
           </div>
           <div>
-            <label className="block text-[12px] font-medium text-slate-700 mb-1.5">{t("workRules.ruleContent")}</label>
+            <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t("workRules.ruleContent")}</label>
             <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
               rows={5} required className="form-input resize-none"
               placeholder={t("workRules.contentPlaceholder")} />
@@ -104,10 +104,9 @@ function RuleModal({ rule, onClose, onSaved }: {
 }
 
 export function WorkRulesClient({ initialRules }: Props) {
-  const { data: session } = useSession();
+  const user = useCurrentUser();
   const { t, locale } = useLocale();
-  const role = (session?.user as any)?.role ?? "";
-  const isManager = MANAGER_ROLES.includes(role);
+  const isManager = MANAGER_ROLES.includes(user.role.name);
   const dateFnsLocale = locale === "vi" ? viLocale : undefined;
 
   const [rules, setRules] = useState<Rule[]>(initialRules);
@@ -134,8 +133,8 @@ export function WorkRulesClient({ initialRules }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">{t("workRules.title")}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{t("workRules.subtitle")}</p>
+          <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">{t("workRules.title")}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t("workRules.subtitle")}</p>
         </div>
         {isManager && (
           <button onClick={() => setCreating(true)} className="btn-primary">
@@ -146,9 +145,9 @@ export function WorkRulesClient({ initialRules }: Props) {
 
       <div className="space-y-2.5">
         {rules.map((r, _idx) => (
-          <div key={r.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-card group">
+          <div key={r.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-card group">
             <div className="flex items-start gap-4">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-[13px] font-bold shrink-0 border border-blue-100">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[13px] font-bold shrink-0 border border-blue-100">
                 {r.ruleNo}
               </div>
               <div className="flex-1 min-w-0">
@@ -157,21 +156,21 @@ export function WorkRulesClient({ initialRules }: Props) {
                     <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="text-[13.5px] font-semibold text-slate-900">{r.title}</h3>
                       {r.effectiveDate && (
-                        <span className="text-[11.5px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+                        <span className="text-[11.5px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                           {t("workRules.effective")} {format(new Date(r.effectiveDate), "dd/MM/yyyy", { locale: dateFnsLocale })}
                         </span>
                       )}
                     </div>
-                    <p className="text-[13px] text-slate-600 mt-2 whitespace-pre-wrap leading-relaxed">{r.description}</p>
+                    <p className="text-[13px] text-slate-600 dark:text-slate-400 mt-2 whitespace-pre-wrap leading-relaxed">{r.description}</p>
                   </div>
                   {isManager && (
                     <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => setEditingRule(r)}
-                        className="p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-lg transition">
+                        className="p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg transition">
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => handleDelete(r.id)}
-                        className="p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition">
+                        className="p-1.5 text-slate-400 dark:text-slate-500 hover:bg-red-50 hover:text-red-500 rounded-lg transition">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -183,7 +182,7 @@ export function WorkRulesClient({ initialRules }: Props) {
         ))}
 
         {rules.length === 0 && (
-          <div className="text-center py-16 text-slate-400 text-sm">{t("workRules.noRules")}</div>
+          <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">{t("workRules.noRules")}</div>
         )}
       </div>
 

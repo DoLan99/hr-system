@@ -94,51 +94,51 @@ export function TemplateFormModal({ open, onClose, editing, onSaved }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-xl">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-xl">
         <div className="px-5 py-3.5 border-b flex items-center justify-between">
           <h2 className="text-lg font-semibold">{editing ? `Sửa template ${editing.code}` : "Tạo Template"}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
+          <button onClick={onClose} className="text-slate-400 dark:text-slate-500 hover:text-slate-600">✕</button>
         </div>
 
         <div className="p-5 space-y-3.5">
           {!editing && (
             <div>
-              <label className="text-xs text-slate-600 font-medium">Code (UPPER_SNAKE_CASE) <span className="text-red-500">*</span></label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Code (UPPER_SNAKE_CASE) <span className="text-red-500">*</span></label>
               <input
                 value={form.code}
                 onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
                 placeholder="CODE_REVIEW, DAILY_STANDUP..."
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded font-mono"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded font-mono"
               />
             </div>
           )}
 
           <div>
-            <label className="text-xs text-slate-600 font-medium">Title <span className="text-red-500">*</span></label>
+            <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Title <span className="text-red-500">*</span></label>
             <input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
             />
           </div>
 
           <div>
-            <label className="text-xs text-slate-600 font-medium">Mô tả</label>
+            <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Mô tả</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={2}
-              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-600 font-medium">Task type</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Task type</label>
               <select
                 value={form.defaultTaskType}
                 onChange={(e) => setForm({ ...form, defaultTaskType: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               >
                 {Object.entries(TASK_TYPE_LABELS).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
@@ -146,11 +146,11 @@ export function TemplateFormModal({ open, onClose, editing, onSaved }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-600 font-medium">Priority</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Priority</label>
               <select
                 value={form.defaultPriority}
                 onChange={(e) => setForm({ ...form, defaultPriority: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               >
                 {["CRITICAL", "HIGH", "NORMAL", "LOW"].map((p) => (
                   <option key={p} value={p}>{p}</option>
@@ -158,20 +158,20 @@ export function TemplateFormModal({ open, onClose, editing, onSaved }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-600 font-medium">Estimate (phút)</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Estimate (phút)</label>
               <input
                 type="number"
                 value={form.defaultEstimatedTime}
                 onChange={(e) => setForm({ ...form, defaultEstimatedTime: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-600 font-medium">Bắt buộc video</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Bắt buộc video</label>
               <select
                 value={form.requiresVideo}
                 onChange={(e) => setForm({ ...form, requiresVideo: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               >
                 <option value="default">Theo task type</option>
                 <option value="true">Bắt buộc</option>
@@ -179,29 +179,29 @@ export function TemplateFormModal({ open, onClose, editing, onSaved }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-600 font-medium">Department</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Department</label>
               <input
                 value={form.department}
                 onChange={(e) => setForm({ ...form, department: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-600 font-medium">Link template</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Link template</label>
               <input
                 type="url"
                 value={form.linkTemplate}
                 onChange={(e) => setForm({ ...form, linkTemplate: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               />
             </div>
           </div>
 
-          {error && <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</div>}
+          {error && <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded">{error}</div>}
         </div>
 
-        <div className="px-5 py-3 border-t bg-slate-50 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded">
+        <div className="px-5 py-3 border-t bg-slate-50 dark:bg-slate-800/60 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
             Hủy
           </button>
           <button

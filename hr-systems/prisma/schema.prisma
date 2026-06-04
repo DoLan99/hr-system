@@ -9,106 +9,185 @@ datasource db {
 }
 
 // ─────────────────────────────────────────────────────────────
+// ORGANIZATIONS (Multi-tenant root)
+// ─────────────────────────────────────────────────────────────
+
+model Organization {
+  id                   String           @id @default(cuid())
+  clerkOrgId           String           @unique
+  slug                 String           @unique
+  name                 String
+  logoUrl              String?
+  plan                 Plan             @default(FREE)
+  status               OrgStatus        @default(ACTIVE)
+  seatLimit            Int              @default(1)
+
+  stripeCustomerId     String?          @unique
+  stripeSubscriptionId String?          @unique
+  trialEndsAt          DateTime?
+
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  // Relations to all tenant-scoped models
+  employees            Employee[]
+  roles                Role[]
+  departments          Department[]
+  teams                Team[]
+  teamDepartments      TeamDepartment[]
+  salaryHistory        SalaryHistory[]
+  customers            Customer[]
+  taskTemplates        TaskTemplate[]
+  tasks                Task[]
+  timeLogs             TimeLog[]
+  officeTimes          OfficeTime[]
+  templateSuggestions  TemplateSuggestion[]
+  estimateFlags        EstimateFlag[]
+  salarySummaries      SalarySummary[]
+  payments             Payment[]
+  leaves               Leave[]
+  messages             Message[]
+  messageAuditLogs     MessageAuditLog[]
+  passwordVaults       PasswordVault[]
+  vaultAccessLogs      VaultAccessLog[]
+  workRules            WorkRule[]
+  userSessions         UserSession[]
+  userActivities       UserActivity[]
+  apiAccessLogs        ApiAccessLog[]
+  anomalyAlerts        AnomalyAlert[]
+  auditLogs            AuditLog[]
+  systemLabels         SystemLabel[]
+  reviewCycles         ReviewCycle[]
+  performanceReviews   PerformanceReview[]
+  skills               Skill[]
+  employeeSkills       EmployeeSkill[]
+  roleSkillRequirements RoleSkillRequirement[]
+
+  @@map("organizations")
+}
+
+// ─────────────────────────────────────────────────────────────
 // ROLES & EMPLOYEES
 // ─────────────────────────────────────────────────────────────
 
 model Role {
-  id          Int        @id @default(autoincrement())
-  name        String     @unique
-  label       String
-  description String?
-  color       String?
-  permissions Json       @default("{}")
-  employees   Employee[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @default(now()) @updatedAt
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  label          String
+  description    String?
+  color          String?
+  permissions    Json         @default("{}")
+  seniority      Int          @default(0)
+  employees      Employee[]
+  skillRequirements RoleSkillRequirement[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("roles")
 }
 
-// ─────────────────────────────────────────────────────────────
-// DEPARTMENTS & TEAMS
-// ─────────────────────────────────────────────────────────────
-
 model Department {
-  id          Int              @id @default(autoincrement())
-  name        String           @unique
-  code        String?          @unique
-  description String?
-  headId      Int?
-  head        Employee?        @relation("DeptHead", fields: [headId], references: [id])
-  isActive    Boolean          @default(true)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id             Int              @id @default(autoincrement())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  code           String?
+  description    String?
+  headId         Int?
+  head           Employee?        @relation("DeptHead", fields: [headId], references: [id])
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  teams       TeamDepartment[]
-  employees   Employee[]       @relation("EmployeeDept")
+  teams          TeamDepartment[]
+  employees      Employee[]       @relation("EmployeeDept")
 
+  @@unique([organizationId, name])
+  @@unique([organizationId, code])
+  @@index([organizationId])
   @@map("departments")
 }
 
 model Team {
-  id           Int              @id @default(autoincrement())
-  name         String           @unique
-  code         String?
-  departments  TeamDepartment[]
-  leadId       Int?
-  lead         Employee?        @relation("TeamLead", fields: [leadId], references: [id])
-  description  String?
-  isActive     Boolean          @default(true)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id             Int              @id @default(autoincrement())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  code           String?
+  departments    TeamDepartment[]
+  leadId         Int?
+  lead           Employee?        @relation("TeamLead", fields: [leadId], references: [id])
+  description    String?
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  employees    Employee[]       @relation("EmployeeTeam")
+  employees      Employee[]       @relation("EmployeeTeam")
 
+  @@unique([organizationId, name])
+  @@index([organizationId])
   @@map("teams")
 }
 
 model TeamDepartment {
-  teamId       Int
-  team         Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  departmentId Int
-  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  teamId         Int
+  team           Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  departmentId   Int
+  department     Department   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 
   @@id([teamId, departmentId])
+  @@index([organizationId])
   @@map("team_departments")
 }
 
 model Employee {
-  id              Int        @id @default(autoincrement())
-  employeeCode    String?    @unique
+  id              Int          @id @default(autoincrement())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clerkUserId     String       // Link to Clerk user (no FK — Clerk is source of truth)
+  membershipRole  MembershipRole @default(MEMBER)
+  isOwner         Boolean      @default(false)
+
+  employeeCode    String?
   fullName        String
   avatarUrl       String?
   department      String?
   departmentId    Int?
-  dept            Department? @relation("EmployeeDept", fields: [departmentId], references: [id])
+  dept            Department?  @relation("EmployeeDept", fields: [departmentId], references: [id])
   teamId          Int?
-  team            Team?      @relation("EmployeeTeam", fields: [teamId], references: [id])
+  team            Team?        @relation("EmployeeTeam", fields: [teamId], references: [id])
   roleId          Int
-  role            Role       @relation(fields: [roleId], references: [id])
+  role            Role         @relation(fields: [roleId], references: [id])
   company         String?
-  emailCompany    String    @unique
+  emailCompany    String
   emailGoogle     String?
   emailPrivate    String?
   mobileCompany   String?
-  payType         PayType   @default(HOURLY)
-  hourlyRate      Decimal?  @db.Decimal(10, 2)
-  monthlySalary   Decimal?  @db.Decimal(10, 2)
-  maxHoursMonth   Int       @default(160)
-  bonusMPct       Decimal   @default(0) @db.Decimal(5, 2)
-  bonusAPct       Decimal   @default(0) @db.Decimal(5, 2)
-  bonusTPct       Decimal   @default(0) @db.Decimal(5, 2)
+  payType         PayType      @default(HOURLY)
+  hourlyRate      Decimal?     @db.Decimal(10, 2)
+  monthlySalary   Decimal?     @db.Decimal(10, 2)
+  maxHoursMonth   Int          @default(160)
+  bonusMPct       Decimal      @default(0) @db.Decimal(5, 2)
+  bonusAPct       Decimal      @default(0) @db.Decimal(5, 2)
+  bonusTPct       Decimal      @default(0) @db.Decimal(5, 2)
   driveLink1      String?
   driveLink2      String?
   driveLink3      String?
   driveLink4      String?
   startDate       DateTime?
   managerId       Int?
-  manager         Employee?  @relation("ManagerEmployee", fields: [managerId], references: [id])
-  subordinates    Employee[] @relation("ManagerEmployee")
+  manager         Employee?    @relation("ManagerEmployee", fields: [managerId], references: [id])
+  subordinates    Employee[]   @relation("ManagerEmployee")
   status          EmployeeStatus @default(ACTIVE)
-  locale          String    @default("en")
-  passwordHash    String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  locale          String       @default("en")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   // Department/Team head relations
   departmentsLed       Department[]          @relation("DeptHead")
@@ -133,6 +212,7 @@ model Employee {
   paymentsCreated      Payment[]             @relation("PaymentCreator")
   leaves               Leave[]
   messages             Message[]
+  messageAuditLogs     MessageAuditLog[]     @relation("MessageAuditActor")
   salaryHistory        SalaryHistory[]
   auditLogs            AuditLog[]
   vaultAccesses        VaultAccessLog[]
@@ -143,20 +223,44 @@ model Employee {
   confirmedSummaries   SalarySummary[]       @relation("SummaryConfirmer")
   salaryHistoryMaker   SalaryHistory[]       @relation("SalaryHistoryChanger")
 
+  // Performance Reviews
+  reviewCyclesCreated  ReviewCycle[]         @relation("ReviewCycleCreator")
+  performanceReviews   PerformanceReview[]   @relation("PerfReviewEmployee")
+  performanceReviewsAsManager PerformanceReview[] @relation("PerfReviewManager")
+
+  // Skills
+  employeeSkills       EmployeeSkill[]       @relation("EmpSkillEmployee")
+  verifiedEmployeeSkills EmployeeSkill[]     @relation("EmpSkillVerifier")
+
+  // Tracking layer
+  userSessions         UserSession[]
+  apiAccessLogs        ApiAccessLog[]
+  userActivities       UserActivity[]
+  anomalyAlerts        AnomalyAlert[]        @relation("AnomalyAlertEmployee")
+  anomalyAcksMade      AnomalyAlert[]        @relation("AnomalyAlertAcknowledger")
+
+  @@unique([organizationId, emailCompany])
+  @@unique([organizationId, employeeCode])
+  @@unique([organizationId, clerkUserId])
+  @@index([organizationId])
+  @@index([clerkUserId])
   @@map("employees")
 }
 
 model SalaryHistory {
-  id         Int      @id @default(autoincrement())
-  employeeId Int
-  employee   Employee @relation(fields: [employeeId], references: [id])
-  field      String
-  oldValue   String?
-  newValue   String?
-  changedById Int
-  changedBy  Employee @relation("SalaryHistoryChanger", fields: [changedById], references: [id])
-  changedAt  DateTime @default(now())
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employeeId     Int
+  employee       Employee     @relation(fields: [employeeId], references: [id])
+  field          String
+  oldValue       String?
+  newValue       String?
+  changedById    Int
+  changedBy      Employee     @relation("SalaryHistoryChanger", fields: [changedById], references: [id])
+  changedAt      DateTime     @default(now())
 
+  @@index([organizationId])
   @@map("salary_history")
 }
 
@@ -165,8 +269,10 @@ model SalaryHistory {
 // ─────────────────────────────────────────────────────────────
 
 model Customer {
-  id                Int       @id @default(autoincrement())
-  custId            String?   @unique
+  id                Int          @id @default(autoincrement())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  custId            String?
   customerName      String?
   businessName      String?
   contactPerson     String?
@@ -180,105 +286,116 @@ model Customer {
   preferredLanguage String?
   status            CustomerStatus @default(ACTIVE)
   responsibleStaffId Int?
-  responsibleStaff  Employee? @relation("CustomerStaff", fields: [responsibleStaffId], references: [id])
+  responsibleStaff  Employee?    @relation("CustomerStaff", fields: [responsibleStaffId], references: [id])
   lastContactDate   DateTime?
   notes             String?
-  createdAt         DateTime  @default(now())
+  createdAt         DateTime     @default(now())
 
   tasks         Task[]
   messages      Message[]
   passwordVault PasswordVault[]
 
+  @@unique([organizationId, custId])
+  @@index([organizationId])
   @@map("customers")
 }
 
 // ─────────────────────────────────────────────────────────────
-// TASK TEMPLATES (optional shortcuts)
+// TASK TEMPLATES
 // ─────────────────────────────────────────────────────────────
 
 model TaskTemplate {
-  id                    Int       @id @default(autoincrement())
-  code                  String    @unique
+  id                    Int          @id @default(autoincrement())
+  organizationId        String
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  code                  String
   title                 String
-  description           String?   @db.Text
-  defaultTaskType       TaskType  @default(NORMAL)
+  description           String?      @db.Text
+  defaultTaskType       TaskType     @default(NORMAL)
   defaultEstimatedTime  Int?
-  defaultPriority       Priority  @default(NORMAL)
+  defaultPriority       Priority     @default(NORMAL)
   requiresVideo         Boolean?
   department            String?
   linkTemplate          String?
-  usageCount            Int       @default(0)
-  isActive              Boolean   @default(true)
+  usageCount            Int          @default(0)
+  isActive              Boolean      @default(true)
   createdById           Int?
-  createdBy             Employee? @relation("TemplateCreator", fields: [createdById], references: [id])
-  createdAt             DateTime  @default(now())
+  createdBy             Employee?    @relation("TemplateCreator", fields: [createdById], references: [id])
+  createdAt             DateTime     @default(now())
 
   tasks                 Task[]
   estimateFlags         EstimateFlag[]
 
-  @@index([isActive])
+  @@unique([organizationId, code])
+  @@index([organizationId, isActive])
   @@map("task_templates")
 }
 
 // ─────────────────────────────────────────────────────────────
-// TASKS (unified — replaces task_library + work_list)
+// TASKS
 // ─────────────────────────────────────────────────────────────
 
 model Task {
-  id                  Int        @id @default(autoincrement())
-  code                String     @unique // TSK-0001
+  id                  Int          @id @default(autoincrement())
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  code                String
   title               String
-  description         String?    @db.Text
-  taskType            TaskType   @default(NORMAL)
-  priority            Priority   @default(NORMAL)
-  status              TaskStatus @default(BACKLOG)
-  estimatedTime       Int?       // phút
-  actualTimeTotal     Int        @default(0)
-  progressPct         Int        @default(0)
+  description         String?      @db.Text
+  taskType            TaskType     @default(NORMAL)
+  priority            Priority     @default(NORMAL)
+  status              TaskStatus   @default(BACKLOG)
+  estimatedTime       Int?
+  actualTimeTotal     Int          @default(0)
+  progressPct         Int          @default(0)
 
   parentTaskId        Int?
-  parentTask          Task?      @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: SetNull)
-  subTasks            Task[]     @relation("TaskHierarchy")
+  parentTask          Task?        @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subTasks            Task[]       @relation("TaskHierarchy")
 
   templateId          Int?
   template            TaskTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
   assignedToId        Int
-  assignedTo          Employee   @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  assignedTo          Employee     @relation("TaskAssignee", fields: [assignedToId], references: [id])
   assignedById        Int
-  assignedBy          Employee   @relation("TaskCreator", fields: [assignedById], references: [id])
+  assignedBy          Employee     @relation("TaskCreator", fields: [assignedById], references: [id])
 
   customerId          Int?
-  customer            Customer?  @relation(fields: [customerId], references: [id])
+  customer            Customer?    @relation(fields: [customerId], references: [id])
   projectId           Int?
 
-  billable            Boolean    @default(false)
-  hourlyRateOverride  Decimal?   @db.Decimal(10, 2)
-  requiresVideo       Boolean    @default(false)
+  billable            Boolean      @default(false)
+  hourlyRateOverride  Decimal?     @db.Decimal(10, 2)
+  requiresVideo       Boolean      @default(false)
+  videoLink           String?
 
-  dateCreated         DateTime   @default(now())
+  dateCreated         DateTime     @default(now())
   dateStarted         DateTime?
   dueDate             DateTime?
   dateCompleted       DateTime?
-  isOverdue           Boolean    @default(false)
-  lastUpdate          DateTime   @default(now()) @updatedAt
+  isOverdue           Boolean      @default(false)
+  lastUpdate          DateTime     @default(now()) @updatedAt
   reasonNextAction    String?
 
   timeLogs            TimeLog[]
 
-  @@index([assignedToId, status])
-  @@index([customerId])
-  @@index([parentTaskId])
-  @@index([dueDate])
+  @@unique([organizationId, code])
+  @@index([organizationId, assignedToId, status])
+  @@index([organizationId, customerId])
+  @@index([organizationId, parentTaskId])
+  @@index([organizationId, dueDate])
   @@map("tasks")
 }
 
 // ─────────────────────────────────────────────────────────────
-// TIME LOGS (replaces work_reports)
+// TIME LOGS
 // ─────────────────────────────────────────────────────────────
 
 model TimeLog {
   id                   Int                @id @default(autoincrement())
+  organizationId       String
+  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   taskId               Int
   task                 Task               @relation(fields: [taskId], references: [id], onDelete: Restrict)
   employeeId           Int
@@ -293,13 +410,11 @@ model TimeLog {
   completionPctAfter   Int?
   taskStatusAfter      TaskStatus?
 
-  // proof
   videoCount           Int                @default(0)
   videoDuration        Int                @default(0)
   videoLink            String?
   proofLinks           Json               @default("[]")
 
-  // approval
   creditedMinutes      Int?
   approvalStatus       TimeLogApprovalStatus @default(PENDING)
   approvedById         Int?
@@ -311,9 +426,9 @@ model TimeLog {
 
   createdAt            DateTime           @default(now())
 
-  @@index([taskId])
-  @@index([employeeId, date])
-  @@index([approvalStatus])
+  @@index([organizationId, taskId])
+  @@index([organizationId, employeeId, date])
+  @@index([organizationId, approvalStatus])
   @@map("time_logs")
 }
 
@@ -323,6 +438,8 @@ model TimeLog {
 
 model OfficeTime {
   id                   Int            @id @default(autoincrement())
+  organizationId       String
+  organization         Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   date                 DateTime
   employeeId           Int
   employee             Employee       @relation(fields: [employeeId], references: [id])
@@ -343,16 +460,19 @@ model OfficeTime {
   approvedAt           DateTime?
   createdAt            DateTime       @default(now())
 
-  @@unique([date, employeeId])
+  @@unique([organizationId, date, employeeId])
+  @@index([organizationId])
   @@map("office_time")
 }
 
 // ─────────────────────────────────────────────────────────────
-// TASK REVIEWS — Template Suggestions + Estimate Flags
+// TASK REVIEWS
 // ─────────────────────────────────────────────────────────────
 
 model TemplateSuggestion {
   id                    Int            @id @default(autoincrement())
+  organizationId        String
+  organization          Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   date                  DateTime       @default(now())
   employeeId            Int
   employee              Employee       @relation("SuggestionEmployee", fields: [employeeId], references: [id])
@@ -373,11 +493,14 @@ model TemplateSuggestion {
   reviewedAt            DateTime?
   createdAt             DateTime       @default(now())
 
+  @@index([organizationId])
   @@map("template_suggestions")
 }
 
 model EstimateFlag {
   id                    Int                @id @default(autoincrement())
+  organizationId        String
+  organization          Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   templateId            Int
   template              TaskTemplate       @relation(fields: [templateId], references: [id], onDelete: Cascade)
   flaggedAt             DateTime           @default(now())
@@ -389,6 +512,7 @@ model EstimateFlag {
   reviewedBy            Employee?          @relation("FlagReviewer", fields: [reviewedById], references: [id])
   reviewedAt            DateTime?
 
+  @@index([organizationId])
   @@map("estimate_flags")
 }
 
@@ -397,68 +521,210 @@ model EstimateFlag {
 // ─────────────────────────────────────────────────────────────
 
 model SalarySummary {
-  id                     Int       @id @default(autoincrement())
+  id                     Int          @id @default(autoincrement())
+  organizationId         String
+  organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   employeeId             Int
-  employee               Employee  @relation(fields: [employeeId], references: [id])
+  employee               Employee     @relation(fields: [employeeId], references: [id])
   month                  Int
   year                   Int
-  // Hours
-  creditedHours          Decimal   @default(0) @db.Decimal(8, 2)
-  workHoursReal          Decimal   @default(0) @db.Decimal(8, 2)
-  learnHours             Decimal   @default(0) @db.Decimal(8, 2)
-  billableHours          Decimal   @default(0) @db.Decimal(8, 2)
-  billableAmount         Decimal   @default(0) @db.Decimal(10, 2)
-  deltaHours             Decimal   @default(0) @db.Decimal(8, 2)
-  // Payroll (€)
-  salaryCalc             Decimal   @default(0) @db.Decimal(10, 2)
-  bonusCalc              Decimal   @default(0) @db.Decimal(10, 2)
-  totalCalc              Decimal   @default(0) @db.Decimal(10, 2)
-  salaryPaid             Decimal   @default(0) @db.Decimal(10, 2)
-  bonusPaid              Decimal   @default(0) @db.Decimal(10, 2)
-  moneyReceived          Decimal   @default(0) @db.Decimal(10, 2)
-  deltaMoney             Decimal   @default(0) @db.Decimal(10, 2)
-  // Performance scores
-  scoreWorkSpeed         Decimal?  @db.Decimal(5, 2)
-  scoreQuality           Decimal?  @db.Decimal(5, 2)
-  scoreLearning          Decimal?  @db.Decimal(5, 2)
-  scoreDeadlines         Decimal?  @db.Decimal(5, 2)
-  scoreInitiative        Decimal?  @db.Decimal(5, 2)
-  totalScore             Decimal?  @db.Decimal(5, 2)
-  // Task stats
-  totalTasks             Int       @default(0)
-  completedTasks         Int       @default(0)
-  openTasks              Int       @default(0)
-  overdueTasks           Int       @default(0)
-  totalActualTimeH       Decimal   @default(0) @db.Decimal(8, 2)
-  totalCreditedTimeH     Decimal   @default(0) @db.Decimal(8, 2)
-  completionRate         Decimal   @default(0) @db.Decimal(5, 2)
+  creditedHours          Decimal      @default(0) @db.Decimal(8, 2)
+  workHoursReal          Decimal      @default(0) @db.Decimal(8, 2)
+  learnHours             Decimal      @default(0) @db.Decimal(8, 2)
+  billableHours          Decimal      @default(0) @db.Decimal(8, 2)
+  billableAmount         Decimal      @default(0) @db.Decimal(10, 2)
+  deltaHours             Decimal      @default(0) @db.Decimal(8, 2)
+  salaryCalc             Decimal      @default(0) @db.Decimal(10, 2)
+  bonusCalc              Decimal      @default(0) @db.Decimal(10, 2)
+  totalCalc              Decimal      @default(0) @db.Decimal(10, 2)
+  salaryPaid             Decimal      @default(0) @db.Decimal(10, 2)
+  bonusPaid              Decimal      @default(0) @db.Decimal(10, 2)
+  moneyReceived          Decimal      @default(0) @db.Decimal(10, 2)
+  deltaMoney             Decimal      @default(0) @db.Decimal(10, 2)
+  scoreWorkSpeed         Decimal?     @db.Decimal(5, 2)
+  scoreQuality           Decimal?     @db.Decimal(5, 2)
+  scoreLearning          Decimal?     @db.Decimal(5, 2)
+  scoreDeadlines         Decimal?     @db.Decimal(5, 2)
+  scoreInitiative        Decimal?     @db.Decimal(5, 2)
+  totalScore             Decimal?     @db.Decimal(5, 2)
+  totalTasks             Int          @default(0)
+  completedTasks         Int          @default(0)
+  openTasks              Int          @default(0)
+  overdueTasks           Int          @default(0)
+  totalActualTimeH       Decimal      @default(0) @db.Decimal(8, 2)
+  totalCreditedTimeH     Decimal      @default(0) @db.Decimal(8, 2)
+  completionRate         Decimal      @default(0) @db.Decimal(5, 2)
   tasksByType            Json?
-  // Status
   confirmedById          Int?
-  confirmedBy            Employee? @relation("SummaryConfirmer", fields: [confirmedById], references: [id])
+  confirmedBy            Employee?    @relation("SummaryConfirmer", fields: [confirmedById], references: [id])
   confirmedAt            DateTime?
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
 
-  @@unique([employeeId, month, year])
+  @@unique([organizationId, employeeId, month, year])
+  @@index([organizationId])
   @@map("salary_summary")
 }
 
 model Payment {
-  id           Int         @id @default(autoincrement())
-  date         DateTime
-  employeeId   Int
-  employee     Employee    @relation("PaymentEmployee", fields: [employeeId], references: [id])
-  type         PaymentType
-  amount       Decimal     @db.Decimal(10, 2)
-  notes        String?
-  summaryMonth Int?
-  summaryYear  Int?
-  createdById  Int?
-  createdBy    Employee?   @relation("PaymentCreator", fields: [createdById], references: [id])
-  createdAt    DateTime    @default(now())
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  date           DateTime
+  employeeId     Int
+  employee       Employee     @relation("PaymentEmployee", fields: [employeeId], references: [id])
+  type           PaymentType
+  amount         Decimal      @db.Decimal(10, 2)
+  notes          String?
+  summaryMonth   Int?
+  summaryYear    Int?
+  createdById    Int?
+  createdBy      Employee?    @relation("PaymentCreator", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
 
+  @@index([organizationId])
   @@map("payments")
+}
+
+// ─────────────────────────────────────────────────────────────
+// PERFORMANCE REVIEWS
+// ─────────────────────────────────────────────────────────────
+
+model ReviewCycle {
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  periodType     ReviewPeriodType @default(QUARTERLY)
+  periodStart    DateTime
+  periodEnd      DateTime
+  selfDueDate    DateTime?
+  managerDueDate DateTime?
+  status         ReviewCycleStatus @default(DRAFT)
+  createdById    Int
+  createdBy      Employee     @relation("ReviewCycleCreator", fields: [createdById], references: [id])
+  openedAt       DateTime?
+  closedAt       DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  reviews        PerformanceReview[]
+
+  @@index([organizationId, status])
+  @@map("review_cycles")
+}
+
+model PerformanceReview {
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cycleId        Int
+  cycle          ReviewCycle  @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  employeeId     Int
+  employee       Employee     @relation("PerfReviewEmployee", fields: [employeeId], references: [id])
+  status         PerfReviewStatus @default(PENDING)
+
+  // Auto-KPI snapshot (frozen at cycle creation)
+  kpiSnapshot    Json?
+
+  // Self review section
+  selfScoreWorkSpeed   Decimal? @db.Decimal(5, 2)
+  selfScoreQuality     Decimal? @db.Decimal(5, 2)
+  selfScoreLearning    Decimal? @db.Decimal(5, 2)
+  selfScoreDeadlines   Decimal? @db.Decimal(5, 2)
+  selfScoreInitiative  Decimal? @db.Decimal(5, 2)
+  selfTotalScore       Decimal? @db.Decimal(5, 2)
+  selfHighlights       String?  @db.Text
+  selfChallenges       String?  @db.Text
+  selfGoalsNext        String?  @db.Text
+  selfSubmittedAt      DateTime?
+
+  // Manager review section
+  mgrScoreWorkSpeed    Decimal? @db.Decimal(5, 2)
+  mgrScoreQuality      Decimal? @db.Decimal(5, 2)
+  mgrScoreLearning     Decimal? @db.Decimal(5, 2)
+  mgrScoreDeadlines    Decimal? @db.Decimal(5, 2)
+  mgrScoreInitiative   Decimal? @db.Decimal(5, 2)
+  mgrTotalScore        Decimal? @db.Decimal(5, 2)
+  mgrStrengths         String?  @db.Text
+  mgrAreasToImprove    String?  @db.Text
+  mgrActionItems       String?  @db.Text
+  recommendedSalaryAdjustPct Decimal? @db.Decimal(5, 2)
+  recommendedPromotion String?  @db.Text
+  mgrReviewerId        Int?
+  mgrReviewer          Employee? @relation("PerfReviewManager", fields: [mgrReviewerId], references: [id])
+  mgrSubmittedAt       DateTime?
+  finalizedAt          DateTime?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, cycleId, employeeId])
+  @@index([organizationId, employeeId])
+  @@index([organizationId, status])
+  @@map("performance_reviews")
+}
+
+// ─────────────────────────────────────────────────────────────
+// SKILLS & CAREER PATH
+// ─────────────────────────────────────────────────────────────
+
+model Skill {
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  category       String?
+  description    String?      @db.Text
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  employeeSkills EmployeeSkill[]
+  roleRequirements RoleSkillRequirement[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, category])
+  @@map("skills")
+}
+
+model EmployeeSkill {
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employeeId     Int
+  employee       Employee     @relation("EmpSkillEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  skillId        Int
+  skill          Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  currentLevel   Int          @default(1)
+  targetLevel    Int?
+  notes          String?      @db.Text
+  verifiedById   Int?
+  verifiedBy     Employee?    @relation("EmpSkillVerifier", fields: [verifiedById], references: [id])
+  verifiedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, employeeId, skillId])
+  @@index([organizationId, employeeId])
+  @@map("employee_skills")
+}
+
+model RoleSkillRequirement {
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  roleId         Int
+  role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  skillId        Int
+  skill          Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  requiredLevel  Int          @default(3)
+  importance     SkillImportance @default(IMPORTANT)
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, roleId, skillId])
+  @@index([organizationId, roleId])
+  @@map("role_skill_requirements")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -467,6 +733,8 @@ model Payment {
 
 model Leave {
   id               Int            @id @default(autoincrement())
+  organizationId   String
+  organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   date             DateTime
   employeeId       Int
   employee         Employee       @relation(fields: [employeeId], references: [id])
@@ -483,6 +751,7 @@ model Leave {
   money            Decimal?       @db.Decimal(10, 2)
   createdAt        DateTime       @default(now())
 
+  @@index([organizationId])
   @@map("leaves")
 }
 
@@ -492,6 +761,8 @@ model Leave {
 
 model Message {
   id             Int            @id @default(autoincrement())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   date           DateTime
   time           DateTime?
   channel        MessageChannel?
@@ -515,7 +786,36 @@ model Message {
   netTime        Int?
   createdAt      DateTime       @default(now())
 
+  auditLogs      MessageAuditLog[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, assignedToId])
+  @@index([organizationId, customerId])
+  @@index([organizationId, dueDate])
   @@map("messages")
+}
+
+model MessageAuditLog {
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  messageId      Int?
+  message        Message?     @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  actorId        Int?
+  actor          Employee?    @relation("MessageAuditActor", fields: [actorId], references: [id])
+  action         String
+  changes        Json?
+  ipAddress      String?
+  userAgent      String?      @db.Text
+  sessionId      String?
+  requestId      String?
+  endpoint       String?
+  method         String?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, messageId])
+  @@index([organizationId, requestId])
+  @@map("message_audit_logs")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -523,11 +823,13 @@ model Message {
 // ─────────────────────────────────────────────────────────────
 
 model PasswordVault {
-  id                 Int       @id @default(autoincrement())
+  id                 Int          @id @default(autoincrement())
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   scope              VaultScope
   entityName         String?
   customerId         Int?
-  customer           Customer? @relation(fields: [customerId], references: [id])
+  customer           Customer?    @relation(fields: [customerId], references: [id])
   serviceApp         String?
   loginUrl           String?
   username           String?
@@ -536,26 +838,30 @@ model PasswordVault {
   twoFaMethod        String?
   twoFaBackup        String?
   ownerId            Int?
-  owner              Employee? @relation("VaultOwner", fields: [ownerId], references: [id])
-  createdDate        DateTime  @default(now())
-  lastUpdated        DateTime  @updatedAt
+  owner              Employee?    @relation("VaultOwner", fields: [ownerId], references: [id])
+  createdDate        DateTime     @default(now())
+  lastUpdated        DateTime     @updatedAt
   rotationDays       Int?
   notes              String?
 
   accessLogs VaultAccessLog[]
 
+  @@index([organizationId])
   @@map("password_vault")
 }
 
 model VaultAccessLog {
-  id          Int           @id @default(autoincrement())
-  vaultId     Int
-  vault       PasswordVault @relation(fields: [vaultId], references: [id])
-  accessedById Int
-  accessedBy  Employee      @relation(fields: [accessedById], references: [id])
-  accessedAt  DateTime      @default(now())
-  action      String?
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vaultId        Int
+  vault          PasswordVault @relation(fields: [vaultId], references: [id])
+  accessedById   Int
+  accessedBy     Employee     @relation(fields: [accessedById], references: [id])
+  accessedAt     DateTime     @default(now())
+  action         String?
 
+  @@index([organizationId])
   @@map("vault_access_log")
 }
 
@@ -564,15 +870,151 @@ model VaultAccessLog {
 // ─────────────────────────────────────────────────────────────
 
 model WorkRule {
-  id            Int      @id @default(autoincrement())
-  ruleNo        Int
-  title         String
-  description   String
-  effectiveDate DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ruleNo         Int
+  title          String
+  description    String
+  effectiveDate  DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
+  @@unique([organizationId, ruleNo])
+  @@index([organizationId])
   @@map("work_rules")
+}
+
+// ─────────────────────────────────────────────────────────────
+// USER SESSIONS & API ACCESS LOG
+// ─────────────────────────────────────────────────────────────
+
+model UserSession {
+  id              String         @id @default(uuid())
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employeeId      Int
+  employee        Employee       @relation(fields: [employeeId], references: [id])
+
+  loginAt         DateTime       @default(now())
+  logoutAt        DateTime?
+  lastActivityAt  DateTime       @default(now())
+
+  ipAddress       String?
+  userAgent       String?        @db.Text
+  device          String?
+  browser         String?
+  os              String?
+  country         String?
+  city            String?
+
+  loginMethod     SessionLoginMethod @default(CREDENTIALS)
+  logoutReason    SessionLogoutReason?
+
+  apiAccessLogs   ApiAccessLog[]
+  activities      UserActivity[]
+
+  @@index([organizationId, employeeId, loginAt])
+  @@index([organizationId, lastActivityAt])
+  @@map("user_sessions")
+}
+
+model UserActivity {
+  id              BigInt       @id @default(autoincrement())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employeeId      Int
+  employee        Employee     @relation(fields: [employeeId], references: [id])
+  sessionId       String
+  session         UserSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  date            DateTime     @db.Date
+
+  activeSeconds   Int          @default(0)
+  idleSeconds     Int          @default(0)
+
+  pageViews       Json         @default("[]")
+
+  firstActivityAt DateTime
+  lastActivityAt  DateTime
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([sessionId, date])
+  @@index([organizationId, employeeId, date])
+  @@map("user_activity")
+}
+
+model ApiAccessLog {
+  id             BigInt       @id @default(autoincrement())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  employeeId     Int?
+  employee       Employee?    @relation(fields: [employeeId], references: [id])
+  sessionId      String?
+  session        UserSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  requestId      String?
+  endpoint       String
+  method         String
+  statusCode     Int
+  durationMs     Int
+
+  ipAddress      String?
+  userAgent      String?      @db.Text
+  errorMessage   String?      @db.Text
+  responseSize   Int?
+
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, employeeId, createdAt])
+  @@index([sessionId])
+  @@index([statusCode, createdAt])
+  @@index([endpoint])
+  @@index([requestId])
+  @@map("api_access_log")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ANOMALY ALERTS
+// ─────────────────────────────────────────────────────────────
+
+model AnomalyAlert {
+  id               Int                @id @default(autoincrement())
+  organizationId   String
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type             AnomalyType
+  severity         AnomalySeverity    @default(WARNING)
+
+  employeeId       Int?
+  employee         Employee?          @relation("AnomalyAlertEmployee", fields: [employeeId], references: [id])
+
+  title            String
+  description      String             @db.Text
+
+  auditLogId       Int?
+  sessionId        String?
+  apiAccessLogId   BigInt?
+
+  metadata         Json?
+
+  status           AnomalyStatus      @default(OPEN)
+  acknowledgedById Int?
+  acknowledgedBy   Employee?          @relation("AnomalyAlertAcknowledger", fields: [acknowledgedById], references: [id])
+  acknowledgedAt   DateTime?
+  notes            String?
+
+  dedupKey         String?
+
+  createdAt        DateTime           @default(now())
+
+  @@unique([organizationId, dedupKey])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, employeeId, status])
+  @@index([organizationId, type, createdAt])
+  @@map("anomaly_alerts")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -580,17 +1022,27 @@ model WorkRule {
 // ─────────────────────────────────────────────────────────────
 
 model AuditLog {
-  id          Int      @id @default(autoincrement())
-  tableName   String
-  recordId    Int?
-  action      String
-  oldData     Json?
-  newData     Json?
-  changedById Int?
-  changedBy   Employee? @relation(fields: [changedById], references: [id])
-  changedAt   DateTime @default(now())
-  ipAddress   String?
+  id             Int          @id @default(autoincrement())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  tableName      String
+  recordId       Int?
+  action         String
+  oldData        Json?
+  newData        Json?
+  changedById    Int?
+  changedBy      Employee?    @relation(fields: [changedById], references: [id])
+  changedAt      DateTime     @default(now())
+  ipAddress      String?
+  userAgent      String?
+  sessionId      String?
+  requestId      String?
+  endpoint       String?
+  method         String?
 
+  @@index([organizationId, tableName, recordId])
+  @@index([organizationId, changedById, changedAt])
+  @@index([requestId])
   @@map("audit_log")
 }
 
@@ -599,22 +1051,44 @@ model AuditLog {
 // ─────────────────────────────────────────────────────────────
 
 model SystemLabel {
-  id        Int      @id @default(autoincrement())
-  category  String
-  key       String
-  label     String
-  color     String?
-  sortOrder Int      @default(0)
-  isActive  Boolean  @default(true)
-  updatedAt DateTime @updatedAt
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category       String
+  key            String
+  label          String
+  color          String?
+  sortOrder      Int          @default(0)
+  isActive       Boolean      @default(true)
+  updatedAt      DateTime     @updatedAt
 
-  @@unique([category, key])
+  @@unique([organizationId, category, key])
+  @@index([organizationId])
   @@map("system_label")
 }
 
 // ─────────────────────────────────────────────────────────────
 // ENUMS
 // ─────────────────────────────────────────────────────────────
+
+enum Plan {
+  FREE
+  STARTER
+  TEAM
+}
+
+enum OrgStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+  TRIAL
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
 
 enum PayType {
   HOURLY
@@ -718,4 +1192,66 @@ enum MessageValue {
 enum VaultScope {
   COMPANY
   CUSTOMER
+}
+
+enum SessionLoginMethod {
+  CREDENTIALS
+  SSO
+  TWO_FA
+  CLERK
+}
+
+enum SessionLogoutReason {
+  MANUAL
+  TIMEOUT
+  FORCED
+  UNKNOWN
+}
+
+enum AnomalyType {
+  UNUSUAL_IP
+  OFF_HOURS_VAULT
+  BULK_DELETE
+  TIMELOG_OVER_ESTIMATE
+  FAILED_API_SPIKE
+  LATE_LOGIN
+  NO_ACTIVITY_LONG
+  CONCURRENT_SESSIONS
+}
+
+enum AnomalySeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AnomalyStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  DISMISSED
+}
+
+enum ReviewPeriodType {
+  QUARTERLY
+  ANNUAL
+  CUSTOM
+}
+
+enum ReviewCycleStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+enum PerfReviewStatus {
+  PENDING
+  SELF_DONE
+  COMPLETED
+}
+
+enum SkillImportance {
+  CRITICAL
+  IMPORTANT
+  NICE_TO_HAVE
 }

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
+import { prisma } from "@/lib/prisma";
+import { withContext } from "@/lib/with-context";
+import { requireManager } from "@/lib/api-auth";
 
 const TEAM_SELECT = {
   id: true, name: true, code: true, description: true, isActive: true, leadId: true,
@@ -22,12 +20,9 @@ const updateSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
-  if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+export const PUT = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireManager();
+  if (!auth.ok) return auth.response;
 
   const body = await req.json();
   const parsed = updateSchema.safeParse(body);
@@ -36,12 +31,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const id = Number(params.id);
   const d = parsed.data;
 
-  // Replace department links if provided
   if (d.departmentIds !== undefined) {
     await prisma.teamDepartment.deleteMany({ where: { teamId: id } });
     if (d.departmentIds.length > 0) {
       await prisma.teamDepartment.createMany({
-        data: d.departmentIds.map(deptId => ({ teamId: id, departmentId: deptId })),
+        data: d.departmentIds.map((deptId) => ({ teamId: id, departmentId: deptId })),
       });
     }
   }
@@ -59,15 +53,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   });
 
   return NextResponse.json({ data: team });
-}
+});
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
-  if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+export const DELETE = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireManager();
+  if (!auth.ok) return auth.response;
 
   await prisma.team.delete({ where: { id: Number(params.id) } });
   return NextResponse.json({ ok: true });
-}
+});

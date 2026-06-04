@@ -136,7 +136,7 @@ export function SystemLabelsClient({ initialData }: Props) {
                 className={`relative flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
                   activeCategory === cat.category
                     ? "text-blue-700"
-                    : "text-slate-500 hover:text-slate-800"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
                 }`}
               >
                 {cat.meta.title}
@@ -174,26 +174,26 @@ export function SystemLabelsClient({ initialData }: Props) {
 
       {/* Table */}
       {activeCategoryData && (
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left border-b border-slate-200">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 text-left border-b border-slate-200">
               <tr>
-                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-36">
+                <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide w-36">
                   {t("systemLabels.colKey")}
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-40">
+                <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide w-40">
                   {t("systemLabels.colDefault")}
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                   {t("systemLabels.colDisplay")}
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-48">
+                <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide w-48">
                   {t("systemLabels.colColor")}
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-24 text-center">
+                <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide w-24 text-center">
                   {t("systemLabels.colVisible")}
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-24 text-right">
+                <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide w-24 text-right">
                   {t("systemLabels.colActions")}
                 </th>
               </tr>
@@ -208,14 +208,14 @@ export function SystemLabelsClient({ initialData }: Props) {
                 return (
                   <tr
                     key={key}
-                    className={`border-t border-slate-100 transition-colors ${
+                    className={`border-t border-slate-100 dark:border-slate-800 transition-colors ${
                       isDirty ? "bg-blue-50/40" : "hover:bg-slate-50"
                     }`}
                   >
                     {/* Enum key */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <code className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                        <code className="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
                           {entry.key}
                         </code>
                         {isDirty && (
@@ -237,7 +237,7 @@ export function SystemLabelsClient({ initialData }: Props) {
                         <input
                           value={row.label}
                           onChange={(e) => updateRow(key, { label: e.target.value })}
-                          className="flex-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 max-w-xs"
+                          className="flex-1 px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 max-w-xs"
                           placeholder={entry.defaultLabel}
                         />
                         {/* Live preview */}
@@ -252,7 +252,7 @@ export function SystemLabelsClient({ initialData }: Props) {
                       <div className="relative">
                         <button
                           onClick={() => setColorPicker(isShowingPicker ? null : key)}
-                          className="flex items-center gap-1.5 px-2 py-1 border border-slate-200 rounded-md hover:border-slate-300 transition-colors text-xs text-slate-600"
+                          className="flex items-center gap-1.5 px-2 py-1 border border-slate-200 dark:border-slate-700 rounded-md hover:border-slate-300 transition-colors text-xs text-slate-600"
                         >
                           <span className={`w-4 h-4 rounded flex-shrink-0 ${row.color.split(" ")[0]}`} />
                           {t("systemLabels.selectColor")}
@@ -262,8 +262,8 @@ export function SystemLabelsClient({ initialData }: Props) {
                         </button>
 
                         {isShowingPicker && (
-                          <div className="absolute top-full left-0 mt-1 z-20 bg-white border border-slate-200 rounded-lg shadow-lg p-3 w-64">
-                            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">{t("systemLabels.selectColor")}</p>
+                          <div className="absolute top-full left-0 mt-1 z-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-3 w-64">
+                            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">{t("systemLabels.selectColor")}</p>
                             <div className="grid grid-cols-4 gap-1.5">
                               {COLOR_PRESETS.map((preset) => {
                                 const isSelected = row.color === preset.value;
@@ -307,7 +307,7 @@ export function SystemLabelsClient({ initialData }: Props) {
                         title={row.isActive ? t("systemLabels.showing") : t("systemLabels.hidden")}
                       >
                         <span
-                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white dark:bg-slate-900 shadow transition-transform ${
                             row.isActive ? "translate-x-[18px]" : "translate-x-0.5"
                           }`}
                         />
@@ -318,7 +318,7 @@ export function SystemLabelsClient({ initialData }: Props) {
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => resetRow(key)}
-                        className="text-xs text-slate-400 hover:text-slate-700 hover:bg-slate-100 px-2 py-1 rounded transition-colors"
+                        className="text-xs text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-1 rounded transition-colors"
                         title={t("systemLabels.reset")}
                       >
                         {t("systemLabels.reset")}
@@ -351,7 +351,7 @@ export function SystemLabelsClient({ initialData }: Props) {
                 return map;
               });
             }}
-            className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
+            className="text-sm text-slate-400 dark:text-slate-500 hover:text-slate-200 transition-colors"
           >
             {t("systemLabels.cancel")}
           </button>

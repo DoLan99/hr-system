@@ -2,15 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useCurrentUser } from "@/lib/contexts/current-user-context";
 import { cn } from "@/lib/utils";
 import { NAV_START_EVENT } from "./navigation-progress";
 import { useLocale } from "@/lib/i18n/context";
+import { useSidebar } from "@/lib/contexts/sidebar-context";
 import {
   LayoutDashboard,
   ListTodo,
   Clock4,
   Clock,
+  Gauge,
+  ClipboardList,
+  Award,
   Layers,
   Inbox,
   BarChart3,
@@ -26,6 +30,11 @@ import {
   Shield,
   SlidersHorizontal,
   Settings,
+  Activity,
+  ShieldCheck,
+  ShieldAlert,
+  Crown,
+  X,
 } from "lucide-react";
 
 interface NavItem {
@@ -41,9 +50,9 @@ interface NavSection {
 }
 
 function useNavSections(): NavSection[] {
-  const { data: session } = useSession();
+  const user = useCurrentUser();
   const { t } = useLocale();
-  const role = (session?.user as any)?.role ?? "";
+  const role = user.role.name;
 
   return [
     {
@@ -65,6 +74,22 @@ function useNavSections(): NavSection[] {
       items: [
         { label: t("nav.taskTemplates"), href: "/task-templates", icon: Layers },
         { label: t("nav.taskReviews"), href: "/task-reviews", icon: Inbox },
+        {
+          label: "Capacity",
+          href: "/capacity",
+          icon: Gauge,
+          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"],
+        },
+        {
+          label: "Đánh giá hiệu suất",
+          href: "/performance-reviews",
+          icon: ClipboardList,
+        },
+        {
+          label: "Skill & Career",
+          href: "/skills",
+          icon: Award,
+        },
       ],
     },
     {
@@ -126,6 +151,30 @@ function useNavSections(): NavSection[] {
           icon: SlidersHorizontal,
           roles: ["SUPER_ADMIN", "ADMIN"],
         },
+        {
+          label: "Activity Tracking",
+          href: "/admin/activity",
+          icon: Activity,
+          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD", "HR"],
+        },
+        {
+          label: "Audit Log",
+          href: "/admin/audit",
+          icon: ShieldCheck,
+          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD", "HR"],
+        },
+        {
+          label: "Anomaly Alerts",
+          href: "/admin/anomalies",
+          icon: ShieldAlert,
+          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD", "HR"],
+        },
+        {
+          label: "Billing",
+          href: "/billing",
+          icon: Crown,
+          roles: ["SUPER_ADMIN", "ADMIN"],
+        },
         { label: t("nav.settings"), href: "/settings", icon: Settings },
       ],
     },
@@ -140,18 +189,46 @@ function useNavSections(): NavSection[] {
 export function Sidebar() {
   const pathname = usePathname();
   const navSections = useNavSections();
+  const { mobileOpen, setMobileOpen } = useSidebar();
 
   return (
-    <aside className="w-[220px] bg-slate-900 flex flex-col h-full flex-shrink-0 sidebar-scroll overflow-y-auto">
+    <>
+      {/* Overlay backdrop — chỉ hiện ở mobile khi drawer mở */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      <aside
+        className={cn(
+          "bg-slate-900 flex flex-col h-full flex-shrink-0 sidebar-scroll overflow-y-auto",
+          // Desktop: tĩnh, hiện luôn
+          "md:relative md:w-[220px] md:translate-x-0",
+          // Mobile: fixed overlay, slide in/out
+          "fixed top-0 left-0 z-40 w-[260px] transform transition-transform duration-200",
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+        )}
+      >
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 py-4 border-b border-white/[0.06]">
         <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
           <Building2 className="w-3.5 h-3.5 text-white" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[13px] font-semibold text-white leading-tight truncate">HR System</p>
           <p className="text-[11px] text-slate-500 leading-tight">Hung IT/GM</p>
         </div>
+        {/* Close button — chỉ hiện ở mobile */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="md:hidden p-1 rounded text-slate-400 hover:text-white hover:bg-white/[0.08]"
+          aria-label="Đóng menu"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Nav */}
@@ -205,6 +282,7 @@ export function Sidebar() {
 
       {/* Bottom divider */}
       <div className="h-4 border-t border-white/[0.06]" />
-    </aside>
+      </aside>
+    </>
   );
 }

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 import { ADMIN_ROLES, SUB_MANAGER_ROLES, getManagedEmployeeIds } from "@/lib/managed-scope";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth } from "@/lib/api-auth";
 
 const TASK_TYPES = ["NORMAL", "LEARNING", "NEW_RESEARCH", "MEETING", "ADMIN", "BILLABLE_CLIENT", "INTERNAL"] as const;
 
@@ -23,14 +23,13 @@ const include = {
   reviewedBy: { select: { id: true, fullName: true } },
 } as const;
 
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
-  const userId = Number(session.user.id);
-  const userRole = session.user.role;
+  const userRole = auth.roleName;
   const isAdmin = ADMIN_ROLES.includes(userRole);
   const isSubManager = SUB_MANAGER_ROLES.includes(userRole);
 
@@ -38,12 +37,12 @@ export async function GET(req: NextRequest) {
   if (status) where.status = status;
 
   if (isAdmin) {
-    // see all
+    // see all in org
   } else if (isSubManager) {
-    const managedIds = await getManagedEmployeeIds(userId, userRole);
-    where.employeeId = { in: managedIds ? [...managedIds, userId] : [userId] };
+    const managedIds = await getManagedEmployeeIds(auth.actorId, userRole);
+    where.employeeId = { in: managedIds ? [...managedIds, auth.actorId] : [auth.actorId] };
   } else {
-    where.employeeId = userId;
+    where.employeeId = auth.actorId;
   }
 
   const items = await prisma.templateSuggestion.findMany({
@@ -53,11 +52,11 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ data: items });
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -66,11 +65,11 @@ export async function POST(req: NextRequest) {
   const created = await prisma.templateSuggestion.create({
     data: {
       ...parsed.data,
-      employeeId: Number(session.user.id),
+      employeeId: auth.actorId,
       exampleTaskIds: parsed.data.exampleTaskIds ?? [],
     },
     include,
   });
 
   return NextResponse.json({ data: created }, { status: 201 });
-}
+});

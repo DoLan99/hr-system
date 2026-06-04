@@ -1,9 +1,10 @@
 "use client";
 
-import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { LocaleProvider } from "@/lib/i18n/context";
+import { ThemeProvider } from "@/lib/contexts/theme-context";
+import { Toaster } from "@/components/ui/toaster";
 
 export function Providers({
   children,
@@ -25,12 +26,13 @@ export function Providers({
   );
 
   return (
-    <SessionProvider refetchInterval={5 * 60} refetchOnWindowFocus={true}>
+    <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <LocaleProvider initialLocale={locale}>
           {children}
+          <Toaster />
         </LocaleProvider>
       </QueryClientProvider>
-    </SessionProvider>
+    </ThemeProvider>
   );
 }

@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calcSalary, calcTotalScore } from "@/lib/salary";
 import { z } from "zod";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 
 const schema = z.object({
   month: z.number().int().min(1).max(12),
@@ -13,16 +11,14 @@ const schema = z.object({
   employeeId: z.number().int().optional(),
 });
 
-// Approval statuses that count as "credited"
 const CREDITED_STATUSES = ["AUTO_APPROVED", "APPROVED"] as const;
 
-// POST /api/summary/calculate
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const isManager = MANAGER_ROLES.includes(session.user.role);
-  const selfId = Number(session.user.id);
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
+  const selfId = auth.actorId;
 
   const body = await req.json();
   const parsed = schema.safeParse(body);
@@ -44,26 +40,21 @@ export async function POST(req: NextRequest) {
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 1);
 
-  const results = await Promise.all(empIds.map((empId) => calculateOne(empId, month, year, start, end)));
+  const results = await Promise.all(empIds.map((empId) => calculateOne(auth.orgId, empId, month, year, start, end)));
 
   return NextResponse.json({ data: results.filter(Boolean), count: results.filter(Boolean).length });
-}
+});
 
-async function calculateOne(empId: number, month: number, year: number, start: Date, end: Date) {
-  const emp = await prisma.employee.findUnique({
+async function calculateOne(orgId: string, empId: number, month: number, year: number, start: Date, end: Date) {
+  const emp = await prisma.employee.findFirst({
     where: { id: empId },
     select: {
-      payType: true,
-      hourlyRate: true,
-      monthlySalary: true,
-      bonusMPct: true,
-      bonusAPct: true,
-      bonusTPct: true,
+      payType: true, hourlyRate: true, monthlySalary: true,
+      bonusMPct: true, bonusAPct: true, bonusTPct: true,
     },
   });
   if (!emp) return null;
 
-  // 1. Credited minutes from time_logs (only auto_approved + approved)
   const creditedAgg = await prisma.timeLog.aggregate({
     where: {
       employeeId: empId,
@@ -75,7 +66,6 @@ async function calculateOne(empId: number, month: number, year: number, start: D
   const creditedMinutes = creditedAgg._sum.creditedMinutes ?? 0;
   const totalActualMinutes = creditedAgg._sum.durationMinutes ?? 0;
 
-  // 2. Learn minutes — duration of LEARNING task type (regardless of approval)
   const learnLogs = await prisma.timeLog.findMany({
     where: {
       employeeId: empId,
@@ -88,7 +78,6 @@ async function calculateOne(empId: number, month: number, year: number, start: D
     .filter((l) => CREDITED_STATUSES.includes(l.approvalStatus as any))
     .reduce((s, l) => s + (l.creditedMinutes ?? l.durationMinutes), 0);
 
-  // 3. Billable hours + amount (credited only, billable tasks)
   const billableLogs = await prisma.timeLog.findMany({
     where: {
       employeeId: empId,
@@ -108,14 +97,12 @@ async function calculateOne(empId: number, month: number, year: number, start: D
     return s + ((l.creditedMinutes ?? 0) / 60) * rate;
   }, 0);
 
-  // 4. Office time
   const otAgg = await prisma.officeTime.aggregate({
     where: { employeeId: empId, date: { gte: start, lt: end } },
     _sum: { actualWorked: true },
   });
   const workHoursRealMinutes = otAgg._sum.actualWorked ?? 0;
 
-  // 5. Task stats (current state)
   const [totalTasks, completedTasks, openTasks, overdueTasks, byType] = await Promise.all([
     prisma.task.count({ where: { assignedToId: empId, status: { not: "CANCELLED" } } }),
     prisma.task.count({ where: { assignedToId: empId, status: "DONE" } }),
@@ -140,7 +127,6 @@ async function calculateOne(empId: number, month: number, year: number, start: D
     return acc;
   }, {});
 
-  // 6. Salary
   const salaryResult = calcSalary({
     payType: emp.payType,
     hourlyRate: emp.hourlyRate ? Number(emp.hourlyRate) : null,
@@ -156,9 +142,8 @@ async function calculateOne(empId: number, month: number, year: number, start: D
 
   const deltaHours = workHoursRealMinutes / 60 - salaryResult.creditedHours;
 
-  // Preserve manual scores
-  const existing = await prisma.salarySummary.findUnique({
-    where: { employeeId_month_year: { employeeId: empId, month, year } },
+  const existing = await prisma.salarySummary.findFirst({
+    where: { employeeId: empId, month, year },
   });
 
   const totalScore = existing
@@ -192,10 +177,21 @@ async function calculateOne(empId: number, month: number, year: number, start: D
     ...(totalScore !== null && { totalScore }),
   };
 
-  const summary = await prisma.salarySummary.upsert({
-    where: { employeeId_month_year: { employeeId: empId, month, year } },
-    create: { employeeId: empId, month, year, ...data },
-    update: data,
+  if (existing) {
+    return prisma.salarySummary.update({
+      where: { id: existing.id },
+      data,
+      include: {
+        employee: {
+          select: { id: true, fullName: true, department: true, payType: true, hourlyRate: true, monthlySalary: true },
+        },
+        confirmedBy: { select: { id: true, fullName: true } },
+      },
+    });
+  }
+
+  return prisma.salarySummary.create({
+    data: { employeeId: empId, month, year, ...data },
     include: {
       employee: {
         select: { id: true, fullName: true, department: true, payType: true, hourlyRate: true, monthlySalary: true },
@@ -203,6 +199,4 @@ async function calculateOne(empId: number, month: number, year: number, start: D
       confirmedBy: { select: { id: true, fullName: true } },
     },
   });
-
-  return summary;
 }

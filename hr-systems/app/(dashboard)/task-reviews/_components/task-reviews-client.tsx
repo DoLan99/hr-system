@@ -82,14 +82,14 @@ export function TaskReviewsClient({ initialSuggestions, initialFlags, isManager 
       <div className="flex items-center gap-2">
         <button
           onClick={() => setTab("suggestions")}
-          className={`px-4 py-2 text-sm rounded ${tab === "suggestions" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600"}`}
+          className={`px-4 py-2 text-sm rounded ${tab === "suggestions" ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600"}`}
         >
           {t("taskReviews.suggestions")} ({suggestions.length})
         </button>
         {isManager && (
           <button
             onClick={() => setTab("flags")}
-            className={`px-4 py-2 text-sm rounded ${tab === "flags" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600"}`}
+            className={`px-4 py-2 text-sm rounded ${tab === "flags" ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600"}`}
           >
             {t("taskReviews.estimateFlags")} ({flags.length})
           </button>
@@ -105,9 +105,9 @@ export function TaskReviewsClient({ initialSuggestions, initialFlags, isManager 
       </div>
 
       {tab === "suggestions" && (
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600 text-left">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left">
               <tr>
                 <th className="px-3 py-2.5 font-medium">{t("taskReviews.colCode")}</th>
                 <th className="px-3 py-2.5 font-medium">{t("taskReviews.colTitle")}</th>
@@ -128,11 +128,11 @@ export function TaskReviewsClient({ initialSuggestions, initialFlags, isManager 
                 </tr>
               )}
               {suggestions.map((s) => (
-                <tr key={s.id} className="border-t border-slate-100 hover:bg-slate-50">
+                <tr key={s.id} className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50">
                   <td className="px-3 py-2.5 font-mono text-xs">{s.proposedCode}</td>
                   <td className="px-3 py-2.5">
                     <div className="text-slate-800">{s.proposedTitle}</div>
-                    <div className="text-xs text-slate-500 mt-0.5 max-w-md truncate">{s.reasonNote}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 max-w-md truncate">{s.reasonNote}</div>
                   </td>
                   <td className="px-3 py-2.5 text-xs">{t(`taskType.${s.proposedTaskType}`) || s.proposedTaskType}</td>
                   <td className="px-3 py-2.5">{s.proposedEstimate} {t("taskTemplates.minutes")}</td>
@@ -143,7 +143,7 @@ export function TaskReviewsClient({ initialSuggestions, initialFlags, isManager 
                     </Badge>
                   </td>
                   <td className="px-3 py-2.5">
-                    <a href={s.evidenceVideoLink} target="_blank" rel="noopener" className="text-xs text-blue-600 hover:underline">
+                    <a href={s.evidenceVideoLink} target="_blank" rel="noopener" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
                       ▶
                     </a>
                   </td>
@@ -152,13 +152,13 @@ export function TaskReviewsClient({ initialSuggestions, initialFlags, isManager 
                       <div className="inline-flex gap-1">
                         <button
                           onClick={() => reviewSuggestion(s.id, "approve")}
-                          className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded hover:bg-emerald-100"
+                          className="text-xs px-2 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded hover:bg-emerald-100"
                         >
                           {t("taskReviews.approveSuggestion")}
                         </button>
                         <button
                           onClick={() => reviewSuggestion(s.id, "reject")}
-                          className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100"
+                          className="text-xs px-2 py-1 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded hover:bg-red-100"
                         >
                           {t("taskReviews.rejectSuggestion")}
                         </button>
@@ -173,9 +173,9 @@ export function TaskReviewsClient({ initialSuggestions, initialFlags, isManager 
       )}
 
       {tab === "flags" && (
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600 text-left">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left">
               <tr>
                 <th className="px-3 py-2.5 font-medium">{t("taskReviews.colTemplate")}</th>
                 <th className="px-3 py-2.5 font-medium">{t("taskReviews.colCurrentEstimate")}</th>
@@ -194,9 +194,9 @@ export function TaskReviewsClient({ initialSuggestions, initialFlags, isManager 
                 </tr>
               )}
               {flags.map((f) => (
-                <tr key={f.id} className="border-t border-slate-100 hover:bg-slate-50">
+                <tr key={f.id} className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50">
                   <td className="px-3 py-2.5">
-                    <span className="font-mono text-xs text-slate-500 mr-2">{f.template.code}</span>
+                    <span className="font-mono text-xs text-slate-500 dark:text-slate-400 mr-2">{f.template.code}</span>
                     {f.template.title}
                   </td>
                   <td className="px-3 py-2.5">{f.currentEstimate} {t("taskTemplates.minutes")}</td>
@@ -207,13 +207,13 @@ export function TaskReviewsClient({ initialSuggestions, initialFlags, isManager 
                     <div className="inline-flex gap-1">
                       <button
                         onClick={() => reviewFlag(f.id, "accept")}
-                        className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded hover:bg-emerald-100"
+                        className="text-xs px-2 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded hover:bg-emerald-100"
                       >
                         {t("taskReviews.accept")}
                       </button>
                       <button
                         onClick={() => reviewFlag(f.id, "dismiss")}
-                        className="text-xs px-2 py-1 text-slate-600 hover:bg-slate-100 rounded"
+                        className="text-xs px-2 py-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
                       >
                         {t("taskReviews.dismiss")}
                       </button>

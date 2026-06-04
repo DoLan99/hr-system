@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { prisma } from "@/lib/prisma";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 
 const reviewSchema = z.object({
   status: z.enum(["APPROVED", "REJECTED"]),
@@ -13,16 +11,15 @@ const reviewSchema = z.object({
   money: z.number().min(0).optional(),
 });
 
-// PATCH /api/leave/[id]/review
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PATCH = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const id = Number(params.id);
-  const existing = await prisma.leave.findUnique({ where: { id } });
+  const existing = await prisma.leave.findFirst({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
   const body = await req.json();
@@ -38,7 +35,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       approvedHours: d.status === "APPROVED" ? (d.approvedHours ?? Number(existing.requestedHours)) : null,
       approvalNote: d.approvalNote,
       money: d.money,
-      approvedById: Number(session.user.id),
+      approvedById: auth.actorId,
       approvedAt: new Date(),
     },
     include: {
@@ -48,4 +45,4 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   });
 
   return NextResponse.json({ data: updated });
-}
+});

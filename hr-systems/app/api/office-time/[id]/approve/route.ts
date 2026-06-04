@@ -1,29 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { prisma } from "@/lib/prisma";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 
 const schema = z.object({
   status: z.enum(["APPROVED", "REJECTED"]),
   approvedDelta: z.number().int().optional(),
 });
 
-// PATCH /api/office-time/[id]/approve
-export async function PATCH(
+export const PATCH = withContext(async (
   req: NextRequest,
   { params }: { params: { id: string } }
-) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const isManager = MANAGER_ROLES.includes(session.user.role);
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const id = Number(params.id);
-  const existing = await prisma.officeTime.findUnique({ where: { id } });
+  const existing = await prisma.officeTime.findFirst({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
   const body = await req.json();
@@ -36,7 +33,7 @@ export async function PATCH(
     where: { id },
     data: {
       approvalStatus: status,
-      approvedById: Number(session.user.id),
+      approvedById: auth.actorId,
       approvedAt: new Date(),
       ...(approvedDelta !== undefined && { approvedDelta }),
     },
@@ -44,4 +41,4 @@ export async function PATCH(
   });
 
   return NextResponse.json({ data: updated });
-}
+});

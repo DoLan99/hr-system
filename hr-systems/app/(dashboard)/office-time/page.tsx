@@ -1,24 +1,18 @@
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/current-user";
+import { MANAGER_ROLES } from "@/lib/api-auth";
 import { OfficeTimeClient } from "./_components/office-time-client";
 
 export const metadata = { title: "Office Time — HR System" };
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
 
 interface Props {
   searchParams: { month?: string; year?: string; employeeId?: string };
 }
 
 export default async function OfficeTimePage({ searchParams }: Props) {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
-
-  const userId = Number(session.user.id);
-  const role = session.user.role;
-  const isManager = MANAGER_ROLES.includes(role);
+  const { employee, organization, role } = await requireAuth();
+  const userId = employee.id;
+  const isManager = MANAGER_ROLES.includes(role.name);
 
   const now = new Date();
   const month = Number(searchParams.month ?? now.getMonth() + 1);
@@ -32,21 +26,28 @@ export default async function OfficeTimePage({ searchParams }: Props) {
 
   const [records, employees, targetEmployee] = await Promise.all([
     prisma.officeTime.findMany({
-      where: { employeeId: targetId, date: { gte: start, lt: end } },
+      where: {
+        organizationId: organization.id,
+        employeeId: targetId,
+        date: { gte: start, lt: end },
+      },
       include: { approvedBy: { select: { fullName: true } } },
       orderBy: { date: "asc" },
     }),
 
     isManager
       ? prisma.employee.findMany({
-          where: { status: "ACTIVE" },
+          where: { organizationId: organization.id, status: "ACTIVE" },
           select: { id: true, fullName: true, department: true },
           orderBy: { fullName: "asc" },
         })
       : null,
 
     targetId !== userId
-      ? prisma.employee.findUnique({ where: { id: targetId }, select: { fullName: true } })
+      ? prisma.employee.findFirst({
+          where: { organizationId: organization.id, id: targetId },
+          select: { fullName: true },
+        })
       : null,
   ]);
 

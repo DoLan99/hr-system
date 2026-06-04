@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { prisma } from "@/lib/prisma";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 
 const createSchema = z.object({
   date: z.string().min(1),
@@ -16,10 +14,9 @@ const createSchema = z.object({
   summaryYear: z.number().int().optional(),
 });
 
-// GET /api/payments?employeeId=&month=&year=&type=
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const { searchParams } = new URL(req.url);
   const empId = searchParams.get("employeeId");
@@ -27,11 +24,10 @@ export async function GET(req: NextRequest) {
   const year = searchParams.get("year") ? Number(searchParams.get("year")) : null;
   const type = searchParams.get("type");
 
-  const userId = Number(session.user.id);
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
 
   const where: any = {};
-  if (!isManager) where.employeeId = userId;
+  if (!isManager) where.employeeId = auth.actorId;
   else if (empId) where.employeeId = Number(empId);
 
   if (type) where.type = type;
@@ -48,14 +44,13 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ data: payments });
-}
+});
 
-// POST /api/payments — manager only
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
@@ -72,7 +67,7 @@ export async function POST(req: NextRequest) {
       notes: d.notes,
       summaryMonth: d.summaryMonth,
       summaryYear: d.summaryYear,
-      createdById: Number(session.user.id),
+      createdById: auth.actorId,
     },
     include: {
       employee: { select: { id: true, fullName: true, department: true } },
@@ -81,4 +76,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ data: payment }, { status: 201 });
-}
+});

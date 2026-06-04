@@ -1,44 +1,77 @@
-import { withAuth } from "next-auth/middleware";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-export default withAuth(
-  function middleware(req) {
-    const { pathname } = req.nextUrl;
-    const token = req.nextauth.token;
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/pricing",
+  "/about",
+  "/contact",
+  "/terms",
+  "/privacy",
+  "/sitemap.xml",
+  "/robots.txt",
+  "/opengraph-image(.*)",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/api/webhooks(.*)",
+  "/api/cron(.*)",
+]);
 
-    // Inactive user — force logout
-    if (token?.status === "INACTIVE") {
-      return NextResponse.redirect(new URL("/login?error=inactive", req.url));
-    }
+const NON_TENANT_SUBDOMAINS = new Set([
+  "",
+  "www",
+  "app",
+  "admin",
+  "api",
+  "static",
+  "mail",
+]);
 
-    // Admin-only routes
-    const adminRoutes = ["/employees", "/work-rules"];
-    if (adminRoutes.some((r) => pathname.startsWith(r))) {
-      const allowed = ["SUPER_ADMIN", "ADMIN", "HR"];
-      if (!allowed.includes(token?.role as string)) {
-        return NextResponse.redirect(new URL("/dashboard?error=forbidden", req.url));
-      }
-    }
+function extractSubdomain(host: string | null): string {
+  if (!host) return "";
+  const hostname = host.split(":")[0];
 
-    // Accountant / Admin only — salary routes
-    if (pathname.startsWith("/summary") || pathname.startsWith("/payments")) {
-      const allowed = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD", "ACCOUNTANT"];
-      if (!allowed.includes(token?.role as string)) {
-        return NextResponse.redirect(new URL("/dashboard?error=forbidden", req.url));
-      }
-    }
+  if (hostname === "localhost") return "";
 
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
+  const parts = hostname.split(".");
+
+  if (parts[parts.length - 1] === "localhost") {
+    return parts.slice(0, -1).join(".");
   }
-);
+
+  if (parts.length <= 2) return "";
+
+  return parts.slice(0, -2).join(".");
+}
+
+export default clerkMiddleware(async (auth, req) => {
+  if (!isPublicRoute(req)) {
+    await auth.protect();
+  }
+
+  const host = req.headers.get("host");
+  const subdomain = extractSubdomain(host);
+  const isTenant = subdomain && !NON_TENANT_SUBDOMAINS.has(subdomain);
+
+  const requestId = req.headers.get("x-request-id") ?? crypto.randomUUID();
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-request-id", requestId);
+
+  if (isTenant) {
+    requestHeaders.set("x-tenant-slug", subdomain);
+  }
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  response.headers.set("x-request-id", requestId);
+  if (isTenant) {
+    response.headers.set("x-tenant-slug", subdomain);
+  }
+  return response;
+});
 
 export const config = {
   matcher: [
-    "/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/(api|trpc)(.*)",
   ],
 };

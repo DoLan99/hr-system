@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 import { ADMIN_ROLES, SUB_MANAGER_ROLES, getManagedEmployeeIds } from "@/lib/managed-scope";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth } from "@/lib/api-auth";
 
 const updateSchema = z.object({
   date: z.string().optional(),
@@ -28,14 +28,8 @@ const include = {
   employee: { select: { id: true, fullName: true, avatarUrl: true } },
   task: {
     select: {
-      id: true,
-      code: true,
-      title: true,
-      taskType: true,
-      estimatedTime: true,
-      billable: true,
-      customerId: true,
-      assignedToId: true,
+      id: true, code: true, title: true, taskType: true,
+      estimatedTime: true, billable: true, customerId: true, assignedToId: true,
       customer: { select: { id: true, customerName: true, businessName: true } },
     },
   },
@@ -43,7 +37,7 @@ const include = {
 };
 
 async function findLog(id: string) {
-  return prisma.timeLog.findUnique({
+  return prisma.timeLog.findFirst({
     where: { id: Number(id) },
     include,
   });
@@ -58,36 +52,32 @@ async function checkApprovalAccess(log: { task: { assignedToId: number } }, user
   return false;
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const log = await findLog(params.id);
   if (!log) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
-  const userId = Number(session.user.id);
-  if (log.employeeId !== userId) {
-    const ok = await checkApprovalAccess(log, userId, session.user.role);
+  if (log.employeeId !== auth.actorId) {
+    const ok = await checkApprovalAccess(log, auth.actorId, auth.roleName);
     if (!ok) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   return NextResponse.json({ data: log });
-}
+});
 
-// PUT — owner can edit within 24h window
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PUT = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const log = await findLog(params.id);
   if (!log) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
-  const userId = Number(session.user.id);
-  const userRole = session.user.role;
-  const isAdmin = ADMIN_ROLES.includes(userRole);
+  const isAdmin = ADMIN_ROLES.includes(auth.roleName);
 
   if (!isAdmin) {
-    if (log.employeeId !== userId) {
+    if (log.employeeId !== auth.actorId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const ageMs = Date.now() - log.createdAt.getTime();
@@ -127,21 +117,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   });
 
   return NextResponse.json({ data: updated });
-}
+});
 
-// DELETE
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const DELETE = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const log = await findLog(params.id);
   if (!log) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
-  const userId = Number(session.user.id);
-  const userRole = session.user.role;
-  const isAdmin = ADMIN_ROLES.includes(userRole);
-
-  if (!isAdmin && log.employeeId !== userId) {
+  const isAdmin = ADMIN_ROLES.includes(auth.roleName);
+  if (!isAdmin && log.employeeId !== auth.actorId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -154,19 +140,16 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   });
 
   return NextResponse.json({ success: true });
-}
+});
 
-// PATCH — manager approval / rejection (action via ?action=approve|reject)
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PATCH = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const log = await findLog(params.id);
   if (!log) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
-  const userId = Number(session.user.id);
-  const userRole = session.user.role;
-  const ok = await checkApprovalAccess(log, userId, userRole);
+  const ok = await checkApprovalAccess(log, auth.actorId, auth.roleName);
   if (!ok) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const action = new URL(req.url).searchParams.get("action") ?? "approve";
@@ -182,7 +165,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         approvalStatus: "REJECTED",
         rejectionReason: parsed.data.rejectionReason,
         creditedMinutes: 0,
-        approvedById: userId,
+        approvedById: auth.actorId,
         approvedAt: new Date(),
       },
       include,
@@ -190,7 +173,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ data: updated });
   }
 
-  // approve
   const parsed = approveSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
@@ -205,10 +187,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       approvedMinutes: parsed.data.approvedMinutes,
       creditedMinutes: parsed.data.approvedMinutes,
       rating: parsed.data.rating ?? null,
-      approvedById: userId,
+      approvedById: auth.actorId,
       approvedAt: new Date(),
     },
     include,
   });
   return NextResponse.json({ data: updated });
-}
+});

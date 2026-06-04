@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useSession } from "next-auth/react";
+import { useCurrentUser } from "@/lib/contexts/current-user-context";
 import {
   ChevronLeft, ChevronRight, RefreshCw, Star,
   CheckCircle2, Clock,
-  Loader2, BarChart2,
+  Loader2, BarChart2, TrendingUp, X,
 } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 import { vi as viLocale } from "date-fns/locale";
@@ -13,6 +13,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { SCORE_LABELS } from "@/lib/salary";
 import { useLocale } from "@/lib/i18n/context";
 import { ScoreModal } from "./score-modal";
+import { TrendChart } from "./trend-chart";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
 
@@ -60,10 +61,9 @@ const n = (v: any) => Number(v ?? 0);
 const h = (v: any) => n(v).toFixed(1);
 
 export function SummaryClient({ initialSummaries, initialMonth, initialYear, employeeId }: Props) {
-  const { data: session } = useSession();
+  const user = useCurrentUser();
   const { t, locale } = useLocale();
-  const role = (session?.user as any)?.role ?? "";
-  const isManager = MANAGER_ROLES.includes(role);
+  const isManager = MANAGER_ROLES.includes(user.role.name);
   const dateFnsLocale = locale === "vi" ? viLocale : undefined;
 
   const [viewDate, setViewDate] = useState(new Date(initialYear, initialMonth - 1));
@@ -71,6 +71,7 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
   const [calculating, setCalculating] = useState(false);
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
   const [scoringItem, setScoringItem] = useState<SummaryItem | null>(null);
+  const [trendItem, setTrendItem] = useState<SummaryItem | null>(null);
 
   const month = viewDate.getMonth() + 1;
   const year = viewDate.getFullYear();
@@ -142,16 +143,16 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
   return (
     <div className="space-y-5">
       {/* Month navigator */}
-      <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-5 py-3">
+      <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-3">
         <button onClick={() => navigateMonth(-1)}
-          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition">
+          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition">
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <span className="text-sm font-semibold text-slate-800 capitalize">
+        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 capitalize">
           {format(viewDate, "MMMM yyyy", { locale: dateFnsLocale })}
         </span>
         <button onClick={() => navigateMonth(1)}
-          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition">
+          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition">
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
@@ -179,7 +180,7 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
               { label: t("summary.totalBonus"), value: formatCurrency(totals.bonusCalc, "€"), color: "text-green-600" },
               { label: t("summary.totalToPay"), value: formatCurrency(totals.totalCalc, "€"), color: "text-blue-700" },
             ].map(s => (
-              <div key={s.label} className="bg-white border border-slate-200 rounded-xl px-4 py-3">
+              <div key={s.label} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
                 <p className="text-xs text-slate-500">{s.label}</p>
                 <p className={cn("text-lg font-bold mt-0.5", s.color)}>{s.value}</p>
               </div>
@@ -188,16 +189,16 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
 
           {/* Manager: table view */}
           {summaries.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-8 text-center">
               <BarChart2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
               <p className="text-sm text-slate-500">{t("summary.noData")}</p>
             </div>
           ) : (
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    <tr className="bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                       <th className="text-left px-4 py-2.5">{t("summary.colEmployee")}</th>
                       <th className="text-center px-3 py-2.5">{t("summary.colCreditedHours")}</th>
                       <th className="text-center px-3 py-2.5">{t("summary.colActualHours")}</th>
@@ -216,9 +217,9 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
                       const dh = n(s.deltaHours);
                       const confirmed = !!s.confirmedAt;
                       return (
-                        <tr key={s.id} className="hover:bg-slate-50 transition">
+                        <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition">
                           <td className="px-4 py-2.5">
-                            <p className="font-medium text-slate-900 text-xs">{s.employee.fullName}</p>
+                            <p className="font-medium text-slate-900 dark:text-slate-100 text-xs">{s.employee.fullName}</p>
                             <p className="text-xs text-slate-400">{s.employee.department}</p>
                           </td>
                           <td className="px-3 py-2.5 text-center text-xs font-mono">{h(s.creditedHours)}h</td>
@@ -254,7 +255,7 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
                                 <CheckCircle2 className="w-3 h-3" />{t("summary.confirmed")}
                               </span>
                             ) : (
-                              <span className="text-xs text-slate-400 flex items-center justify-center gap-1">
+                              <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center justify-center gap-1">
                                 <Clock className="w-3 h-3" />{t("summary.notConfirmed")}
                               </span>
                             )}
@@ -270,10 +271,14 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
                                 className="p-1.5 rounded-lg hover:bg-yellow-50 text-yellow-500 transition" title={t("summary.performance")}>
                                 <Star className="w-3.5 h-3.5" />
                               </button>
+                              <button onClick={() => setTrendItem(s)}
+                                className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition" title="Xu hướng hiệu suất">
+                                <TrendingUp className="w-3.5 h-3.5" />
+                              </button>
                               {!confirmed && (
                                 <button onClick={() => confirmSummary(s.id)}
                                   disabled={confirmingId === s.id}
-                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 text-xs font-medium transition">
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-50 dark:bg-green-950/40 hover:bg-green-100 dark:hover:bg-green-900/40 text-green-600 dark:text-green-400 text-xs font-medium transition">
                                   {confirmingId === s.id
                                     ? <Loader2 className="w-3 h-3 animate-spin" />
                                     : <CheckCircle2 className="w-3 h-3" />}
@@ -297,7 +302,7 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
       {!isManager && (
         <div className="space-y-4">
           {!myRecord ? (
-            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-8 text-center">
               <BarChart2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
               <p className="text-sm text-slate-500">{t("summary.noDataMonth")}</p>
             </div>
@@ -315,17 +320,17 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
                     color: Math.abs(n(myRecord.deltaHours)) < 1 ? "text-green-600" : "text-orange-500",
                   },
                 ].map(c => (
-                  <div key={c.label} className="bg-white border border-slate-200 rounded-xl px-4 py-3">
+                  <div key={c.label} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
                     <p className="text-xs text-slate-500">{c.label}</p>
                     <p className={cn("text-xl font-bold mt-0.5", c.color)}>{c.value}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{c.sub}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{c.sub}</p>
                   </div>
                 ))}
               </div>
 
               {/* Salary section */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-slate-800 mb-3">{t("summary.monthlySalary")} {month}/{year}</h3>
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3">{t("summary.monthlySalary")} {month}/{year}</h3>
                 <div className="space-y-2">
                   {[
                     { label: t("summary.calcSalary"), value: formatCurrency(n(myRecord.salaryCalc), "€") },
@@ -339,7 +344,7 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
                     },
                   ].map((row, i) => (
                     <div key={i}>
-                      {row.divider && <div className="border-t border-slate-100 my-2" />}
+                      {row.divider && <div className="border-t border-slate-100 dark:border-slate-800 my-2" />}
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-slate-500">{row.label}</span>
                         <span className={cn(row.bold && "font-bold text-base", row.color ?? "text-slate-800")}>
@@ -352,8 +357,8 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
               </div>
 
               {/* Work stats */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-slate-800 mb-3">{t("summary.colTasks")}</h3>
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3">{t("summary.colTasks")}</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
                     { label: t("summary.totalTasks"), value: myRecord.totalTasks },
@@ -363,25 +368,33 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
                   ].map(s => (
                     <div key={s.label} className="text-center">
                       <p className={cn("text-2xl font-bold", s.color ?? "text-slate-700")}>{s.value}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{s.label}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{s.label}</p>
                     </div>
                   ))}
                 </div>
                 <div className="mt-3">
-                  <div className="flex justify-between text-xs text-slate-500 mb-1">
+                  <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                     <span>{t("summary.completionRate")}</span>
                     <span className="font-medium">{n(myRecord.completionRate).toFixed(1)}%</span>
                   </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div className="h-full bg-green-500 rounded-full transition-all"
                       style={{ width: `${Math.min(100, n(myRecord.completionRate))}%` }} />
                   </div>
                 </div>
               </div>
 
+              {/* 6-month trend */}
+              <TrendChart
+                employeeId={myRecord.employeeId}
+                endMonth={month}
+                endYear={year}
+                months={6}
+              />
+
               {/* Performance scores */}
               {myRecord.totalScore && (
-                <div className="bg-white border border-slate-200 rounded-xl p-5">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-semibold text-slate-800">{t("summary.performance")}</h3>
                     <span className={cn(
@@ -397,12 +410,12 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
                       if (!val) return null;
                       return (
                         <div key={key} className="flex items-center gap-3">
-                          <span className="text-xs text-slate-500 w-40">{SCORE_LABELS[key]}</span>
-                          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <span className="text-xs text-slate-500 dark:text-slate-400 w-40">{SCORE_LABELS[key]}</span>
+                          <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div className={cn("h-full rounded-full", val >= 8 ? "bg-green-500" : val >= 6 ? "bg-blue-500" : "bg-orange-400")}
                               style={{ width: `${val * 10}%` }} />
                           </div>
-                          <span className="text-xs font-bold text-slate-700 w-6 text-right">{val}</span>
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 w-6 text-right">{val}</span>
                         </div>
                       );
                     })}
@@ -412,19 +425,44 @@ export function SummaryClient({ initialSummaries, initialMonth, initialYear, emp
 
               {/* Status */}
               {myRecord.confirmedAt ? (
-                <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3">
                   <CheckCircle2 className="w-4 h-4" />
                   {t("summary.confirmed")} · {myRecord.confirmedBy?.fullName}
                   {" · "}{format(new Date(myRecord.confirmedAt), "dd/MM/yyyy HH:mm")}
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-yellow-600 text-sm bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2 text-yellow-600 text-sm bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-800 rounded-xl px-4 py-3">
                   <Clock className="w-4 h-4" />
                   {t("summary.waitingConfirm")}
                 </div>
               )}
             </>
           )}
+        </div>
+      )}
+
+      {/* Trend modal (manager) */}
+      {trendItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setTrendItem(null)}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Xu hướng hiệu suất</h3>
+                <p className="text-xs text-slate-500">{trendItem.employee.fullName}</p>
+              </div>
+              <button onClick={() => setTrendItem(null)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4">
+              <TrendChart
+                employeeId={trendItem.employeeId}
+                endMonth={month}
+                endYear={year}
+                months={6}
+              />
+            </div>
+          </div>
         </div>
       )}
 

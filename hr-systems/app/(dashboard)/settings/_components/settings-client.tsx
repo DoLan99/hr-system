@@ -20,14 +20,14 @@ export function SettingsClient() {
   return (
     <div className="max-w-2xl space-y-6">
       {/* Language Section */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+          <div className="w-8 h-8 bg-blue-50 dark:bg-blue-950/40 rounded-lg flex items-center justify-center">
             <Globe className="w-4 h-4 text-blue-600" />
           </div>
           <div>
             <p className="text-[14px] font-semibold text-slate-900">{t("settings.language")}</p>
-            <p className="text-[12px] text-slate-500 mt-0.5">{t("settings.languageDescription")}</p>
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{t("settings.languageDescription")}</p>
           </div>
         </div>
 
@@ -43,7 +43,7 @@ export function SettingsClient() {
                   "w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all text-left",
                   isSelected
                     ? "border-blue-500 bg-blue-50"
-                    : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                    : "border-slate-200 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -57,7 +57,7 @@ export function SettingsClient() {
                     )}>
                       {LOCALE_LABELS[loc]}
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
                       {loc === "en" ? "English (Default)" : "Tiếng Việt"}
                     </p>
                   </div>
@@ -73,9 +73,9 @@ export function SettingsClient() {
         </div>
 
         {saved && (
-          <div className="mx-4 mb-4 px-3.5 py-2.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2">
+          <div className="mx-4 mb-4 px-3.5 py-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-2">
             <Check className="w-3.5 h-3.5 text-emerald-600" />
-            <p className="text-[13px] text-emerald-700 font-medium">{t("settings.saved")}</p>
+            <p className="text-[13px] text-emerald-700 dark:text-emerald-300 font-medium">{t("settings.saved")}</p>
           </div>
         )}
       </div>

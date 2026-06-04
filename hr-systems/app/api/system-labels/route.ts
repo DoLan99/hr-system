@@ -1,24 +1,24 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_ROLES } from "@/lib/managed-scope";
 import { DEFAULT_LABELS, type LabelCategory } from "@/lib/system-labels";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth } from "@/lib/api-auth";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async () => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const rows = await prisma.systemLabel.findMany({
     orderBy: [{ category: "asc" }, { sortOrder: "asc" }, { key: "asc" }],
   });
 
   return Response.json({ data: rows });
-}
+});
 
-export async function PUT(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  if (!ADMIN_ROLES.includes((session.user as any).role)) {
+export const PUT = withContext(async (req: Request) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
+  if (!ADMIN_ROLES.includes(auth.roleName)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -41,37 +41,33 @@ export async function PUT(req: Request) {
     return Response.json({ error: "category/key không hợp lệ" }, { status: 400 });
   }
 
-  const result = await prisma.systemLabel.upsert({
-    where: { category_key: { category, key } },
-    update: {
-      label,
-      color: color ?? null,
-      isActive: isActive ?? true,
-      sortOrder: sortOrder ?? 0,
-    },
-    create: {
-      category,
-      key,
-      label,
-      color: color ?? null,
-      isActive: isActive ?? true,
-      sortOrder: sortOrder ?? 0,
-    },
+  const existing = await prisma.systemLabel.findFirst({
+    where: { category, key },
   });
 
-  return Response.json({ data: result });
-}
+  const data = {
+    label,
+    color: color ?? null,
+    isActive: isActive ?? true,
+    sortOrder: sortOrder ?? 0,
+  };
 
-export async function DELETE(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  if (!ADMIN_ROLES.includes((session.user as any).role)) {
+  const result = existing
+    ? await prisma.systemLabel.update({ where: { id: existing.id }, data })
+    : await prisma.systemLabel.create({ data: { category, key, ...data } });
+
+  return Response.json({ data: result });
+});
+
+export const DELETE = withContext(async (req: Request) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
+  if (!ADMIN_ROLES.includes(auth.roleName)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { category, key } = await req.json();
-
   await prisma.systemLabel.deleteMany({ where: { category, key } });
 
   return Response.json({ ok: true });
-}
+});

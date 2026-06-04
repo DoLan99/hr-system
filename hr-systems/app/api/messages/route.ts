@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logMessageAudit } from "@/lib/message-audit";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -16,16 +17,19 @@ const createSchema = z.object({
   dueDate: z.string().optional(),
   status: z.enum(["OPEN", "IN_PROGRESS", "CLOSED"]).optional(),
   linkFile: z.string().optional(),
+  followUpNote: z.string().optional(),
+  companyAnswer: z.string().optional(),
   tags: z.string().optional(),
   valueType: z.enum(["A", "B", "C"]).optional(),
-  supportTime: z.number().int().optional(),
-  benefitTime: z.number().int().optional(),
+  supportTime: z.number().int().min(0).optional(),
+  benefitTime: z.number().int().min(0).optional(),
 });
 
-// GET /api/messages?status=OPEN&customerId=&assignedToId=
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
+
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
@@ -33,12 +37,22 @@ export async function GET(req: NextRequest) {
   const assignedToId = searchParams.get("assignedToId");
   const channel = searchParams.get("channel");
   const search = searchParams.get("search") ?? "";
+  const overdue = searchParams.get("overdue") === "true";
+  const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
+  const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") ?? "50")));
 
   const where: any = {};
+
+  if (!isManager) where.assignedToId = auth.actorId;
+
   if (status) where.status = status;
   if (customerId) where.customerId = Number(customerId);
   if (assignedToId) where.assignedToId = Number(assignedToId);
   if (channel) where.channel = channel;
+  if (overdue) {
+    where.dueDate = { lt: new Date() };
+    where.status = { not: "CLOSED" };
+  }
   if (search) {
     where.OR = [
       { subject: { contains: search, mode: "insensitive" } },
@@ -48,30 +62,38 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  const messages = await prisma.message.findMany({
-    where,
-    include: {
-      customer: { select: { id: true, customerName: true, businessName: true } },
-      assignedTo: { select: { id: true, fullName: true } },
-    },
-    orderBy: { date: "desc" },
-  });
+  const [messages, total] = await prisma.$transaction([
+    prisma.message.findMany({
+      where,
+      include: {
+        customer: { select: { id: true, customerName: true, businessName: true } },
+        assignedTo: { select: { id: true, fullName: true } },
+      },
+      orderBy: { date: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.message.count({ where }),
+  ]);
 
-  return NextResponse.json({ data: messages });
-}
+  const now = new Date();
+  const data = messages.map(m => ({
+    ...m,
+    isOverdue: !!(m.dueDate && m.status !== "CLOSED" && m.dueDate < now),
+  }));
 
-// POST /api/messages
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return NextResponse.json({ data, total, page, limit, totalPages: Math.ceil(total / limit) });
+});
+
+export const POST = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
   const d = parsed.data;
-
-  // netTime = benefitTime - supportTime
   const netTime = (d.benefitTime ?? 0) - (d.supportTime ?? 0);
 
   const message = await prisma.message.create({
@@ -83,10 +105,12 @@ export async function POST(req: NextRequest) {
       subject: d.subject,
       messageSummary: d.messageSummary,
       actionRequired: d.actionRequired,
-      assignedToId: d.assignedToId ?? Number(session.user.id),
+      assignedToId: d.assignedToId ?? auth.actorId,
       dueDate: d.dueDate ? new Date(d.dueDate) : null,
       status: d.status ?? "OPEN",
       linkFile: d.linkFile,
+      followUpNote: d.followUpNote,
+      companyAnswer: d.companyAnswer,
       tags: d.tags,
       valueType: d.valueType,
       supportTime: d.supportTime,
@@ -99,5 +123,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  await logMessageAudit({ messageId: message.id, actorId: auth.actorId, action: "CREATED" });
+
   return NextResponse.json({ data: message }, { status: 201 });
-}
+});

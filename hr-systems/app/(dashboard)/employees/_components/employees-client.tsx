@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useSession } from "next-auth/react";
+import { useCurrentUser } from "@/lib/contexts/current-user-context";
 import { Plus, Search, Pencil, UserX, UserCheck, ExternalLink, Mail, Phone } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n/context";
@@ -44,19 +44,19 @@ interface Props {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  ACTIVE: "bg-green-100 text-green-700",
-  PROBATION: "bg-yellow-100 text-yellow-700",
-  INACTIVE: "bg-slate-100 text-slate-500",
+  ACTIVE: "bg-green-100 dark:bg-green-950/60 text-green-700",
+  PROBATION: "bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700",
+  INACTIVE: "bg-slate-100 dark:bg-slate-800 text-slate-500",
 };
 
 const DEPARTMENTS = ["All", "Dev", "Design", "Admin", "HR", "Sales", "Support", "Management"];
 
 export function EmployeesClient({ initialEmployees, roles, departments, teams }: Props) {
-  const { data: session } = useSession();
+  const user = useCurrentUser();
   const { t } = useLocale();
-  const role = (session?.user as any)?.role ?? "";
+  const role = user.role.name;
   const isManager = MANAGER_ROLES.includes(role);
-  const currentUserId = Number((session?.user as any)?.id ?? 0);
+  const currentUserId = user.employeeId;
 
   const [employees, setEmployees] = useState<EmployeeItem[]>(initialEmployees);
   const [search, setSearch] = useState("");
@@ -111,8 +111,8 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">{t("employees.title")}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{t("employees.subtitle")}</p>
+          <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">{t("employees.title")}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t("employees.subtitle")}</p>
         </div>
         {isManager && (
           <button onClick={() => setCreating(true)} className="btn-primary">
@@ -129,7 +129,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
           { label: t("employees.resigned"), value: stats.inactive, color: "text-slate-400" },
         ].map(s => (
           <div key={s.label} className="stat-card">
-            <p className="text-[11.5px] font-medium text-slate-500 uppercase tracking-wide">{s.label}</p>
+            <p className="text-[11.5px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{s.label}</p>
             <p className={`text-[26px] font-bold mt-1 leading-none ${s.color}`}>{s.value}</p>
           </div>
         ))}
@@ -148,7 +148,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
           {["ALL", "ACTIVE", "PROBATION", "INACTIVE"].map(s => (
             <button key={s} onClick={() => setFilterStatus(s)}
               className={cn("px-3 py-1.5 rounded-lg text-[12px] font-medium transition",
-                filterStatus === s ? "bg-blue-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50")}>
+                filterStatus === s ? "bg-blue-600 text-white shadow-sm" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50")}>
               {s === "ALL" ? t("common.all") : (
                 s === "ACTIVE" ? t("employees.working") :
                 s === "PROBATION" ? t("employees.probation") :
@@ -162,7 +162,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
           {DEPARTMENTS.map(d => (
             <button key={d} onClick={() => setFilterDept(d)}
               className={cn("px-3 py-1.5 rounded-lg text-[12px] font-medium transition",
-                filterDept === d ? "bg-slate-800 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50")}>
+                filterDept === d ? "bg-slate-800 text-white shadow-sm" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50")}>
               {d === "All" ? t("employees.allDepts") : d}
             </button>
           ))}
@@ -172,7 +172,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {filtered.map(emp => {
-          const statusColor = STATUS_COLOR[emp.status] ?? "bg-slate-100 text-slate-500";
+          const statusColor = STATUS_COLOR[emp.status] ?? "bg-slate-100 dark:bg-slate-800 text-slate-500";
           const statusLabel = emp.status === "ACTIVE" ? t("employees.working") :
             emp.status === "PROBATION" ? t("employees.probation") :
             t("employees.resigned");
@@ -186,29 +186,29 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
 
           return (
             <div key={emp.id} className={cn(
-              "bg-white rounded-xl border p-4 space-y-3 transition shadow-card",
-              emp.status === "INACTIVE" ? "border-slate-100 opacity-60" : "border-slate-200 hover:border-blue-300 hover:shadow-card-md"
+              "bg-white dark:bg-slate-900 rounded-xl border p-4 space-y-3 transition shadow-card",
+              emp.status === "INACTIVE" ? "border-slate-100 dark:border-slate-800 opacity-60" : "border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:shadow-card-md"
             )}>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-slate-900 text-[13.5px] truncate">{emp.fullName}</p>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100 text-[13.5px] truncate">{emp.fullName}</p>
                     <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-medium", statusColor)}>
                       {statusLabel}
                     </span>
                   </div>
-                  <p className="text-[12px] text-slate-500 truncate mt-0.5">{emp.role.label}{emp.department ? ` · ${emp.department}` : ""}</p>
-                  {emp.employeeCode && <p className="text-[11px] text-slate-400 font-mono">{emp.employeeCode}</p>}
+                  <p className="text-[12px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{emp.role.label}{emp.department ? ` · ${emp.department}` : ""}</p>
+                  {emp.employeeCode && <p className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{emp.employeeCode}</p>}
                 </div>
                 {(isManager || emp.id === currentUserId) && (
                   <div className="flex gap-1 shrink-0">
                     <button onClick={() => setEditingEmp(emp)}
-                      className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition">
+                      className="p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     {isManager && emp.id !== currentUserId && (
                       <button onClick={() => toggleStatus(emp)}
-                        className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition"
+                        className="p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
                         title={emp.status === "ACTIVE" ? t("employees.disable") : t("employees.reactivate")}>
                         {emp.status === "ACTIVE" ? <UserX className="w-3.5 h-3.5 text-red-400" /> : <UserCheck className="w-3.5 h-3.5 text-emerald-500" />}
                       </button>
@@ -231,16 +231,16 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
               </div>
 
               {isManager && (
-                <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 text-[12px]">
+                <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-slate-800 text-[12px]">
                   <span className="text-slate-500">{payTypeLabel}</span>
                   <span className="font-semibold text-slate-800">{salaryText}</span>
-                  {totalBonus > 0 && <span className="text-blue-600 font-medium">+{totalBonus}%</span>}
+                  {totalBonus > 0 && <span className="text-blue-600 dark:text-blue-400 font-medium">+{totalBonus}%</span>}
                 </div>
               )}
 
               {emp.driveLink1 && (
                 <a href={emp.driveLink1} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-[12px] text-blue-600 hover:text-blue-700 hover:underline">
+                  className="flex items-center gap-1 text-[12px] text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:underline">
                   <ExternalLink className="w-3 h-3" /> Drive
                 </a>
               )}
@@ -250,7 +250,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-16 text-slate-400 text-sm">{t("employees.noEmployees")}</div>
+        <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">{t("employees.noEmployees")}</div>
       )}
 
       {(creating || editingEmp) && (

@@ -1,7 +1,5 @@
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/current-user";
 import { ADMIN_ROLES, SUB_MANAGER_ROLES, getManagedEmployeeIds } from "@/lib/managed-scope";
 import { TimeLogsClient } from "./_components/time-logs-client";
 
@@ -10,11 +8,9 @@ export const metadata = { title: "Time Logs — HR System" };
 type SearchParams = { taskId?: string; date?: string };
 
 export default async function TimeLogsPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
-
-  const userId = Number(session.user.id);
-  const userRole = session.user.role;
+  const { employee, organization, role } = await requireAuth();
+  const userId = employee.id;
+  const userRole = role.name;
   const isAdmin = ADMIN_ROLES.includes(userRole);
   const isSubManager = SUB_MANAGER_ROLES.includes(userRole);
   const isManager = isAdmin || isSubManager;
@@ -34,6 +30,7 @@ export default async function TimeLogsPage({ searchParams }: { searchParams: Sea
   endOfDay.setDate(endOfDay.getDate() + 1);
 
   const where: any = {
+    organizationId: organization.id,
     date: { gte: startOfDay, lt: endOfDay },
   };
   if (employeeScopeIds) where.employeeId = { in: employeeScopeIds };
@@ -46,15 +43,9 @@ export default async function TimeLogsPage({ searchParams }: { searchParams: Sea
         employee: { select: { id: true, fullName: true, avatarUrl: true } },
         task: {
           select: {
-            id: true,
-            code: true,
-            title: true,
-            taskType: true,
-            estimatedTime: true,
-            actualTimeTotal: true,
-            requiresVideo: true,
-            billable: true,
-            status: true,
+            id: true, code: true, title: true, taskType: true,
+            estimatedTime: true, actualTimeTotal: true, requiresVideo: true,
+            billable: true, status: true,
             customer: { select: { id: true, customerName: true, businessName: true } },
           },
         },
@@ -62,21 +53,15 @@ export default async function TimeLogsPage({ searchParams }: { searchParams: Sea
       },
       orderBy: [{ date: "desc" }, { id: "desc" }],
     }),
-    // Tasks user can log against
     prisma.task.findMany({
       where: {
+        organizationId: organization.id,
         status: { in: ["BACKLOG", "IN_PROGRESS", "BLOCKED", "REVIEW"] },
         assignedToId: isAdmin ? undefined : { in: employeeScopeIds! },
       },
       select: {
-        id: true,
-        code: true,
-        title: true,
-        taskType: true,
-        estimatedTime: true,
-        actualTimeTotal: true,
-        requiresVideo: true,
-        status: true,
+        id: true, code: true, title: true, taskType: true,
+        estimatedTime: true, actualTimeTotal: true, requiresVideo: true, status: true,
         assignedTo: { select: { id: true, fullName: true } },
       },
       orderBy: [{ priority: "asc" }, { dueDate: "asc" }],

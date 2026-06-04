@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isValidLocale } from "@/lib/i18n";
+import { withContext } from "@/lib/with-context";
+import { getActorId } from "@/lib/request-context";
 
-export async function PATCH(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const PATCH = withContext(async (req: Request) => {
+  const actorId = getActorId();
+  if (!actorId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
   const { locale } = body;
@@ -18,9 +16,9 @@ export async function PATCH(req: Request) {
   }
 
   await prisma.employee.update({
-    where: { id: Number(session.user.id) },
-    data: { locale } as any,
+    where: { id: actorId },
+    data: { locale },
   });
 
   return NextResponse.json({ ok: true, locale });
-}
+});

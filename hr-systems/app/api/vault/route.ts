@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 import { encryptVault } from "@/lib/vault";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 
 const createSchema = z.object({
   scope: z.enum(["COMPANY", "CUSTOMER"]),
@@ -23,10 +21,9 @@ const createSchema = z.object({
   notes: z.string().optional(),
 });
 
-// GET /api/vault — returns list WITHOUT decrypted passwords
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const { searchParams } = new URL(req.url);
   const scope = searchParams.get("scope");
@@ -56,14 +53,13 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ data: vaults });
-}
+});
 
-// POST /api/vault — manager only
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
@@ -83,7 +79,7 @@ export async function POST(req: NextRequest) {
       passwordEncrypted: encryptVault(d.password),
       twoFaMethod: d.twoFaMethod,
       twoFaBackup: d.twoFaBackup ? encryptVault(d.twoFaBackup) : null,
-      ownerId: d.ownerId ?? Number(session.user.id),
+      ownerId: d.ownerId ?? auth.actorId,
       rotationDays: d.rotationDays,
       notes: d.notes,
     },
@@ -97,4 +93,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ data: vault }, { status: 201 });
-}
+});

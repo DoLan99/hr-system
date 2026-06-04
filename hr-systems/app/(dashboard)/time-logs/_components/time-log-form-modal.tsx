@@ -97,19 +97,19 @@ export function TimeLogFormModal({ open, onClose, tasks, preselectedTaskId, defa
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-xl">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-xl">
         <div className="px-5 py-3.5 border-b flex items-center justify-between">
           <h2 className="text-lg font-semibold">Log Time</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
+          <button onClick={onClose} className="text-slate-400 dark:text-slate-500 hover:text-slate-600">✕</button>
         </div>
 
         <div className="p-5 space-y-3.5">
           <div>
-            <label className="text-xs text-slate-600 font-medium">Task <span className="text-red-500">*</span></label>
+            <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Task <span className="text-red-500">*</span></label>
             <select
               value={form.taskId}
               onChange={(e) => setForm({ ...form, taskId: e.target.value })}
-              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
             >
               <option value="">— Chọn task —</option>
               {tasks.map((t) => (
@@ -119,7 +119,7 @@ export function TimeLogFormModal({ open, onClose, tasks, preselectedTaskId, defa
               ))}
             </select>
             {selectedTask && (
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Estimate: {selectedTask.estimatedTime ?? "—"} phút · Đã log: {selectedTask.actualTimeTotal} phút
               </p>
             )}
@@ -127,55 +127,55 @@ export function TimeLogFormModal({ open, onClose, tasks, preselectedTaskId, defa
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-600 font-medium">Ngày <span className="text-red-500">*</span></label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Ngày <span className="text-red-500">*</span></label>
               <input
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-600 font-medium">Duration (phút) <span className="text-red-500">*</span></label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Duration (phút) <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 min={1}
                 value={form.durationMinutes}
                 onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-xs text-slate-600 font-medium">Note</label>
+            <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Note</label>
             <textarea
               value={form.note}
               onChange={(e) => setForm({ ...form, note: e.target.value })}
               rows={2}
               placeholder="Mô tả ngắn lần log này..."
-              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-600 font-medium">% hoàn thành sau log này</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">% hoàn thành sau log này</label>
               <input
                 type="number"
                 min={0}
                 max={100}
                 value={form.completionPctAfter}
                 onChange={(e) => setForm({ ...form, completionPctAfter: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-600 font-medium">Đổi status task</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Đổi status task</label>
               <select
                 value={form.taskStatusAfter}
                 onChange={(e) => setForm({ ...form, taskStatusAfter: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               >
                 <option value="">— Giữ nguyên —</option>
                 <option value="IN_PROGRESS">In Progress</option>
@@ -187,7 +187,7 @@ export function TimeLogFormModal({ open, onClose, tasks, preselectedTaskId, defa
           </div>
 
           <div>
-            <label className="text-xs text-slate-600 font-medium">
+            <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">
               Video link {videoMandatory && <span className="text-red-500">* bắt buộc</span>}
             </label>
             <input
@@ -195,20 +195,20 @@ export function TimeLogFormModal({ open, onClose, tasks, preselectedTaskId, defa
               value={form.videoLink}
               onChange={(e) => setForm({ ...form, videoLink: e.target.value })}
               placeholder="https://drive.google.com/..."
-              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
             />
             {videoMandatory && !form.videoLink && (
-              <p className="text-xs text-amber-600 mt-1">
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                 {needVideo ? "Task type này yêu cầu video" : "Vượt estimate cần video để được full credit"}
               </p>
             )}
           </div>
 
-          {error && <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</div>}
+          {error && <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded">{error}</div>}
         </div>
 
-        <div className="px-5 py-3 border-t bg-slate-50 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded">
+        <div className="px-5 py-3 border-t bg-slate-50 dark:bg-slate-800/60 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
             Hủy
           </button>
           <button

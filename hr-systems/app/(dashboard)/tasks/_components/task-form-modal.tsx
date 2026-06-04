@@ -34,6 +34,7 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
     customerId: "",
     billable: false,
     requiresVideo: false,
+    videoLink: "",
     dueDate: "",
     progressPct: "0",
     reasonNextAction: "",
@@ -56,6 +57,7 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
           customerId: editing.customer?.id?.toString() ?? "",
           billable: editing.billable,
           requiresVideo: editing.requiresVideo,
+          videoLink: editing.videoLink ?? "",
           dueDate: editing.dueDate ? new Date(editing.dueDate).toISOString().split("T")[0] : "",
           progressPct: editing.progressPct?.toString() ?? "0",
           reasonNextAction: editing.reasonNextAction ?? "",
@@ -73,6 +75,7 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
           customerId: "",
           billable: false,
           requiresVideo: false,
+          videoLink: "",
           dueDate: "",
           progressPct: "0",
           reasonNextAction: "",
@@ -114,6 +117,7 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
         customerId: form.customerId ? Number(form.customerId) : null,
         billable: form.billable,
         requiresVideo: form.requiresVideo,
+        videoLink: form.videoLink || null,
         dueDate: form.dueDate || null,
         progressPct: Number(form.progressPct),
       };
@@ -139,20 +143,20 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="px-5 py-3.5 border-b flex items-center justify-between">
           <h2 className="text-lg font-semibold">{editing ? `${t("tasks.editTask")} ${editing.code}` : t("tasks.addTask")}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
+          <button onClick={onClose} className="text-slate-400 dark:text-slate-500 hover:text-slate-600">✕</button>
         </div>
 
         <div className="p-5 space-y-3.5">
           {!editing && templates.length > 0 && (
             <div>
-              <label className="text-xs text-slate-600 font-medium">{t("tasks.template")} ({t("common.optional")})</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("tasks.template")} ({t("common.optional")})</label>
               <select
                 value={form.templateId}
                 onChange={(e) => applyTemplate(e.target.value)}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               >
                 <option value="">{t("tasks.selectTemplate")}</option>
                 {templates.map((tpl) => (
@@ -165,31 +169,31 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
           )}
 
           <div>
-            <label className="text-xs text-slate-600 font-medium">Title <span className="text-red-500">*</span> ({t("common.required")})</label>
+            <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Title <span className="text-red-500">*</span> ({t("common.required")})</label>
             <input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
             />
           </div>
 
           <div>
-            <label className="text-xs text-slate-600 font-medium">{t("common.description")}</label>
+            <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("common.description")}</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={3}
-              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-600 font-medium">{t("tasks.taskType")}</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("tasks.taskType")}</label>
               <select
                 value={form.taskType}
                 onChange={(e) => setForm({ ...form, taskType: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               >
                 {Object.keys(TASK_TYPE_LABELS).map((k) => (
                   <option key={k} value={k}>{t(`taskType.${k}`) || TASK_TYPE_LABELS[k as keyof typeof TASK_TYPE_LABELS]}</option>
@@ -197,11 +201,11 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-600 font-medium">{t("common.priority")}</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("common.priority")}</label>
               <select
                 value={form.priority}
                 onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               >
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>{t(`taskPriority.${p}`) || p}</option>
@@ -209,11 +213,11 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-600 font-medium">{t("common.status")}</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("common.status")}</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               >
                 {STATUSES.map((s) => (
                   <option key={s} value={s}>{t(`taskStatus.${s}`) || s}</option>
@@ -221,21 +225,21 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-600 font-medium">{t("tasks.estimatedTime")}</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("tasks.estimatedTime")}</label>
               <input
                 type="number"
                 value={form.estimatedTime}
                 onChange={(e) => setForm({ ...form, estimatedTime: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               />
             </div>
             {isManager && (
               <div>
-                <label className="text-xs text-slate-600 font-medium">{t("common.assignedTo")}</label>
+                <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("common.assignedTo")}</label>
                 <select
                   value={form.assignedToId}
                   onChange={(e) => setForm({ ...form, assignedToId: e.target.value })}
-                  className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                  className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
                 >
                   {employees.map((e) => (
                     <option key={e.id} value={e.id}>{e.fullName}</option>
@@ -244,11 +248,11 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
               </div>
             )}
             <div>
-              <label className="text-xs text-slate-600 font-medium">{t("common.customer")}</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("common.customer")}</label>
               <select
                 value={form.customerId}
                 onChange={(e) => setForm({ ...form, customerId: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               >
                 <option value="">{t("tasks.selectCustomer")}</option>
                 {customers.map((c) => (
@@ -259,35 +263,35 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-600 font-medium">{t("tasks.dueDate")}</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("tasks.dueDate")}</label>
               <input
                 type="date"
                 value={form.dueDate}
                 onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-600 font-medium">{t("tasks.progress")}</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("tasks.progress")}</label>
               <input
                 type="number"
                 min={0}
                 max={100}
                 value={form.progressPct}
                 onChange={(e) => setForm({ ...form, progressPct: e.target.value })}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               />
             </div>
           </div>
 
           {form.status === "BLOCKED" && (
             <div>
-              <label className="text-xs text-slate-600 font-medium">{t("tasks.reasonNextAction")}</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">{t("tasks.reasonNextAction")}</label>
               <textarea
                 value={form.reasonNextAction}
                 onChange={(e) => setForm({ ...form, reasonNextAction: e.target.value })}
                 rows={2}
-                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 rounded"
+                className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
               />
             </div>
           )}
@@ -311,11 +315,24 @@ export function TaskFormModal({ open, onClose, editing, employees, customers, te
             </label>
           </div>
 
-          {error && <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</div>}
+          <div>
+            <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Link video Google Drive <span className="text-slate-400">(tuỳ chọn)</span>
+            </label>
+            <input
+              type="url"
+              value={form.videoLink}
+              onChange={(e) => setForm({ ...form, videoLink: e.target.value })}
+              placeholder="https://drive.google.com/file/d/..."
+              className="mt-1 w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded"
+            />
+          </div>
+
+          {error && <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded">{error}</div>}
         </div>
 
-        <div className="px-5 py-3 border-t bg-slate-50 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded">
+        <div className="px-5 py-3 border-t bg-slate-50 dark:bg-slate-800/60 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded">
             {t("common.cancel")}
           </button>
           <button

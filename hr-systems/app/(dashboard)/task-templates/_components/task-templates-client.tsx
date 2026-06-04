@@ -67,7 +67,7 @@ export function TaskTemplatesClient({ initialItems, canManage }: Props) {
           placeholder={t("taskTemplates.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 text-sm border border-slate-200 rounded-md w-64"
+          className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-md w-64"
         />
         <label className="flex items-center gap-2 text-sm text-slate-600">
           <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
@@ -86,9 +86,9 @@ export function TaskTemplatesClient({ initialItems, canManage }: Props) {
         )}
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-600 text-left">
+          <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left">
             <tr>
               <th className="px-3 py-2.5 font-medium">{t("taskTemplates.colCode")}</th>
               <th className="px-3 py-2.5 font-medium">{t("taskTemplates.colTitle")}</th>
@@ -110,7 +110,7 @@ export function TaskTemplatesClient({ initialItems, canManage }: Props) {
               </tr>
             )}
             {filtered.map((item) => (
-              <tr key={item.id} className={`border-t border-slate-100 hover:bg-slate-50 ${!item.isActive && "opacity-50"}`}>
+              <tr key={item.id} className={`border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 ${!item.isActive && "opacity-50"}`}>
                 <td className="px-3 py-2.5 font-mono text-xs text-slate-500">{item.code}</td>
                 <td className="px-3 py-2.5 text-slate-800">{item.title}</td>
                 <td className="px-3 py-2.5">
@@ -135,13 +135,13 @@ export function TaskTemplatesClient({ initialItems, canManage }: Props) {
                           setEditing(item);
                           setModalOpen(true);
                         }}
-                        className="text-xs px-2 py-1 text-slate-600 hover:bg-slate-100 rounded"
+                        className="text-xs px-2 py-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
                       >
                         ✎
                       </button>
                       <button
                         onClick={() => toggleActive(item)}
-                        className={`text-xs px-2 py-1 rounded ${item.isActive ? "text-red-600 hover:bg-red-50" : "text-emerald-600 hover:bg-emerald-50"}`}
+                        className={`text-xs px-2 py-1 rounded ${item.isActive ? "text-red-600 dark:text-red-400 hover:bg-red-50" : "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50"}`}
                       >
                         {item.isActive ? t("taskTemplates.hide") : t("taskTemplates.show")}
                       </button>

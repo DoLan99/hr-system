@@ -1,59 +1,36 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { ROLES } from "@/lib/utils";
-import DashboardClient from "./_components/dashboard-client";
-
-const ADMIN_ROLES = [ROLES.SUPER_ADMIN, ROLES.ADMIN];
-const SUB_MANAGER_ROLES = [ROLES.MANAGER, ROLES.TEAM_LEAD];
+import { requireAuth } from "@/lib/current-user";
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) return null;
-
-  const user = session.user as any;
-  const userId = Number(user.id);
-  const isAdmin = ADMIN_ROLES.includes(user.role);
-  const isSubManager = SUB_MANAGER_ROLES.includes(user.role);
-  const isManager = isAdmin || isSubManager;
-
-  let teams: { id: number; name: string }[] = [];
-  let handlers: { id: number; name: string }[] = [];
-
-  if (isAdmin) {
-    teams = await prisma.team.findMany({
-      where: { isActive: true },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    });
-  } else if (user.role === ROLES.TEAM_LEAD) {
-    const myTeam = await prisma.team.findFirst({
-      where: { leadId: userId, isActive: true },
-      select: {
-        employees: {
-          where: { status: "ACTIVE" },
-          select: { id: true, fullName: true },
-          orderBy: { fullName: "asc" },
-        },
-      },
-    });
-    handlers = (myTeam?.employees ?? []).map((e) => ({ id: e.id, name: e.fullName }));
-  } else if (user.role === ROLES.MANAGER) {
-    const subs = await prisma.employee.findMany({
-      where: { managerId: userId, status: "ACTIVE" },
-      select: { id: true, fullName: true },
-      orderBy: { fullName: "asc" },
-    });
-    handlers = subs.map((e) => ({ id: e.id, name: e.fullName }));
-  }
+  const { employee, organization, role } = await requireAuth();
 
   return (
-    <DashboardClient
-      userName={user.name ?? ""}
-      isManager={isManager}
-      isAdmin={isAdmin}
-      teams={teams}
-      handlers={handlers}
-    />
+    <div className="max-w-3xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+          Xin chào, {employee.fullName} 👋
+        </h1>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          Workspace <strong>{organization.name}</strong> · Role: {role.label}
+        </p>
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6 space-y-3 border border-slate-200 dark:border-slate-800">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+          🚧 Đang migrate sang Multi-tenant SaaS
+        </h2>
+        <p className="text-sm text-slate-700 dark:text-slate-300">
+          Các module đang chờ migrate sang flow mới (Clerk auth + tenant context):
+        </p>
+        <ul className="text-sm text-slate-600 dark:text-slate-400 list-disc list-inside space-y-1">
+          <li>Employees, Customers, Tasks, Time Logs</li>
+          <li>Office Time, Leave, Messages</li>
+          <li>Summary, Payments</li>
+          <li>Admin pages (audit, anomalies, activity)</li>
+        </ul>
+        <p className="text-xs text-slate-500 dark:text-slate-500 pt-2 border-t border-slate-200 dark:border-slate-800">
+          Foundation OK: Clerk auth ✓ · Subdomain routing ✓ · Tenant isolation Prisma ✓ · Sidebar/Topbar ✓
+        </p>
+      </div>
+    </div>
   );
 }

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 import { getManagedEmployeeIds, ADMIN_ROLES, SUB_MANAGER_ROLES } from "@/lib/managed-scope";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth } from "@/lib/api-auth";
 
 const TASK_TYPES = ["NORMAL", "LEARNING", "NEW_RESEARCH", "MEETING", "ADMIN", "BILLABLE_CLIENT", "INTERNAL"] as const;
 const TASK_STATUSES = ["BACKLOG", "IN_PROGRESS", "BLOCKED", "REVIEW", "DONE", "CANCELLED"] as const;
@@ -21,6 +21,7 @@ const updateSchema = z.object({
   billable: z.boolean().optional(),
   hourlyRateOverride: z.number().nullable().optional(),
   requiresVideo: z.boolean().optional(),
+  videoLink: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),
   progressPct: z.number().int().min(0).max(100).optional(),
   reasonNextAction: z.string().nullable().optional(),
@@ -35,13 +36,12 @@ const include = {
   _count: { select: { timeLogs: true, subTasks: true } },
 };
 
-// Resolve task by code (TSK-xxxx) or numeric id
 async function findTask(idOrCode: string) {
   const numId = Number(idOrCode);
   if (Number.isInteger(numId) && !isNaN(numId)) {
-    return prisma.task.findUnique({ where: { id: numId } });
+    return prisma.task.findFirst({ where: { id: numId } });
   }
-  return prisma.task.findUnique({ where: { code: idOrCode } });
+  return prisma.task.findFirst({ where: { code: idOrCode } });
 }
 
 async function checkAccess(taskAssigneeId: number, userId: number, userRole: string) {
@@ -53,19 +53,17 @@ async function checkAccess(taskAssigneeId: number, userId: number, userRole: str
   return taskAssigneeId === userId;
 }
 
-// GET /api/tasks/[id]
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const existing = await findTask(params.id);
   if (!existing) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
-  const userId = Number(session.user.id);
-  const ok = await checkAccess(existing.assignedToId, userId, session.user.role);
+  const ok = await checkAccess(existing.assignedToId, auth.actorId, auth.roleName);
   if (!ok) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const detail = await prisma.task.findUnique({
+  const detail = await prisma.task.findFirst({
     where: { id: existing.id },
     include: {
       ...include,
@@ -90,18 +88,17 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   });
 
   return NextResponse.json({ data: detail });
-}
+});
 
-// PUT /api/tasks/[id]
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PUT = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const existing = await findTask(params.id);
   if (!existing) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
-  const userId = Number(session.user.id);
-  const userRole = session.user.role;
+  const userId = auth.actorId;
+  const userRole = auth.roleName;
   const isAdmin = ADMIN_ROLES.includes(userRole);
   const isSubManager = SUB_MANAGER_ROLES.includes(userRole);
   const isManager = isAdmin || isSubManager;
@@ -115,7 +112,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   const d = parsed.data;
 
-  // Sub-managers cannot reassign outside scope
   if (isSubManager && d.assignedToId !== undefined) {
     const managedIds = await getManagedEmployeeIds(userId, userRole);
     if (!managedIds || (!managedIds.includes(d.assignedToId) && d.assignedToId !== userId)) {
@@ -123,12 +119,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
   }
 
-  // Status BLOCKED → reasonNextAction required
   if (d.status === "BLOCKED" && d.reasonNextAction === undefined && !existing.reasonNextAction) {
     return NextResponse.json({ error: "Phải điền reasonNextAction khi status = BLOCKED" }, { status: 422 });
   }
 
-  // Build update data based on role
   const data: any = {};
   if (isManager) {
     if (d.title !== undefined) data.title = d.title;
@@ -145,7 +139,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (d.dueDate !== undefined) data.dueDate = d.dueDate ? new Date(d.dueDate) : null;
   }
 
-  // Status / progress / reason — both manager and assignee can update
+  if (d.videoLink !== undefined) data.videoLink = d.videoLink;
+
   if (d.status !== undefined) {
     data.status = d.status;
     if (d.status === "DONE") {
@@ -160,7 +155,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (d.progressPct !== undefined) data.progressPct = d.progressPct;
   if (d.reasonNextAction !== undefined) data.reasonNextAction = d.reasonNextAction;
 
-  // Validate billable + customer
   const willBeBillable = data.billable ?? existing.billable;
   const willHaveCustomer = (data.customerId !== undefined ? data.customerId : existing.customerId) ?? null;
   if (willBeBillable && !willHaveCustomer) {
@@ -174,24 +168,22 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   });
 
   return NextResponse.json({ data: updated });
-}
+});
 
-// DELETE /api/tasks/[id] — manager only, soft-delete (set status = CANCELLED)
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const DELETE = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const isManager = ADMIN_ROLES.includes(session.user.role) || SUB_MANAGER_ROLES.includes(session.user.role);
+  const isManager = ADMIN_ROLES.includes(auth.roleName) || SUB_MANAGER_ROLES.includes(auth.roleName);
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const existing = await findTask(params.id);
   if (!existing) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
-  // Soft-delete: cancel rather than physical delete (preserves time_logs FK)
   const cancelled = await prisma.task.update({
     where: { id: existing.id },
     data: { status: "CANCELLED" },
   });
 
   return NextResponse.json({ success: true, data: cancelled });
-}
+});

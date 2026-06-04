@@ -59,18 +59,18 @@ export function LeaveReviewModal({ item, onClose, onSaved }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
             <h2 className="text-base font-semibold text-slate-900">Duyệt đơn nghỉ</h2>
             <p className="text-xs text-slate-500">{item.employee.fullName}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400"><X className="w-4 h-4" /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
           {/* Summary */}
-          <div className="bg-slate-50 rounded-xl p-4 space-y-1.5 text-sm">
+          <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="text-slate-500">Ngày nghỉ</span>
               <span className="font-medium">{format(new Date(item.date), "dd/MM/yyyy", { locale: vi })}</span>
@@ -84,11 +84,11 @@ export function LeaveReviewModal({ item, onClose, onSaved }: Props) {
               <span className="font-medium">{Number(item.requestedHours)}h</span>
             </div>
             {item.reason && (
-              <div className="pt-1 text-slate-700 text-xs italic">&ldquo;{item.reason}&rdquo;</div>
+              <div className="pt-1 text-slate-700 dark:text-slate-300 text-xs italic">&ldquo;{item.reason}&rdquo;</div>
             )}
             {item.evidenceLink && (
               <a href={item.evidenceLink} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 text-blue-600 text-xs hover:underline pt-1">
+                className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-xs hover:underline pt-1">
                 <ExternalLink className="w-3 h-3" /> Xem minh chứng
               </a>
             )}
@@ -101,8 +101,8 @@ export function LeaveReviewModal({ item, onClose, onSaved }: Props) {
                 className={cn(
                   "flex-1 py-2 rounded-xl text-sm font-medium border-2 transition flex items-center justify-center gap-1.5",
                   status === s
-                    ? s === "APPROVED" ? "border-green-500 bg-green-50 text-green-700" : "border-red-500 bg-red-50 text-red-700"
-                    : "border-slate-200 text-slate-400 hover:border-slate-300"
+                    ? s === "APPROVED" ? "border-green-500 bg-green-50 dark:bg-green-950/40 text-green-700" : "border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700"
+                    : "border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300"
                 )}>
                 {s === "APPROVED" ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                 {s === "APPROVED" ? "Duyệt" : "Từ chối"}
@@ -113,30 +113,30 @@ export function LeaveReviewModal({ item, onClose, onSaved }: Props) {
           {status === "APPROVED" && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Số giờ duyệt</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Số giờ duyệt</label>
                 <input type="number" min={0} max={24} step={0.5} value={approvedHours}
                   onChange={e => setApprovedHours(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Tiền hỗ trợ (nếu có)</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Tiền hỗ trợ (nếu có)</label>
                 <input type="number" min={0} value={money} onChange={e => setMoney(e.target.value)}
                   placeholder="0"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Ghi chú</label>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Ghi chú</label>
             <textarea value={approvalNote} onChange={e => setApprovalNote(e.target.value)} rows={2}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               placeholder="Ghi chú cho nhân viên..." />
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
             <button type="button" onClick={onClose}
-              className="px-4 py-2 text-sm text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50">Hủy</button>
+              className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50">Hủy</button>
             <button type="submit" disabled={loading}
               className={cn(
                 "px-4 py-2 text-sm font-medium text-white rounded-lg flex items-center gap-2 transition disabled:opacity-60",

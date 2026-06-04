@@ -13,6 +13,7 @@ declare module "next-auth" {
       department?: string | null;
       avatarUrl?: string | null;
       locale?: string;
+      sessionId?: string | null;
     };
   }
 
@@ -38,5 +39,6 @@ declare module "next-auth/jwt" {
     avatarUrl?: string | null;
     status: string;
     locale?: string;
+    sessionId?: string | null;
   }
 }

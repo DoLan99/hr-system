@@ -18,6 +18,7 @@
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.39.3",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-avatar": "^1.1.11",
@@ -41,14 +42,12 @@
     "@tiptap/pm": "^3.23.1",
     "@tiptap/react": "^3.23.1",
     "@tiptap/starter-kit": "^3.23.1",
-    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
     "date-fns": "^3.6.0",
     "lucide-react": "^1.14.0",
     "next": "14.2.35",
-    "next-auth": "^4.24.14",
     "next-nprogress-bar": "^2.4.7",
     "prisma": "^5.22.0",
     "react": "^18",
@@ -59,7 +58,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^20.19.39",
     "@types/react": "^18",

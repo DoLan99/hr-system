@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { prisma } from "@/lib/prisma";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth, requireManager } from "@/lib/api-auth";
 
 const createSchema = z.object({
   customerName: z.string().optional(),
@@ -24,10 +22,9 @@ const createSchema = z.object({
   notes: z.string().optional(),
 });
 
-// GET /api/customers?search=&status=ACTIVE
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") ?? "";
@@ -55,15 +52,11 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ data: customers });
-}
+});
 
-// POST /api/customers
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
-  if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+export const POST = withContext(async (req: NextRequest) => {
+  const auth = await requireManager();
+  if (!auth.ok) return auth.response;
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -83,4 +76,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ data: customer }, { status: 201 });
-}
+});

@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import bcrypt from "bcryptjs";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { clerkClient } from "@clerk/nextjs/server";
+import { prisma, rawPrisma } from "@/lib/prisma";
+import { withContext } from "@/lib/with-context";
+import { getOrgId } from "@/lib/request-context";
+import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 
 const createSchema = z.object({
   fullName: z.string().min(1),
   emailCompany: z.string().email(),
-  password: z.string().min(6),
   roleId: z.number().int(),
   employeeCode: z.string().optional(),
   department: z.string().optional(),
@@ -36,10 +34,9 @@ const createSchema = z.object({
   driveLink4: z.string().optional(),
 });
 
-// GET /api/employees?search=&status=ACTIVE&department=
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (req: NextRequest) => {
+  const orgId = getOrgId();
+  if (!orgId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") ?? "";
@@ -65,6 +62,7 @@ export async function GET(req: NextRequest) {
       mobileCompany: true, payType: true, hourlyRate: true, monthlySalary: true,
       maxHoursMonth: true, bonusMPct: true, bonusAPct: true, bonusTPct: true,
       startDate: true, status: true, managerId: true,
+      clerkUserId: true, isOwner: true, membershipRole: true,
       role: { select: { id: true, name: true, label: true } },
       manager: { select: { id: true, fullName: true } },
     },
@@ -72,32 +70,91 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ data: employees });
-}
+});
 
-// POST /api/employees — manager only
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// POST creates Employee + sends Clerk invitation email.
+// When invitee accepts the invitation and signs in, the Clerk webhook
+// (or fallback claim-by-email in requireAuth) links their clerkUserId
+// to the pre-created Employee record.
+export const POST = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
-  if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!MANAGER_ROLES.includes(auth.roleName)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
+  }
 
   const d = parsed.data;
 
-  const existing = await prisma.employee.findUnique({ where: { emailCompany: d.emailCompany } });
-  if (existing) return NextResponse.json({ error: "Email đã tồn tại" }, { status: 409 });
+  const existing = await prisma.employee.findFirst({
+    where: { emailCompany: d.emailCompany },
+  });
+  if (existing) return NextResponse.json({ error: "Email đã tồn tại trong workspace" }, { status: 409 });
 
-  const passwordHash = await bcrypt.hash(d.password, 10);
+  const org = await rawPrisma.organization.findUnique({
+    where: { id: auth.orgId },
+    select: { clerkOrgId: true, slug: true, name: true, seatLimit: true, status: true },
+  });
+  if (!org) return NextResponse.json({ error: "Workspace không tồn tại" }, { status: 404 });
+
+  if (org.status === "SUSPENDED" || org.status === "CANCELLED") {
+    return NextResponse.json({ error: "Workspace đã bị tạm khóa, không thể thêm thành viên" }, { status: 403 });
+  }
+
+  const memberCount = await rawPrisma.employee.count({
+    where: { organizationId: auth.orgId, status: { not: "INACTIVE" } },
+  });
+  if (memberCount >= org.seatLimit) {
+    return NextResponse.json(
+      { error: `Đã đạt giới hạn ${org.seatLimit} thành viên của gói. Vui lòng upgrade gói tại /billing.` },
+      { status: 402 },
+    );
+  }
+
+  const inviter = await rawPrisma.employee.findFirst({
+    where: { id: auth.actorId },
+    select: { clerkUserId: true },
+  });
+  if (!inviter) return NextResponse.json({ error: "Người mời không tồn tại" }, { status: 500 });
+
+  const protocol = req.headers.get("x-forwarded-proto") ?? "http";
+  const host = req.headers.get("host") ?? "";
+  const redirectUrl = `${protocol}://${host}/welcome`;
+
+  const client = await clerkClient();
+  let clerkInvitationId: string;
+  try {
+    const invitation = await client.organizations.createOrganizationInvitation({
+      organizationId: org.clerkOrgId,
+      inviterUserId: inviter.clerkUserId,
+      emailAddress: d.emailCompany,
+      role: "org:member",
+      redirectUrl,
+    });
+    clerkInvitationId = invitation.id;
+  } catch (err) {
+    console.error("[employees POST] Clerk invitation failed:", err);
+    const anyErr = err as { errors?: Array<{ message?: string; longMessage?: string; code?: string }>; status?: number };
+    const detail = anyErr.errors?.[0]?.longMessage ?? anyErr.errors?.[0]?.message ?? (err instanceof Error ? err.message : String(err));
+    return NextResponse.json({ error: `Không gửi được email mời: ${detail}` }, { status: 502 });
+  }
+
+  const placeholderClerkId = `pending:${clerkInvitationId}`;
 
   const employee = await prisma.employee.create({
     data: {
+      organizationId: auth.orgId,
+      clerkUserId: placeholderClerkId,
+      isOwner: false,
+      membershipRole: "MEMBER",
       fullName: d.fullName,
       emailCompany: d.emailCompany,
-      passwordHash,
       roleId: d.roleId,
       employeeCode: d.employeeCode,
       department: d.department,
@@ -116,7 +173,7 @@ export async function POST(req: NextRequest) {
       bonusTPct: d.bonusTPct ?? 0,
       managerId: d.managerId,
       startDate: d.startDate ? new Date(d.startDate) : null,
-      status: d.status ?? "ACTIVE",
+      status: d.status ?? "PROBATION",
       driveLink1: d.driveLink1,
       driveLink2: d.driveLink2,
       driveLink3: d.driveLink3,
@@ -125,9 +182,13 @@ export async function POST(req: NextRequest) {
     select: {
       id: true, employeeCode: true, fullName: true, department: true,
       emailCompany: true, payType: true, status: true,
+      clerkUserId: true, isOwner: true, membershipRole: true,
       role: { select: { id: true, name: true, label: true } },
     },
   });
 
-  return NextResponse.json({ data: employee }, { status: 201 });
-}
+  return NextResponse.json({
+    data: employee,
+    invitation: { id: clerkInvitationId, message: `Email mời đã gửi tới ${d.emailCompany}` },
+  }, { status: 201 });
+});

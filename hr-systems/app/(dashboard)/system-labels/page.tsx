@@ -1,7 +1,6 @@
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/current-user";
 import { ADMIN_ROLES } from "@/lib/managed-scope";
 import { SystemLabelsClient } from "./_components/system-labels-client";
 import { DEFAULT_LABELS, CATEGORY_META, type LabelCategory } from "@/lib/system-labels";
@@ -9,13 +8,11 @@ import { DEFAULT_LABELS, CATEGORY_META, type LabelCategory } from "@/lib/system-
 export const metadata = { title: "System Labels — HR System" };
 
 export default async function SystemLabelsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
-
-  const role = (session.user as any).role;
-  if (!ADMIN_ROLES.includes(role)) redirect("/dashboard");
+  const { organization, role } = await requireAuth();
+  if (!ADMIN_ROLES.includes(role.name)) redirect("/dashboard");
 
   const dbRows = await prisma.systemLabel.findMany({
+    where: { organizationId: organization.id },
     orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
   });
 

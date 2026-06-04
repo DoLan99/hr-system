@@ -1,26 +1,26 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { requireAuth } from "@/lib/current-user";
+import { MANAGER_ROLES } from "@/lib/api-auth";
 import { LeaveClient } from "./_components/leave-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeavePage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const { employee, organization, role } = await requireAuth();
+  const userId = employee.id;
+  const isManager = MANAGER_ROLES.includes(role.name);
 
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
-  const userId = Number(session.user.id);
-  const isManager = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"].includes((session.user as any).role);
-
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 1);
 
-  const where: any = { date: { gte: start, lt: end } };
+  const where: any = {
+    organizationId: organization.id,
+    date: { gte: start, lt: end },
+  };
   if (!isManager) where.employeeId = userId;
 
   const [leaves, employees] = await Promise.all([
@@ -34,7 +34,7 @@ export default async function LeavePage() {
     }),
     isManager
       ? prisma.employee.findMany({
-          where: { status: "ACTIVE" },
+          where: { organizationId: organization.id, status: "ACTIVE" },
           select: { id: true, fullName: true, department: true },
           orderBy: { fullName: "asc" },
         })

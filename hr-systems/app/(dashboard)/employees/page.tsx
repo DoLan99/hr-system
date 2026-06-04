@@ -1,17 +1,15 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { requireAuth } from "@/lib/current-user";
 import { EmployeesClient } from "./_components/employees-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function EmployeesPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const { organization } = await requireAuth();
 
   const [employees, roles, departments, teams] = await Promise.all([
     prisma.employee.findMany({
+      where: { organizationId: organization.id },
       select: {
         id: true, employeeCode: true, fullName: true, avatarUrl: true,
         department: true, departmentId: true, teamId: true,
@@ -19,6 +17,7 @@ export default async function EmployeesPage() {
         mobileCompany: true, payType: true, hourlyRate: true, monthlySalary: true,
         maxHoursMonth: true, bonusMPct: true, bonusAPct: true, bonusTPct: true,
         startDate: true, status: true, managerId: true, driveLink1: true,
+        clerkUserId: true, isOwner: true, membershipRole: true,
         role: { select: { id: true, name: true, label: true } },
         manager: { select: { id: true, fullName: true } },
         dept: { select: { id: true, name: true } },
@@ -26,14 +25,17 @@ export default async function EmployeesPage() {
       },
       orderBy: { fullName: "asc" },
     }),
-    prisma.role.findMany({ orderBy: { id: "asc" } }),
+    prisma.role.findMany({
+      where: { organizationId: organization.id },
+      orderBy: { id: "asc" },
+    }),
     prisma.department.findMany({
-      where: { isActive: true },
+      where: { organizationId: organization.id, isActive: true },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     prisma.team.findMany({
-      where: { isActive: true },
+      where: { organizationId: organization.id, isActive: true },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),

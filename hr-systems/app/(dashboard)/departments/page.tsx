@@ -1,17 +1,16 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { requireAuth } from "@/lib/current-user";
 import { DepartmentsClient } from "./_components/departments-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function DepartmentsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const { organization } = await requireAuth();
+  const orgFilter = { organizationId: organization.id };
 
   const [depts, teams, employees] = await Promise.all([
     prisma.department.findMany({
+      where: orgFilter,
       include: {
         head: { select: { id: true, fullName: true } },
         teams: { include: { team: { select: { id: true, name: true, isActive: true } } } },
@@ -20,6 +19,7 @@ export default async function DepartmentsPage() {
       orderBy: { name: "asc" },
     }),
     prisma.team.findMany({
+      where: orgFilter,
       include: {
         departments: { include: { department: { select: { id: true, name: true } } } },
         lead: { select: { id: true, fullName: true } },
@@ -28,7 +28,7 @@ export default async function DepartmentsPage() {
       orderBy: { name: "asc" },
     }),
     prisma.employee.findMany({
-      where: { status: "ACTIVE" },
+      where: { ...orgFilter, status: "ACTIVE" },
       select: { id: true, fullName: true },
       orderBy: { fullName: "asc" },
     }),

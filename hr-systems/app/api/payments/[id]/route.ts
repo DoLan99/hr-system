@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { prisma } from "@/lib/prisma";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 
 const updateSchema = z.object({
   date: z.string().optional(),
@@ -15,15 +13,15 @@ const updateSchema = z.object({
   summaryYear: z.number().int().optional(),
 });
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PUT = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const id = Number(params.id);
-  const existing = await prisma.payment.findUnique({ where: { id } });
+  const existing = await prisma.payment.findFirst({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
   const body = await req.json();
@@ -48,15 +46,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   });
 
   return NextResponse.json({ data: updated });
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const DELETE = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   await prisma.payment.delete({ where: { id: Number(params.id) } });
   return NextResponse.json({ ok: true });
-}
+});

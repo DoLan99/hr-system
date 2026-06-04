@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 import { ADMIN_ROLES } from "@/lib/managed-scope";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth } from "@/lib/api-auth";
 
 const TASK_TYPES = ["NORMAL", "LEARNING", "NEW_RESEARCH", "MEETING", "ADMIN", "BILLABLE_CLIENT", "INTERNAL"] as const;
 
@@ -19,14 +19,14 @@ const createSchema = z.object({
   linkTemplate: z.string().optional(),
 });
 
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search");
   const department = searchParams.get("department");
-  const activeOnly = searchParams.get("activeOnly") !== "false"; // default true
+  const activeOnly = searchParams.get("activeOnly") !== "false";
 
   const where: any = {};
   if (activeOnly) where.isActive = true;
@@ -44,14 +44,13 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ data: items });
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const userRole = session.user.role;
-  const canManage = ADMIN_ROLES.includes(userRole) || userRole === "MANAGER" || userRole === "TEAM_LEAD";
+  const canManage = ADMIN_ROLES.includes(auth.roleName) || auth.roleName === "MANAGER" || auth.roleName === "TEAM_LEAD";
   if (!canManage) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
@@ -59,15 +58,12 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
   const d = parsed.data;
-  const exists = await prisma.taskTemplate.findUnique({ where: { code: d.code } });
+  const exists = await prisma.taskTemplate.findFirst({ where: { code: d.code } });
   if (exists) return NextResponse.json({ error: "Code đã tồn tại" }, { status: 409 });
 
   const created = await prisma.taskTemplate.create({
-    data: {
-      ...d,
-      createdById: Number(session.user.id),
-    },
+    data: { ...d, createdById: auth.actorId },
   });
 
   return NextResponse.json({ data: created }, { status: 201 });
-}
+});

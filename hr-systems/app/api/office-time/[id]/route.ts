@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { calcActualWorked } from "@/lib/office-time";
-import { z } from "zod";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 
 const timeStr = z.string().regex(/^\d{2}:\d{2}$/).nullable().optional();
 
@@ -27,22 +25,20 @@ function parseTime(base: Date, t: string | null | undefined): Date | null {
   return d;
 }
 
-// PUT /api/office-time/[id] — manual edit (employee sửa giờ + giải thích, manager override)
-export async function PUT(
+export const PUT = withContext(async (
   req: NextRequest,
   { params }: { params: { id: string } }
-) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const id = Number(params.id);
-  const existing = await prisma.officeTime.findUnique({ where: { id } });
+  const existing = await prisma.officeTime.findFirst({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
-  const userId = Number(session.user.id);
-  const isManager = MANAGER_ROLES.includes(session.user.role);
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
 
-  if (!isManager && existing.employeeId !== userId) {
+  if (!isManager && existing.employeeId !== auth.actorId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -56,7 +52,6 @@ export async function PUT(
   const updateData: Record<string, any> = {};
   if (d.explanation !== undefined) updateData.explanation = d.explanation;
 
-  // Chỉ update field nào được gửi (không null = có giá trị mới, null = xóa)
   if ("startWork1" in d) updateData.startWork1 = parseTime(base, d.startWork1);
   if ("startLunch" in d) updateData.startLunch = parseTime(base, d.startLunch);
   if ("startWork2" in d) updateData.startWork2 = parseTime(base, d.startWork2);
@@ -64,19 +59,14 @@ export async function PUT(
   if ("startWork3" in d) updateData.startWork3 = parseTime(base, d.startWork3);
   if ("endWorkday" in d) updateData.endWorkday = parseTime(base, d.endWorkday);
 
-  // Reset approval nếu employee tự sửa
   if (!isManager) {
     updateData.approvalStatus = "PENDING";
     updateData.approvedById = null;
     updateData.approvedAt = null;
   }
 
-  const record = await prisma.officeTime.update({
-    where: { id },
-    data: updateData,
-  });
+  const record = await prisma.officeTime.update({ where: { id }, data: updateData });
 
-  // Recalc
   const actualWorked = calcActualWorked(record);
   const delta = actualWorked > 0 ? record.timeLogsTotal - actualWorked : null;
 
@@ -87,20 +77,19 @@ export async function PUT(
   });
 
   return NextResponse.json({ data: updated });
-}
+});
 
-// DELETE /api/office-time/[id] — manager only
-export async function DELETE(
+export const DELETE = withContext(async (
   _req: NextRequest,
   { params }: { params: { id: string } }
-) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const isManager = MANAGER_ROLES.includes(session.user.role);
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const id = Number(params.id);
   await prisma.officeTime.delete({ where: { id } });
   return NextResponse.json({ success: true });
-}
+});

@@ -68,12 +68,12 @@ function Select({
 }) {
   return (
     <div>
-      <label className="block text-[12px] text-slate-500 mb-1">{label}</label>
+      <label className="block text-[12px] text-slate-500 dark:text-slate-400 mb-1">{label}</label>
       <div className="relative">
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full appearance-none border border-slate-300 rounded-md px-3 py-2 pr-8 text-[13px] text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full appearance-none border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 pr-8 text-[13px] text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {options.map((o) => (
             <option key={o.value} value={o.value}>
@@ -81,7 +81,7 @@ function Select({
             </option>
           ))}
         </select>
-        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" />
       </div>
     </div>
   );
@@ -214,28 +214,28 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">
+        <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
           {isManager ? "Dashboard" : t("dashboard.greeting", { name: userName })}
         </h1>
-        <p className="text-slate-500 text-sm mt-1">
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
           {format(new Date(), "EEEE, dd/MM/yyyy")}
         </p>
       </div>
 
       {/* Top stat + Sub-team */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
         <div className="flex flex-wrap items-start gap-0">
           {/* Overdue count (admin only) */}
           {isAdmin && (
             <div className="pr-8 mr-8 border-r border-slate-200">
-              <p className="text-[12px] text-slate-500 mb-1">{t("dashboard.overdueTasks")}</p>
+              <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-1">{t("dashboard.overdueTasks")}</p>
               <div className="flex items-center gap-2">
-                <span className="text-[36px] font-bold text-red-600 leading-none">
+                <span className="text-[36px] font-bold text-red-600 dark:text-red-400 leading-none">
                   {loading ? "—" : (data?.overdueCount ?? 0)}
                 </span>
                 <button
                   onClick={fetchData}
-                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                  className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                   title={t("dashboard.refresh")}
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -246,9 +246,9 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
 
           {/* In-progress count */}
           <div className="pr-8 mr-8 border-r border-slate-200">
-            <p className="text-[12px] text-slate-500 mb-1">{t("dashboard.inProgressTasks")}</p>
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-1">{t("dashboard.inProgressTasks")}</p>
             <div className="flex items-center gap-2">
-              <span className="text-[36px] font-bold text-blue-600 leading-none">
+              <span className="text-[36px] font-bold text-blue-600 dark:text-blue-400 leading-none">
                 {loading ? "—" : (data?.inProgressCount ?? 0)}
               </span>
             </div>
@@ -256,15 +256,15 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
 
           {/* Backlog count */}
           <div className="pr-8 mr-8 border-r border-slate-200">
-            <p className="text-[12px] text-slate-500 mb-1">{t("dashboard.backlogTasks")}</p>
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-1">{t("dashboard.backlogTasks")}</p>
             <div className="flex items-center gap-2">
-              <span className="text-[36px] font-bold text-slate-900 leading-none">
+              <span className="text-[36px] font-bold text-slate-900 dark:text-slate-100 leading-none">
                 {loading ? "—" : (data?.backlogCount ?? 0)}
               </span>
               {!isAdmin && (
                 <button
                   onClick={fetchData}
-                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                  className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                   title={t("dashboard.refresh")}
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -276,7 +276,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
           {/* Sub-team buttons (admin only) */}
           {isAdmin && teams.length > 0 && (
             <div className="flex-1">
-              <p className="text-[12px] text-slate-500 mb-2">{t("dashboard.subTeam")}</p>
+              <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2">{t("dashboard.subTeam")}</p>
               <div className="flex flex-wrap gap-2">
                 {teams.map((t) => (
                   <button
@@ -285,7 +285,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
                     className={`px-4 py-1.5 rounded-md text-[13px] font-medium border transition-colors ${
                       activeTeam === t.id
                         ? "bg-blue-600 text-white border-blue-600"
-                        : "bg-white text-slate-700 border-slate-300 hover:border-blue-400 hover:text-blue-600"
+                        : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:text-blue-600"
                     }`}
                   >
                     {t.name}
@@ -298,7 +298,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
           {/* Handler quick-select (sub-manager only) */}
           {isSubManager && handlers.length > 0 && (
             <div className="flex-1">
-              <p className="text-[12px] text-slate-500 mb-2">{t("dashboard.handler")}</p>
+              <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2">{t("dashboard.handler")}</p>
               <div className="flex flex-wrap gap-2">
                 {handlers.map((h) => (
                   <button
@@ -307,7 +307,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
                     className={`px-4 py-1.5 rounded-md text-[13px] font-medium border transition-colors ${
                       activeHandler === h.id
                         ? "bg-blue-600 text-white border-blue-600"
-                        : "bg-white text-slate-700 border-slate-300 hover:border-blue-400 hover:text-blue-600"
+                        : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:text-blue-600"
                     }`}
                   >
                     {h.name}
@@ -320,7 +320,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
       </div>
 
       {/* Workload overview */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         {/* Section header */}
         <div className="px-5 pt-5 pb-4 border-b border-slate-100">
           <h2 className="text-[15px] font-semibold text-slate-800">
@@ -328,7 +328,7 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
           </h2>
           <button
             onClick={() => setFilterOpen((o) => !o)}
-            className="flex items-center gap-1.5 text-[13px] text-blue-600 hover:text-blue-700 mt-2 font-medium"
+            className="flex items-center gap-1.5 text-[13px] text-blue-600 dark:text-blue-400 hover:text-blue-700 mt-2 font-medium"
           >
             <Filter className="w-3.5 h-3.5" />
             {t("dashboard.workloadFilter")}
@@ -394,11 +394,11 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
 
         {/* Line chart */}
         <div className="px-5 py-5">
-          <p className="text-[13px] font-semibold text-slate-700 mb-4">
+          <p className="text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-4">
             {t("dashboard.dailySeries")}
           </p>
           {loading ? (
-            <div className="h-[280px] flex items-center justify-center text-slate-400 text-sm">{t("common.loading")}</div>
+            <div className="h-[280px] flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">{t("common.loading")}</div>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <LineChart
@@ -438,12 +438,12 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
       </div>
 
       {/* Donut chart */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-        <p className="text-[14px] font-semibold text-slate-800 mb-5">{t("dashboard.statusDistribution")}</p>
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+        <p className="text-[14px] font-semibold text-slate-800 dark:text-slate-200 mb-5">{t("dashboard.statusDistribution")}</p>
         {loading ? (
-          <div className="h-[200px] flex items-center justify-center text-slate-400 text-sm">{t("common.loading")}</div>
+          <div className="h-[200px] flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">{t("common.loading")}</div>
         ) : totalTasks === 0 ? (
-          <div className="h-[200px] flex items-center justify-center text-slate-400 text-sm">{t("dashboard.noTasks")}</div>
+          <div className="h-[200px] flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">{t("dashboard.noTasks")}</div>
         ) : (
           <div className="flex flex-col sm:flex-row items-center gap-8">
             <div className="flex-shrink-0">
@@ -475,19 +475,19 @@ export default function DashboardClient({ userName, isManager, isAdmin, teams, h
               {sortedStatus.map((entry) => {
                 const pct = totalTasks > 0 ? ((entry.count / totalTasks) * 100).toFixed(1) : "0.0";
                 return (
-                  <div key={entry.status} className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-2.5 min-w-[220px]">
+                  <div key={entry.status} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 rounded-lg px-4 py-2.5 min-w-[220px]">
                     <div className="flex items-center gap-2.5">
                       <span
                         className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: STATUS_COLORS[entry.status] ?? "#cbd5e1" }}
                       />
-                      <span className="text-[13px] text-slate-700 font-medium">
+                      <span className="text-[13px] text-slate-700 dark:text-slate-300 font-medium">
                         {t(`taskStatus.${entry.status}`) || entry.status}
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-[14px] font-bold text-slate-800">{entry.count}</span>
-                      <span className="text-[12px] text-slate-500 w-[42px] text-right">{pct}%</span>
+                      <span className="text-[12px] text-slate-500 dark:text-slate-400 w-[42px] text-right">{pct}%</span>
                     </div>
                   </div>
                 );

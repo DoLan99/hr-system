@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 import { calcCreditedMinutes } from "@/lib/time-logs";
 import { getManagedEmployeeIds, ADMIN_ROLES, SUB_MANAGER_ROLES } from "@/lib/managed-scope";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth } from "@/lib/api-auth";
 
 const createSchema = z.object({
   taskId: z.number().int().positive(),
@@ -26,22 +26,17 @@ const TIMELOG_INCLUDE = {
   employee: { select: { id: true, fullName: true, avatarUrl: true } },
   task: {
     select: {
-      id: true,
-      code: true,
-      title: true,
-      taskType: true,
-      estimatedTime: true,
-      billable: true,
-      customerId: true,
+      id: true, code: true, title: true, taskType: true,
+      estimatedTime: true, billable: true, customerId: true,
       customer: { select: { id: true, customerName: true, businessName: true } },
     },
   },
   approvedBy: { select: { id: true, fullName: true } },
 } as const;
 
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const { searchParams } = new URL(req.url);
   const dateStr = searchParams.get("date");
@@ -51,14 +46,13 @@ export async function GET(req: NextRequest) {
   const employeeIdParam = searchParams.get("employeeId");
   const approvalStatus = searchParams.get("approvalStatus");
 
-  const userId = Number(session.user.id);
-  const userRole = session.user.role;
+  const userId = auth.actorId;
+  const userRole = auth.roleName;
   const isAdmin = ADMIN_ROLES.includes(userRole);
   const isSubManager = SUB_MANAGER_ROLES.includes(userRole);
 
   const where: any = {};
 
-  // Scope
   if (isAdmin) {
     if (employeeIdParam) where.employeeId = Number(employeeIdParam);
   } else if (isSubManager) {
@@ -98,30 +92,24 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ data: items });
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const userId = Number(session.user.id);
+  const userId = auth.actorId;
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
   const d = parsed.data;
 
-  // Verify task exists + status allows logging
-  const task = await prisma.task.findUnique({
+  const task = await prisma.task.findFirst({
     where: { id: d.taskId },
     select: {
-      id: true,
-      status: true,
-      taskType: true,
-      estimatedTime: true,
-      actualTimeTotal: true,
-      requiresVideo: true,
-      assignedToId: true,
+      id: true, status: true, taskType: true, estimatedTime: true,
+      actualTimeTotal: true, requiresVideo: true, assignedToId: true,
     },
   });
   if (!task) return NextResponse.json({ error: "Task không tồn tại" }, { status: 404 });
@@ -129,8 +117,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Task đã ${task.status}, không thể log thêm time` }, { status: 422 });
   }
 
-  // Permission: assignee OR admin/manager-of-assignee
-  const userRole = session.user.role;
+  const userRole = auth.roleName;
   const isAdmin = ADMIN_ROLES.includes(userRole);
   const isSubManager = SUB_MANAGER_ROLES.includes(userRole);
   if (task.assignedToId !== userId && !isAdmin) {
@@ -144,7 +131,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Calculate credited minutes
   const credited = calcCreditedMinutes({
     taskType: task.taskType,
     durationMinutes: d.durationMinutes,
@@ -157,8 +143,9 @@ export async function POST(req: NextRequest) {
   const log = await prisma.$transaction(async (tx) => {
     const created = await tx.timeLog.create({
       data: {
+        organizationId: auth.orgId,
         taskId: d.taskId,
-        employeeId: task.assignedToId, // log against the assignee
+        employeeId: task.assignedToId,
         date: new Date(d.date),
         startTime: d.startTime ? new Date(d.startTime) : null,
         endTime: d.endTime ? new Date(d.endTime) : null,
@@ -177,7 +164,6 @@ export async function POST(req: NextRequest) {
       include: TIMELOG_INCLUDE,
     });
 
-    // Update task aggregates
     const taskUpdate: any = {
       actualTimeTotal: { increment: d.durationMinutes },
       lastUpdate: new Date(),
@@ -202,4 +188,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ data: log }, { status: 201 });
-}
+});

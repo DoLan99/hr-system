@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Loader2, Eye, EyeOff } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Role { id: number; name: string; label: string }
@@ -62,7 +62,6 @@ export function EmployeeFormModal({ employee, roles, managers, departments, team
   const [form, setForm] = useState({
     fullName: employee?.fullName ?? "",
     emailCompany: employee?.emailCompany ?? "",
-    password: "",
     roleId: employee?.role.id ?? roles[0]?.id ?? 1,
     employeeCode: employee?.employeeCode ?? "",
     departmentId: String(employee?.departmentId ?? ""),
@@ -83,7 +82,6 @@ export function EmployeeFormModal({ employee, roles, managers, departments, team
     status: employee?.status ?? "ACTIVE",
     driveLink1: employee?.driveLink1 ?? "",
   });
-  const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -119,9 +117,6 @@ export function EmployeeFormModal({ employee, roles, managers, departments, team
 
       if (!isEdit) {
         body.emailCompany = form.emailCompany;
-        body.password = form.password;
-      } else if (form.password) {
-        body.password = form.password;
       }
 
       const url = isEdit ? `/api/employees/${employee.id}` : "/api/employees";
@@ -135,22 +130,22 @@ export function EmployeeFormModal({ employee, roles, managers, departments, team
     }
   }
 
-  const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const inputCls = "w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl my-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-xl my-4">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <h2 className="text-base font-semibold text-slate-900">{isEdit ? "Chỉnh sửa nhân viên" : "Thêm nhân viên"}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400"><X className="w-4 h-4" /></button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-100 px-6">
+        <div className="flex border-b border-slate-100 dark:border-slate-800 px-6">
           {(["basic", "salary", "links"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={cn("py-2.5 px-3 text-xs font-medium border-b-2 transition -mb-px",
-                tab === t ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700")}>
+                tab === t ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700")}>
               {t === "basic" ? "Thông tin" : t === "salary" ? "Lương & KPI" : "Drive Links"}
             </button>
           ))}
@@ -161,42 +156,37 @@ export function EmployeeFormModal({ employee, roles, managers, departments, team
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Họ tên *</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Họ tên *</label>
                   <input value={form.fullName} onChange={e => set("fullName", e.target.value)} required className={inputCls} placeholder="Nguyễn Văn A" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Mã NV</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Mã NV</label>
                   <input value={form.employeeCode} onChange={e => set("employeeCode", e.target.value)} className={inputCls} placeholder="NV001" />
                 </div>
               </div>
 
               {!isEdit && (
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Email công ty *</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Email công ty *</label>
                   <input type="email" value={form.emailCompany} onChange={e => set("emailCompany", e.target.value)} required className={inputCls} />
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">{isEdit ? "Đổi mật khẩu (để trống = giữ nguyên)" : "Mật khẩu *"}</label>
-                <div className="relative">
-                  <input type={showPass ? "text" : "password"} value={form.password} onChange={e => set("password", e.target.value)}
-                    required={!isEdit} className={cn(inputCls, "pr-9")} placeholder="••••••••" />
-                  <button type="button" onClick={() => setShowPass(p => !p)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400">
-                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+              {!isEdit && (
+                <div className="px-3 py-2 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg text-xs text-blue-800 dark:text-blue-300">
+                  ✉️ Sau khi tạo, Clerk sẽ gửi email mời tới <strong>email công ty</strong>. Nhân viên click link trong email để tạo tài khoản và tự động vào workspace.
                 </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Vai trò *</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Vai trò *</label>
                   <select value={form.roleId} onChange={e => set("roleId", e.target.value)} className={inputCls}>
                     {roles.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Trạng thái</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Trạng thái</label>
                   <select value={form.status} onChange={e => set("status", e.target.value)} className={inputCls}>
                     {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
@@ -205,14 +195,14 @@ export function EmployeeFormModal({ employee, roles, managers, departments, team
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Phòng ban</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Phòng ban</label>
                   <select value={form.departmentId} onChange={e => set("departmentId", e.target.value)} className={inputCls}>
                     <option value="">-- Chọn phòng ban --</option>
                     {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Nhóm</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nhóm</label>
                   <select value={form.teamId} onChange={e => set("teamId", e.target.value)} className={inputCls}>
                     <option value="">-- Chọn nhóm --</option>
                     {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -220,7 +210,7 @@ export function EmployeeFormModal({ employee, roles, managers, departments, team
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Quản lý</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Quản lý</label>
                 <select value={form.managerId} onChange={e => set("managerId", e.target.value)} className={inputCls}>
                   <option value="">-- Không có --</option>
                   {managers.map(m => <option key={m.id} value={m.id}>{m.fullName}</option>)}
@@ -229,22 +219,22 @@ export function EmployeeFormModal({ employee, roles, managers, departments, team
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Email Google</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Email Google</label>
                   <input type="email" value={form.emailGoogle} onChange={e => set("emailGoogle", e.target.value)} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">SĐT công ty</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">SĐT công ty</label>
                   <input value={form.mobileCompany} onChange={e => set("mobileCompany", e.target.value)} className={inputCls} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Ngày vào làm</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Ngày vào làm</label>
                   <input type="date" value={form.startDate} onChange={e => set("startDate", e.target.value)} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Công ty</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Công ty</label>
                   <input value={form.company} onChange={e => set("company", e.target.value)} className={inputCls} placeholder="Hung IT" />
                 </div>
               </div>
@@ -254,12 +244,12 @@ export function EmployeeFormModal({ employee, roles, managers, departments, team
           {tab === "salary" && (
             <>
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Loại lương</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Loại lương</label>
                 <div className="flex gap-2">
                   {PAY_TYPES.map(p => (
                     <button key={p.value} type="button" onClick={() => set("payType", p.value)}
                       className={cn("flex-1 py-2 rounded-lg text-xs font-medium border-2 transition",
-                        form.payType === p.value ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 text-slate-600")}>
+                        form.payType === p.value ? "border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-700" : "border-slate-200 dark:border-slate-700 text-slate-600")}>
                       {p.label}
                     </button>
                   ))}
@@ -269,33 +259,33 @@ export function EmployeeFormModal({ employee, roles, managers, departments, team
               <div className="grid grid-cols-2 gap-3">
                 {form.payType === "HOURLY" && (
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Giá giờ (USD)</label>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Giá giờ (USD)</label>
                     <input type="number" min={0} step="0.01" value={form.hourlyRate} onChange={e => set("hourlyRate", e.target.value)} className={inputCls} placeholder="10.00" />
                   </div>
                 )}
                 {form.payType === "MONTHLY" && (
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Lương cố định (USD)</label>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Lương cố định (USD)</label>
                     <input type="number" min={0} step="0.01" value={form.monthlySalary} onChange={e => set("monthlySalary", e.target.value)} className={inputCls} placeholder="2000.00" />
                   </div>
                 )}
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Giờ tối đa/tháng</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Giờ tối đa/tháng</label>
                   <input type="number" min={1} value={form.maxHoursMonth} onChange={e => set("maxHoursMonth", e.target.value)} className={inputCls} />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Bonus M (%)</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Bonus M (%)</label>
                   <input type="number" min={0} max={100} step={0.5} value={form.bonusMPct} onChange={e => set("bonusMPct", e.target.value)} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Bonus A (%)</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Bonus A (%)</label>
                   <input type="number" min={0} max={100} step={0.5} value={form.bonusAPct} onChange={e => set("bonusAPct", e.target.value)} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Bonus T (%)</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Bonus T (%)</label>
                   <input type="number" min={0} max={100} step={0.5} value={form.bonusTPct} onChange={e => set("bonusTPct", e.target.value)} className={inputCls} />
                 </div>
               </div>
@@ -306,7 +296,7 @@ export function EmployeeFormModal({ employee, roles, managers, departments, team
             <div className="space-y-3">
               {["driveLink1", "driveLink2", "driveLink3", "driveLink4"].map((k, i) => (
                 <div key={k}>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Drive Link {i + 1}</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Drive Link {i + 1}</label>
                   <input type="url" value={(form as any)[k]} onChange={e => set(k, e.target.value)} className={inputCls} placeholder="https://drive.google.com/..." />
                 </div>
               ))}
@@ -317,7 +307,7 @@ export function EmployeeFormModal({ employee, roles, managers, departments, team
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
-              className="px-4 py-2 text-sm text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50">Hủy</button>
+              className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50">Hủy</button>
             <button type="submit" disabled={loading}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-lg flex items-center gap-2">
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}

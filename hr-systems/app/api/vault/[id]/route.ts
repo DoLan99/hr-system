@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 import { encryptVault, decryptVault } from "@/lib/vault";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 
 const updateSchema = z.object({
   scope: z.enum(["COMPANY", "CUSTOMER"]).optional(),
@@ -23,19 +21,17 @@ const updateSchema = z.object({
   notes: z.string().optional(),
 });
 
-// GET /api/vault/[id] — returns decrypted password for authorized user; logs access
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const vault = await prisma.passwordVault.findUnique({ where: { id: Number(params.id) } });
+  const vault = await prisma.passwordVault.findFirst({ where: { id: Number(params.id) } });
   if (!vault) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
-  // Log access
   await prisma.vaultAccessLog.create({
     data: {
       vaultId: vault.id,
-      accessedById: Number(session.user.id),
+      accessedById: auth.actorId,
       action: "VIEW_PASSWORD",
     },
   });
@@ -47,13 +43,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       twoFaBackup: vault.twoFaBackup ? decryptVault(vault.twoFaBackup) : null,
     },
   });
-}
+});
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PUT = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
@@ -88,15 +84,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   });
 
   return NextResponse.json({ data: updated });
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const DELETE = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   await prisma.passwordVault.delete({ where: { id: Number(params.id) } });
   return NextResponse.json({ ok: true });
-}
+});

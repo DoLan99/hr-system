@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logMessageAudit, diffObjects } from "@/lib/message-audit";
 import { z } from "zod";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 
 const updateSchema = z.object({
   date: z.string().optional(),
@@ -20,21 +21,27 @@ const updateSchema = z.object({
   tags: z.string().nullable().optional(),
   valueType: z.enum(["A", "B", "C"]).nullable().optional(),
   companyAnswer: z.string().nullable().optional(),
-  supportTime: z.number().int().nullable().optional(),
-  benefitTime: z.number().int().nullable().optional(),
+  supportTime: z.number().int().min(0).nullable().optional(),
+  benefitTime: z.number().int().min(0).nullable().optional(),
 });
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PUT = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
+
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
 
   const body = await req.json();
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
   const d = parsed.data;
-  const existing = await prisma.message.findUnique({ where: { id: Number(params.id) } });
+  const existing = await prisma.message.findFirst({ where: { id: Number(params.id) } });
   if (!existing) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
+
+  if (!isManager && existing.assignedToId !== auth.actorId) {
+    return NextResponse.json({ error: "Không có quyền chỉnh sửa tin nhắn này" }, { status: 403 });
+  }
 
   const supportTime = d.supportTime !== undefined ? d.supportTime : existing.supportTime;
   const benefitTime = d.benefitTime !== undefined ? d.benefitTime : existing.benefitTime;
@@ -71,13 +78,24 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     },
   });
 
-  return NextResponse.json({ data: updated });
-}
+  const auditFields = ["status", "assignedToId", "subject", "dueDate", "supportTime", "benefitTime", "valueType"];
+  const changes = diffObjects(existing as any, updated as any, auditFields);
+  const action = d.status && d.status !== existing.status ? "STATUS_CHANGED" : "UPDATED";
+  await logMessageAudit({ messageId: updated.id, actorId: auth.actorId, action, changes });
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const isOverdue = !!(updated.dueDate && updated.status !== "CLOSED" && updated.dueDate < new Date());
+  return NextResponse.json({ data: { ...updated, isOverdue } });
+});
 
+export const DELETE = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
+
+  if (!MANAGER_ROLES.includes(auth.roleName)) {
+    return NextResponse.json({ error: "Không có quyền xóa" }, { status: 403 });
+  }
+
+  await logMessageAudit({ messageId: Number(params.id), actorId: auth.actorId, action: "DELETED" });
   await prisma.message.delete({ where: { id: Number(params.id) } });
   return NextResponse.json({ ok: true });
-}
+});

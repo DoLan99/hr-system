@@ -98,7 +98,7 @@ export function TimeLogsClient({ initialItems, tasks, initialDate, initialTaskId
           type="date"
           value={date}
           onChange={(e) => changeDate(e.target.value)}
-          className="px-3 py-2 text-sm border border-slate-200 rounded-md"
+          className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-md"
         />
         <div className="text-sm text-slate-600">
           {t("timeLogs.total")}: <strong>{formatMin(totalDuration)}</strong> · {t("timeLogs.credited")}: <strong>{formatMin(totalCredited)}</strong>
@@ -115,9 +115,9 @@ export function TimeLogsClient({ initialItems, tasks, initialDate, initialTaskId
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-600 text-left">
+          <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-left">
             <tr>
               <th className="px-3 py-2.5 font-medium">{t("timeLogs.task")}</th>
               <th className="px-3 py-2.5 font-medium">{t("timeLogs.type")}</th>
@@ -142,10 +142,10 @@ export function TimeLogsClient({ initialItems, tasks, initialDate, initialTaskId
               const lbl = approvalStatusLabel(l.approvalStatus);
               const typeLabel = t(`taskType.${l.task.taskType}`) || l.task.taskType;
               return (
-                <tr key={l.id} className="border-t border-slate-100 hover:bg-slate-50">
+                <tr key={l.id} className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50">
                   <td className="px-3 py-2.5">
                     <div className="font-medium text-slate-800">
-                      <span className="font-mono text-xs text-slate-500 mr-1.5">{l.task.code}</span>
+                      <span className="font-mono text-xs text-slate-500 dark:text-slate-400 mr-1.5">{l.task.code}</span>
                       {l.task.title}
                     </div>
                     {l.task.customer && (
@@ -160,10 +160,10 @@ export function TimeLogsClient({ initialItems, tasks, initialDate, initialTaskId
                       {typeLabel}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-slate-700 text-xs max-w-xs truncate">{l.note ?? "—"}</td>
+                  <td className="px-3 py-2.5 text-slate-700 dark:text-slate-300 text-xs max-w-xs truncate">{l.note ?? "—"}</td>
                   <td className="px-3 py-2.5 text-slate-700">{formatMin(l.durationMinutes)}</td>
                   <td className="px-3 py-2.5">
-                    <span className={l.creditedMinutes && l.creditedMinutes < l.durationMinutes ? "text-amber-600 font-medium" : "text-slate-700"}>
+                    <span className={l.creditedMinutes && l.creditedMinutes < l.durationMinutes ? "text-amber-600 dark:text-amber-400 font-medium" : "text-slate-700"}>
                       {l.creditedMinutes !== null ? formatMin(l.creditedMinutes) : "?"}
                     </span>
                   </td>
@@ -173,7 +173,7 @@ export function TimeLogsClient({ initialItems, tasks, initialDate, initialTaskId
                   </td>
                   <td className="px-3 py-2.5">
                     {l.videoLink ? (
-                      <a href={l.videoLink} target="_blank" rel="noopener" className="text-xs text-blue-600 hover:underline">
+                      <a href={l.videoLink} target="_blank" rel="noopener" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
                         ▶
                       </a>
                     ) : (
@@ -186,7 +186,7 @@ export function TimeLogsClient({ initialItems, tasks, initialDate, initialTaskId
                       {isManager && l.approvalStatus === "PENDING" && (
                         <button
                           onClick={() => setApproving(l)}
-                          className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+                          className="text-xs px-2 py-1 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-100"
                         >
                           {t("timeLogs.approve")}
                         </button>
@@ -194,7 +194,7 @@ export function TimeLogsClient({ initialItems, tasks, initialDate, initialTaskId
                       {(l.employee.id === currentUserId || isManager) && (
                         <button
                           onClick={() => deleteLog(l.id)}
-                          className="text-xs px-2 py-1 text-red-600 hover:bg-red-50 rounded"
+                          className="text-xs px-2 py-1 text-red-600 dark:text-red-400 hover:bg-red-50 rounded"
                         >
                           ✕
                         </button>

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { DEFAULT_LABEL_CONFIG, type LabelConfig } from "@/lib/system-labels";
 import { useLocale } from "@/lib/i18n/context";
+import { TimerButton } from "@/components/tracking/timer-button";
 
 type TaskItem = {
   id: number;
@@ -34,7 +35,15 @@ const PRIORITY_DOT_COLOR: Record<string, string> = {
   LOW: "#94a3b8",
 };
 
-export function SummaryView({ items, labelConfig: lc }: { items: TaskItem[]; labelConfig?: LabelConfig }) {
+export function SummaryView({
+  items,
+  labelConfig: lc,
+  currentUserId,
+}: {
+  items: TaskItem[];
+  labelConfig?: LabelConfig;
+  currentUserId: number;
+}) {
   const labelConfig = lc ?? DEFAULT_LABEL_CONFIG;
   const { t } = useLocale();
 
@@ -116,11 +125,11 @@ export function SummaryView({ items, labelConfig: lc }: { items: TaskItem[]; lab
 
       {/* Status Overview + Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg border border-slate-200 p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-5">
           <h3 className="text-sm font-semibold text-slate-700">{t("tasks.statusOverview")}</h3>
-          <p className="text-xs text-slate-400 mt-0.5 mb-4">{t("tasks.statusOverviewSub")}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 mb-4">{t("tasks.statusOverviewSub")}</p>
           {stats.total === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-8">{t("tasks.noTasks")}</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-8">{t("tasks.noTasks")}</p>
           ) : (
             <div className="flex items-center gap-6">
               <div className="relative w-36 h-36 flex-shrink-0">
@@ -143,7 +152,7 @@ export function SummaryView({ items, labelConfig: lc }: { items: TaskItem[]; lab
                 {stats.statusData.map((d) => (
                   <div key={d.status} className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: d.color }} />
-                    <span className="text-xs text-slate-600 flex-1">{d.label}</span>
+                    <span className="text-xs text-slate-600 dark:text-slate-400 flex-1">{d.label}</span>
                     <span className="text-xs font-semibold text-slate-800">{d.count}</span>
                   </div>
                 ))}
@@ -152,38 +161,46 @@ export function SummaryView({ items, labelConfig: lc }: { items: TaskItem[]; lab
           )}
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200 p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-5">
           <h3 className="text-sm font-semibold text-slate-700">{t("tasks.recentActivity")}</h3>
-          <p className="text-xs text-slate-400 mt-0.5 mb-4">{t("tasks.recentActivitySub")}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 mb-4">{t("tasks.recentActivitySub")}</p>
           <div className="space-y-3">
             {stats.recent.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-6">{t("tasks.noActivity")}</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">{t("tasks.noActivity")}</p>
             ) : (
               stats.recent.map((task) => (
                 <div key={task.id} className="flex items-start gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-950/60 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-[10px] font-semibold text-blue-700">
                       {task.assignedTo.fullName.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-slate-600 leading-relaxed">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                       <span className="font-medium text-slate-800">{task.assignedTo.fullName}</span>
                       {` ${t("tasks.createdBy")} `}
                       <span className="font-mono font-medium text-blue-700">{task.code}</span>
                       {": "}
                       <span className="text-slate-500">{task.title}</span>
                     </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{timeAgo(task.dateCreated)}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{timeAgo(task.dateCreated)}</p>
                   </div>
-                  {(() => {
-                    const cfg = labelConfig.taskStatus[task.status];
-                    return (
-                      <span className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded font-medium ${cfg?.color ?? "bg-slate-100 text-slate-600"}`}>
-                        {t(`taskStatus.${task.status}`) || cfg?.label || task.status}
-                      </span>
-                    );
-                  })()}
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <TimerButton
+                      taskId={task.id}
+                      assigneeId={task.assignedTo.id}
+                      currentUserId={currentUserId}
+                      variant="compact"
+                    />
+                    {(() => {
+                      const cfg = labelConfig.taskStatus[task.status];
+                      return (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${cfg?.color ?? "bg-slate-100 dark:bg-slate-800 text-slate-600"}`}>
+                          {t(`taskStatus.${task.status}`) || cfg?.label || task.status}
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </div>
               ))
             )}
@@ -193,42 +210,42 @@ export function SummaryView({ items, labelConfig: lc }: { items: TaskItem[]; lab
 
       {/* Priority + Type Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg border border-slate-200 p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-5">
           <h3 className="text-sm font-semibold text-slate-700">{t("tasks.priorityBreakdown")}</h3>
-          <p className="text-xs text-slate-400 mt-0.5 mb-4">{t("tasks.priorityBreakdownSub")}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 mb-4">{t("tasks.priorityBreakdownSub")}</p>
           <div className="space-y-3">
             {stats.priorityData.map((d) => (
               <div key={d.priority} className="flex items-center gap-3">
-                <span className="text-xs text-slate-600 w-16 flex-shrink-0">{d.label}</span>
-                <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                <span className="text-xs text-slate-600 dark:text-slate-400 w-16 flex-shrink-0">{d.label}</span>
+                <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                   <div
                     className="h-2 rounded-full transition-all duration-500"
                     style={{ width: `${(d.count / stats.maxPriority) * 100}%`, backgroundColor: d.color }}
                   />
                 </div>
-                <span className="text-xs font-medium text-slate-700 w-4 text-right">{d.count}</span>
+                <span className="text-xs font-medium text-slate-700 dark:text-slate-300 w-4 text-right">{d.count}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200 p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-5">
           <h3 className="text-sm font-semibold text-slate-700">{t("tasks.taskTypeBreakdown")}</h3>
-          <p className="text-xs text-slate-400 mt-0.5 mb-4">{t("tasks.taskTypeBreakdownSub")}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 mb-4">{t("tasks.taskTypeBreakdownSub")}</p>
           <div className="space-y-3">
             {stats.typeData.length === 0 ? (
               <p className="text-sm text-slate-400">{t("common.noData")}</p>
             ) : (
               stats.typeData.map((d) => (
                 <div key={d.type} className="flex items-center gap-3">
-                  <span className="text-xs text-slate-600 w-24 flex-shrink-0 truncate">{d.label}</span>
-                  <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <span className="text-xs text-slate-600 dark:text-slate-400 w-24 flex-shrink-0 truncate">{d.label}</span>
+                  <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                     <div
                       className="h-2 rounded-full bg-blue-500 transition-all duration-500"
                       style={{ width: `${(d.count / stats.maxType) * 100}%` }}
                     />
                   </div>
-                  <span className="text-xs font-medium text-slate-700 w-4 text-right">{d.count}</span>
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 w-4 text-right">{d.count}</span>
                 </div>
               ))
             )}
@@ -241,10 +258,10 @@ export function SummaryView({ items, labelConfig: lc }: { items: TaskItem[]; lab
 
 function StatCard({ value, label, sub, color }: { value: number; label: string; sub: string; color: string }) {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4 hover:shadow-sm transition-shadow">
+    <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-4 hover:shadow-sm transition-shadow">
       <div className={`text-3xl font-bold ${color}`}>{value}</div>
-      <div className="text-sm font-medium text-slate-700 mt-1">{label}</div>
-      <div className="text-xs text-slate-400 mt-0.5">{sub}</div>
+      <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mt-1">{label}</div>
+      <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{sub}</div>
     </div>
   );
 }

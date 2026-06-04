@@ -30,16 +30,16 @@ const PRIORITIES = ["CRITICAL", "HIGH", "NORMAL", "LOW"];
 const TASK_TYPES = ["NORMAL", "LEARNING", "NEW_RESEARCH", "MEETING", "ADMIN", "BILLABLE_CLIENT", "INTERNAL"];
 
 const STATUS_STYLE: Record<string, string> = {
-  BACKLOG:     "bg-slate-100 text-slate-700 border-slate-200",
-  IN_PROGRESS: "bg-blue-50 text-blue-700 border-blue-200",
-  BLOCKED:     "bg-red-50 text-red-700 border-red-200",
-  REVIEW:      "bg-amber-50 text-amber-700 border-amber-200",
-  DONE:        "bg-emerald-50 text-emerald-700 border-emerald-200",
+  BACKLOG:     "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200",
+  IN_PROGRESS: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200",
+  BLOCKED:     "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200",
+  REVIEW:      "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200",
+  DONE:        "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200",
 };
 
 function SideLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-[11px] text-slate-400 w-24 flex-shrink-0 pt-0.5 font-medium uppercase tracking-wide">
+    <span className="text-[11px] text-slate-400 dark:text-slate-500 w-24 flex-shrink-0 pt-0.5 font-medium uppercase tracking-wide">
       {children}
     </span>
   );
@@ -47,7 +47,7 @@ function SideLabel({ children }: { children: React.ReactNode }) {
 
 function SideRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 py-2.5 border-b border-slate-100 last:border-0">
+    <div className="flex items-start gap-2 py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
       <SideLabel>{label}</SideLabel>
       <div className="flex-1 min-w-0 text-xs text-slate-700">{children}</div>
     </div>
@@ -146,16 +146,16 @@ export function TaskCreateDrawer({
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-4xl bg-white shadow-2xl flex flex-col h-full animate-slide-in-right">
+      <div className="relative z-10 w-full max-w-4xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col h-full animate-slide-in-right">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 flex-shrink-0 bg-white">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700 flex-shrink-0 bg-white">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-semibold text-slate-700">{t("tasks.addTask")}</h2>
             {templates.length > 0 && (
               <select
                 value={form.templateId}
                 onChange={(e) => applyTemplate(e.target.value)}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-600 bg-white outline-none focus:ring-2 focus:ring-blue-200 max-w-[220px]"
+                className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 outline-none focus:ring-2 focus:ring-blue-200 max-w-[220px]"
               >
                 <option value="">{t("tasks.selectTemplate")}</option>
                 {templates.map((tpl) => (
@@ -168,7 +168,7 @@ export function TaskCreateDrawer({
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -187,14 +187,14 @@ export function TaskCreateDrawer({
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
                 placeholder={`${t("common.title")} *`}
-                className="w-full text-2xl font-bold text-slate-900 placeholder:text-slate-300 bg-transparent outline-none border-0 leading-tight"
+                className="w-full text-2xl font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-300 bg-transparent outline-none border-0 leading-tight"
               />
-              <div className="h-px bg-slate-200 mt-2" />
+              <div className="h-px bg-slate-200 dark:bg-slate-700 mt-2" />
             </div>
 
             {/* Description */}
             <div>
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+              <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
                 {t("common.description")}
               </h3>
               <RichTextEditor
@@ -208,14 +208,14 @@ export function TaskCreateDrawer({
             {/* Blocked reason */}
             {form.status === "BLOCKED" && (
               <div>
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
                   {t("tasks.reasonNextAction")}
                 </h3>
                 <textarea
                   value={form.reasonNextAction}
                   onChange={(e) => setForm({ ...form, reasonNextAction: e.target.value })}
                   rows={3}
-                  className="w-full text-sm border border-red-200 bg-red-50 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-red-200 resize-none placeholder:text-red-300 text-red-700"
+                  className="w-full text-sm border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-red-200 resize-none placeholder:text-red-300 text-red-700"
                   placeholder={t("tasks.reasonNextAction")}
                 />
               </div>
@@ -223,21 +223,21 @@ export function TaskCreateDrawer({
 
             {/* Error */}
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">
+              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-3 py-2 rounded-lg">
                 {error}
               </div>
             )}
           </div>
 
           {/* ── Sidebar ── */}
-          <div className="w-[264px] flex-shrink-0 border-l border-slate-200 bg-slate-50/40 overflow-y-auto flex flex-col">
+          <div className="w-[264px] flex-shrink-0 border-l border-slate-200 dark:border-slate-700 bg-slate-50/40 overflow-y-auto flex flex-col">
             {/* Status */}
             <div className="px-4 pt-4 pb-3 border-b border-slate-200">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{t("common.status")}</p>
+              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5">{t("common.status")}</p>
               <select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className={`w-full text-sm font-semibold px-3 py-2 rounded-lg border cursor-pointer outline-none transition-colors ${STATUS_STYLE[form.status] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}
+                className={`w-full text-sm font-semibold px-3 py-2 rounded-lg border cursor-pointer outline-none transition-colors ${STATUS_STYLE[form.status] ?? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200"}`}
               >
                 {STATUSES.map((s) => (
                   <option key={s} value={s}>{t(`taskStatus.${s}`) || s}</option>
@@ -321,9 +321,9 @@ export function TaskCreateDrawer({
                     value={form.estimatedTime}
                     onChange={(e) => setForm({ ...form, estimatedTime: e.target.value })}
                     placeholder="min"
-                    className="w-20 text-xs bg-white border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-blue-200"
+                    className="w-20 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-blue-200"
                   />
-                  <span className="text-slate-400 text-xs">{t("common.minute")}</span>
+                  <span className="text-slate-400 dark:text-slate-500 text-xs">{t("common.minute")}</span>
                 </div>
               </SideRow>
 
@@ -336,7 +336,7 @@ export function TaskCreateDrawer({
                     onChange={(e) => setForm({ ...form, billable: e.target.checked })}
                     className="w-3.5 h-3.5 rounded"
                   />
-                  <span className={form.billable ? "text-emerald-600 font-semibold" : "text-slate-400"}>
+                  <span className={form.billable ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-slate-400"}>
                     {form.billable ? t("common.yes") : t("common.no")}
                   </span>
                 </label>
@@ -351,7 +351,7 @@ export function TaskCreateDrawer({
                     onChange={(e) => setForm({ ...form, requiresVideo: e.target.checked })}
                     className="w-3.5 h-3.5 rounded"
                   />
-                  <span className={form.requiresVideo ? "text-blue-600 font-semibold" : "text-slate-400"}>
+                  <span className={form.requiresVideo ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-slate-400"}>
                     {form.requiresVideo ? t("common.yes") : t("common.no")}
                   </span>
                 </label>
@@ -359,7 +359,7 @@ export function TaskCreateDrawer({
             </div>
 
             {/* Create button — pinned to bottom */}
-            <div className="px-4 py-4 border-t border-slate-200 bg-white flex flex-col gap-2">
+            <div className="px-4 py-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col gap-2">
               <button
                 onClick={submit}
                 disabled={saving || !form.title.trim()}
@@ -370,7 +370,7 @@ export function TaskCreateDrawer({
               <button
                 onClick={onClose}
                 disabled={saving}
-                className="w-full py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
+                className="w-full py-2 text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
               >
                 {t("common.cancel")}
               </button>

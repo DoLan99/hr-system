@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { calcActualWorked } from "@/lib/office-time";
-import { z } from "zod";
-
-const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 
 const clockSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -17,19 +15,17 @@ const clockSchema = z.object({
   employeeId: z.number().int().optional(),
 });
 
-// GET /api/office-time?month=1&year=2025&employeeId=2
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const { searchParams } = new URL(req.url);
   const month = Number(searchParams.get("month") ?? new Date().getMonth() + 1);
   const year = Number(searchParams.get("year") ?? new Date().getFullYear());
   const empId = searchParams.get("employeeId");
 
-  const userId = Number(session.user.id);
-  const isManager = MANAGER_ROLES.includes(session.user.role);
-  const targetId = isManager && empId ? Number(empId) : userId;
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
+  const targetId = isManager && empId ? Number(empId) : auth.actorId;
 
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 1);
@@ -41,12 +37,11 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ data: records });
-}
+});
 
-// POST /api/office-time — clock in/out 1 checkpoint
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const body = await req.json();
   const parsed = clockSchema.safeParse(body);
@@ -54,16 +49,13 @@ export async function POST(req: NextRequest) {
 
   const { date, checkpoint, timeStr, employeeId: bodyEmpId } = parsed.data;
 
-  const userId = Number(session.user.id);
-  const isManager = MANAGER_ROLES.includes(session.user.role);
-  const targetId = isManager && bodyEmpId ? bodyEmpId : userId;
+  const isManager = MANAGER_ROLES.includes(auth.roleName);
+  const targetId = isManager && bodyEmpId ? bodyEmpId : auth.actorId;
 
-  // Chỉ manager mới được clock cho người khác
-  if (!isManager && bodyEmpId && bodyEmpId !== userId) {
+  if (!isManager && bodyEmpId && bodyEmpId !== auth.actorId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Tính thời điểm checkpoint
   const dateStart = new Date(date + "T00:00:00");
   let checkpointTime: Date;
   if (timeStr) {
@@ -74,9 +66,8 @@ export async function POST(req: NextRequest) {
     checkpointTime = new Date();
   }
 
-  // Upsert record
-  const existing = await prisma.officeTime.findUnique({
-    where: { date_employeeId: { date: dateStart, employeeId: targetId } },
+  const existing = await prisma.officeTime.findFirst({
+    where: { date: dateStart, employeeId: targetId },
   });
 
   let record;
@@ -85,8 +76,7 @@ export async function POST(req: NextRequest) {
       where: { id: existing.id },
       data: {
         [checkpoint]: checkpointTime,
-        // Reset approval nếu employee tự sửa
-        ...(targetId === userId && !isManager && { approvalStatus: "PENDING", approvedById: null, approvedAt: null }),
+        ...(targetId === auth.actorId && !isManager && { approvalStatus: "PENDING", approvedById: null, approvedAt: null }),
       },
     });
   } else {
@@ -95,7 +85,6 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Recalc actualWorked & delta
   const actualWorked = calcActualWorked(record);
   const delta = actualWorked > 0 ? record.timeLogsTotal - actualWorked : null;
 
@@ -106,4 +95,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ data: updated }, { status: 201 });
-}
+});

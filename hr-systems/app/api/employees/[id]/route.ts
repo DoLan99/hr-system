@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
+import { withContext } from "@/lib/with-context";
+import { getActorId, getOrgId } from "@/lib/request-context";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
 
@@ -32,21 +31,29 @@ const updateSchema = z.object({
   driveLink2: z.string().optional(),
   driveLink3: z.string().optional(),
   driveLink4: z.string().optional(),
-  password: z.string().min(6).optional(),
 });
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+async function getCurrentRole(): Promise<string | null> {
+  const actorId = getActorId();
+  if (!actorId) return null;
+  const me = await prisma.employee.findFirst({
+    where: { id: actorId },
+    select: { role: { select: { name: true } } },
+  });
+  return me?.role.name ?? null;
+}
+
+export const GET = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const orgId = getOrgId();
+  const actorId = getActorId();
+  if (!orgId || !actorId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const id = Number(params.id);
-  const userId = Number(session.user.id);
+  const roleName = await getCurrentRole();
+  const isManager = roleName ? MANAGER_ROLES.includes(roleName) : false;
+  if (!isManager && id !== actorId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  // Employee can only view their own profile; managers can view all
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
-  if (!isManager && id !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const employee = await prisma.employee.findUnique({
+  const employee = await prisma.employee.findFirst({
     where: { id },
     select: {
       id: true, employeeCode: true, fullName: true, avatarUrl: true,
@@ -56,6 +63,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       monthlySalary: true, maxHoursMonth: true, bonusMPct: true, bonusAPct: true,
       bonusTPct: true, startDate: true, status: true, managerId: true,
       driveLink1: true, driveLink2: true, driveLink3: true, driveLink4: true,
+      clerkUserId: true, isOwner: true, membershipRole: true,
       role: { select: { id: true, name: true, label: true } },
       manager: { select: { id: true, fullName: true } },
       dept: { select: { id: true, name: true } },
@@ -65,19 +73,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   if (!employee) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
   return NextResponse.json({ data: employee });
-}
+});
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PUT = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const orgId = getOrgId();
+  const actorId = getActorId();
+  if (!orgId || !actorId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const id = Number(params.id);
-  const userId = Number(session.user.id);
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
+  const roleName = await getCurrentRole();
+  const isManager = roleName ? MANAGER_ROLES.includes(roleName) : false;
 
-  if (!isManager && id !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isManager && id !== actorId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const existing = await prisma.employee.findUnique({ where: { id } });
+  const existing = await prisma.employee.findFirst({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
   const body = await req.json();
@@ -87,7 +96,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const d = parsed.data;
   const updateData: any = { ...d };
 
-  // Non-managers can only update basic info, not salary/role
   if (!isManager) {
     delete updateData.roleId;
     delete updateData.payType;
@@ -98,13 +106,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     delete updateData.bonusTPct;
     delete updateData.status;
     delete updateData.managerId;
-  }
-
-  if (d.password) {
-    updateData.passwordHash = await bcrypt.hash(d.password, 10);
-    delete updateData.password;
-  } else {
-    delete updateData.password;
   }
 
   if (d.startDate !== undefined) {
@@ -124,6 +125,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       monthlySalary: true, maxHoursMonth: true, bonusMPct: true, bonusAPct: true,
       bonusTPct: true, startDate: true, status: true, managerId: true,
       driveLink1: true, driveLink2: true, driveLink3: true, driveLink4: true,
+      clerkUserId: true, isOwner: true, membershipRole: true,
       role: { select: { id: true, name: true, label: true } },
       manager: { select: { id: true, fullName: true } },
       dept: { select: { id: true, name: true } },
@@ -132,20 +134,23 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   });
 
   return NextResponse.json({ data: updated });
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const DELETE = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const orgId = getOrgId();
+  const actorId = getActorId();
+  if (!orgId || !actorId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const isManager = MANAGER_ROLES.includes((session.user as any).role);
+  const roleName = await getCurrentRole();
+  const isManager = roleName ? MANAGER_ROLES.includes(roleName) : false;
   if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const id = Number(params.id);
-  const userId = Number(session.user.id);
-  if (id === userId) return NextResponse.json({ error: "Không thể xóa chính mình" }, { status: 400 });
+  if (id === actorId) return NextResponse.json({ error: "Không thể xóa chính mình" }, { status: 400 });
 
-  // Soft delete
+  const existing = await prisma.employee.findFirst({ where: { id } });
+  if (!existing) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
+
   await prisma.employee.update({ where: { id }, data: { status: "INACTIVE" } });
   return NextResponse.json({ ok: true });
-}
+});

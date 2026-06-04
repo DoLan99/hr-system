@@ -88,8 +88,8 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-slate-900 tracking-tight leading-tight">{t("vault.title")}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{t("vault.subtitle")}</p>
+          <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">{t("vault.title")}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t("vault.subtitle")}</p>
         </div>
         {isManager && (
           <button onClick={() => setCreating(true)} className="btn-primary">
@@ -113,7 +113,7 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
           ].map(s => (
             <button key={s.key} onClick={() => setFilterScope(s.key)}
               className={cn("px-3 py-1.5 rounded-lg text-[12px] font-medium transition",
-                filterScope === s.key ? "bg-blue-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50")}>
+                filterScope === s.key ? "bg-blue-600 text-white shadow-sm" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50")}>
               {s.label}
             </button>
           ))}
@@ -129,28 +129,28 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
           const scopeLabel = v.scope === "COMPANY" ? t("vault.company") : t("vault.customer");
           return (
             <div key={v.id} className={cn(
-              "bg-white rounded-xl border p-4 space-y-3 shadow-card transition hover:shadow-card-md",
-              isExpiring ? "border-amber-200 bg-amber-50/20" : "border-slate-200"
+              "bg-white dark:bg-slate-900 rounded-xl border p-4 space-y-3 shadow-card transition hover:shadow-card-md",
+              isExpiring ? "border-amber-200 dark:border-amber-800 bg-amber-50/20" : "border-slate-200"
             )}>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={cn("text-[11px] px-2 py-0.5 rounded-md font-semibold",
-                      v.scope === "COMPANY" ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-purple-50 text-purple-700 border border-purple-200")}>
+                      v.scope === "COMPANY" ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200" : "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200")}>
                       {scopeLabel}
                     </span>
-                    <p className="font-semibold text-slate-900 text-[13.5px] truncate">
+                    <p className="font-semibold text-slate-900 dark:text-slate-100 text-[13.5px] truncate">
                       {v.entityName || v.serviceApp || "—"}
                     </p>
                   </div>
                   {v.serviceApp && v.entityName && (
-                    <p className="text-[12px] text-slate-500 mt-0.5">{v.serviceApp}</p>
+                    <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{v.serviceApp}</p>
                   )}
                   {v.customer && <p className="text-[12px] text-slate-500">{v.customer.customerName}</p>}
                 </div>
                 <div className="flex gap-1 shrink-0">
                   {isManager && (
-                    <button onClick={() => setEditingVault(v)} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition">
+                    <button onClick={() => setEditingVault(v)} className="p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -165,37 +165,37 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
               <div className="space-y-1.5 text-[12px] text-slate-600">
                 {v.username && (
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400 w-16 shrink-0">{t("vault.username")}</span>
-                    <span className="font-mono text-slate-700 truncate">{v.username}</span>
+                    <span className="text-slate-400 dark:text-slate-500 w-16 shrink-0">{t("vault.username")}</span>
+                    <span className="font-mono text-slate-700 dark:text-slate-300 truncate">{v.username}</span>
                   </div>
                 )}
                 {v.emailUsed && (
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400 w-16 shrink-0">{t("common.email")}</span>
+                    <span className="text-slate-400 dark:text-slate-500 w-16 shrink-0">{t("common.email")}</span>
                     <span className="truncate">{v.emailUsed}</span>
                   </div>
                 )}
                 {v.twoFaMethod && (
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400 w-16 shrink-0">{t("vault.twoFa")}</span>
+                    <span className="text-slate-400 dark:text-slate-500 w-16 shrink-0">{t("vault.twoFa")}</span>
                     <span>{v.twoFaMethod}</span>
                   </div>
                 )}
               </div>
 
               {/* Password reveal */}
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-                <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className={cn("flex-1 font-mono text-[12px] truncate", isRevealed ? "text-slate-900" : "text-slate-400 tracking-widest")}>
+              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
+                <Lock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                <span className={cn("flex-1 font-mono text-[12px] truncate", isRevealed ? "text-slate-900" : "text-slate-400 dark:text-slate-500 tracking-widest")}>
                   {isRevealed ? revealedPass : "••••••••••"}
                 </span>
                 <button onClick={() => handleReveal(v.id)}
-                  className="p-1 text-slate-400 hover:text-slate-700 transition" title={isRevealed ? t("vault.hide") : t("vault.show")}>
+                  className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition" title={isRevealed ? t("vault.hide") : t("vault.show")}>
                   {isRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 </button>
                 {isRevealed && (
                   <button onClick={() => handleCopy(v.id, revealedPass)}
-                    className="p-1 text-slate-400 hover:text-slate-700 transition">
+                    className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition">
                     {copied === v.id
                       ? <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
                       : <Copy className="w-3.5 h-3.5" />}
@@ -203,17 +203,17 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
                 )}
               </div>
 
-              <div className="flex items-center justify-between text-[11.5px] text-slate-400 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between text-[11.5px] text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-100">
                 <span className="font-medium text-slate-500">{v.owner?.fullName}</span>
                 <div className="flex items-center gap-1.5">
                   {isExpiring && <RotateCcw className="w-3 h-3 text-amber-500" />}
-                  <span className={isExpiring ? "text-amber-600 font-medium" : ""}>
+                  <span className={isExpiring ? "text-amber-600 dark:text-amber-400 font-medium" : ""}>
                     {t("common.daysAgo").replace("{n}", String(daysSinceUpdate))}
                   </span>
                 </div>
                 {v.loginUrl && (
                   <a href={v.loginUrl} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-blue-600 hover:text-blue-700 hover:underline">
+                    className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:underline">
                     <Globe className="w-3 h-3" /> {t("vault.url")}
                   </a>
                 )}
@@ -224,7 +224,7 @@ export function VaultClient({ initialVaults, employees, customers, isManager }: 
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-16 text-slate-400 text-sm">{t("vault.noItems")}</div>
+        <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">{t("vault.noItems")}</div>
       )}
 
       {(creating || editingVault) && (

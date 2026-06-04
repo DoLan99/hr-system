@@ -1,22 +1,24 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { requireAuth } from "@/lib/current-user";
+import { MANAGER_ROLES } from "@/lib/api-auth";
 import { PaymentsClient } from "./_components/payments-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function PaymentsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const { employee, organization, role } = await requireAuth();
+  const userId = employee.id;
+  const isManager = MANAGER_ROLES.includes(role.name);
 
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
-  const userId = Number(session.user.id);
-  const isManager = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"].includes((session.user as any).role);
 
-  const where: any = { summaryMonth: month, summaryYear: year };
+  const where: any = {
+    organizationId: organization.id,
+    summaryMonth: month,
+    summaryYear: year,
+  };
   if (!isManager) where.employeeId = userId;
 
   const [payments, employees] = await Promise.all([
@@ -30,7 +32,7 @@ export default async function PaymentsPage() {
     }),
     isManager
       ? prisma.employee.findMany({
-          where: { status: { not: "INACTIVE" } },
+          where: { organizationId: organization.id, status: { not: "INACTIVE" } },
           select: { id: true, fullName: true, department: true },
           orderBy: { fullName: "asc" },
         })

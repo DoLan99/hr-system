@@ -38,7 +38,7 @@ function Btn({
       className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${
         active
           ? "bg-slate-700 text-white"
-          : "text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:opacity-30"
+          : "text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-800 disabled:opacity-30"
       }`}
     >
       {children}
@@ -90,10 +90,10 @@ export function RichTextEditor({ value, onChange, onBlur, placeholder, minHeight
   if (!editor) return null;
 
   return (
-    <div className={`border border-slate-200 rounded-lg overflow-hidden bg-white ${!readOnly ? "focus-within:ring-2 focus-within:ring-blue-200 focus-within:border-blue-300 transition-all" : ""}`}>
+    <div className={`border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-900 ${!readOnly ? "focus-within:ring-2 focus-within:ring-blue-200 focus-within:border-blue-300 transition-all" : ""}`}>
       {/* Toolbar — hidden in read-only mode */}
       {!readOnly && (
-        <div className="flex items-center gap-0.5 px-2 py-1.5 bg-slate-50 border-b border-slate-200 flex-wrap">
+        <div className="flex items-center gap-0.5 px-2 py-1.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 flex-wrap">
           <Btn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold (Ctrl+B)">
             <Bold className="w-3.5 h-3.5" />
           </Btn>

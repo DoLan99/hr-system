@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth } from "@/lib/api-auth";
 
-export async function GET(_req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (_req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const roles = await prisma.role.findMany({
-    include: {
-      _count: { select: { employees: true } },
-    },
+    include: { _count: { select: { employees: true } } },
     orderBy: { id: "asc" },
   });
 
   return NextResponse.json({ data: roles });
-}
+});

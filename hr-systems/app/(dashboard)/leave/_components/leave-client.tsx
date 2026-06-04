@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useSession } from "next-auth/react";
+import { useCurrentUser } from "@/lib/contexts/current-user-context";
 import { format } from "date-fns";
 import { vi as viLocale } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, CheckCircle2, Clock, XCircle, ExternalLink } from "lucide-react";
@@ -39,19 +39,18 @@ interface Props {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  VACATION: "bg-blue-100 text-blue-700",
-  HOLIDAY: "bg-purple-100 text-purple-700",
-  ILLNESS: "bg-red-100 text-red-700",
-  OTHER: "bg-slate-100 text-slate-700",
+  VACATION: "bg-blue-100 dark:bg-blue-950/60 text-blue-700",
+  HOLIDAY: "bg-purple-100 dark:bg-purple-950/60 text-purple-700",
+  ILLNESS: "bg-red-100 dark:bg-red-950/60 text-red-700",
+  OTHER: "bg-slate-100 dark:bg-slate-800 text-slate-700",
 };
 
 const STATUS_ORDER = ["PENDING", "APPROVED", "REJECTED"];
 
 export function LeaveClient({ initialLeaves, initialMonth, initialYear, employees, currentUserId }: Props) {
-  const { data: session } = useSession();
+  const user = useCurrentUser();
   const { t, locale } = useLocale();
-  const role = (session?.user as any)?.role ?? "";
-  const isManager = MANAGER_ROLES.includes(role);
+  const isManager = MANAGER_ROLES.includes(user.role.name);
   const dateFnsLocale = locale === "vi" ? viLocale : undefined;
 
   const [viewDate, setViewDate] = useState(new Date(initialYear, initialMonth - 1));
@@ -109,9 +108,9 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
   };
 
   const statusConfig = {
-    PENDING: { label: t("leaveStatus.PENDING"), color: "bg-yellow-100 text-yellow-700", icon: <Clock className="w-3.5 h-3.5" /> },
-    APPROVED: { label: t("leaveStatus.APPROVED"), color: "bg-green-100 text-green-700", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-    REJECTED: { label: t("leaveStatus.REJECTED"), color: "bg-red-100 text-red-700", icon: <XCircle className="w-3.5 h-3.5" /> },
+    PENDING: { label: t("leaveStatus.PENDING"), color: "bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700", icon: <Clock className="w-3.5 h-3.5" /> },
+    APPROVED: { label: t("leaveStatus.APPROVED"), color: "bg-green-100 dark:bg-green-950/60 text-green-700", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+    REJECTED: { label: t("leaveStatus.REJECTED"), color: "bg-red-100 dark:bg-red-950/60 text-red-700", icon: <XCircle className="w-3.5 h-3.5" /> },
   } as Record<string, { label: string; color: string; icon: React.ReactNode }>;
 
   return (
@@ -136,7 +135,7 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
           { label: t("leave.approvedRequests"), value: stats.approved, color: "text-green-600" },
           { label: t("leave.approvedHours"), value: `${stats.totalHours}h`, color: "text-blue-600" },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl border border-slate-100 p-4">
+          <div key={s.label} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4">
             <p className="text-xs text-slate-500">{s.label}</p>
             <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
           </div>
@@ -145,12 +144,12 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
 
       {/* Controls */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 px-3 py-2">
-          <button onClick={() => navigate(-1)} className="p-1 hover:bg-slate-100 rounded"><ChevronLeft className="w-4 h-4" /></button>
+        <div className="flex items-center gap-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2">
+          <button onClick={() => navigate(-1)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><ChevronLeft className="w-4 h-4" /></button>
           <span className="text-sm font-medium w-28 text-center">
             {format(viewDate, "MMMM yyyy", { locale: dateFnsLocale })}
           </span>
-          <button onClick={() => navigate(1)} className="p-1 hover:bg-slate-100 rounded"><ChevronRight className="w-4 h-4" /></button>
+          <button onClick={() => navigate(1)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><ChevronRight className="w-4 h-4" /></button>
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -158,7 +157,7 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
             <button key={s} onClick={() => setFilterStatus(s)}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-medium transition",
-                filterStatus === s ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                filterStatus === s ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
               )}>
               {s === "ALL" ? t("common.all") : (statusConfig[s]?.label ?? s)}
             </button>
@@ -185,34 +184,34 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
                   const canEdit = item.status === "PENDING" && (!isManager ? item.employee.id === currentUserId : true);
                   const canReview = isManager && item.status === "PENDING";
                   return (
-                    <div key={item.id} className="bg-white rounded-xl border border-slate-100 p-4 flex items-start gap-4">
+                    <div key={item.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4 flex items-start gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           {isManager && (
                             <span className="text-sm font-semibold text-slate-900">{item.employee.fullName}</span>
                           )}
-                          <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", TYPE_COLORS[item.type] ?? "bg-slate-100 text-slate-700")}>
+                          <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", TYPE_COLORS[item.type] ?? "bg-slate-100 dark:bg-slate-800 text-slate-700")}>
                             {t(`leaveType.${item.type}`) || item.type}
                           </span>
-                          <span className="text-sm text-slate-700 font-medium">
+                          <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">
                             {format(new Date(item.date), "dd/MM/yyyy", { locale: dateFnsLocale })}
                           </span>
                           <span className="text-sm text-slate-600">
                             {Number(item.requestedHours)}h {t("leave.hoursRequested")}
                             {item.status === "APPROVED" && item.approvedHours != null && (
-                              <span className="text-green-600 ml-1">→ {Number(item.approvedHours)}h {t("leave.hoursApproved")}</span>
+                              <span className="text-green-600 dark:text-green-400 ml-1">→ {Number(item.approvedHours)}h {t("leave.hoursApproved")}</span>
                             )}
                           </span>
                         </div>
                         {item.reason && (
-                          <p className="text-xs text-slate-500 mt-1 truncate">{item.reason}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">{item.reason}</p>
                         )}
                         {item.approvalNote && (
-                          <p className="text-xs text-slate-500 mt-0.5 italic">&ldquo;{item.approvalNote}&rdquo; — {item.approvedBy?.fullName}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 italic">&ldquo;{item.approvalNote}&rdquo; — {item.approvedBy?.fullName}</p>
                         )}
                         {item.evidenceLink && (
                           <a href={item.evidenceLink} target="_blank" rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-0.5">
+                            className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-0.5">
                             <ExternalLink className="w-3 h-3" /> {t("leave.evidence")}
                           </a>
                         )}
@@ -220,13 +219,13 @@ export function LeaveClient({ initialLeaves, initialMonth, initialYear, employee
                       <div className="flex items-center gap-1 shrink-0">
                         {canReview && (
                           <button onClick={() => setReviewingItem(item)}
-                            className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title={t("common.approve")}>
+                            className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 rounded-lg transition" title={t("common.approve")}>
                             <CheckCircle2 className="w-4 h-4" />
                           </button>
                         )}
                         {canEdit && (
                           <button onClick={() => setEditingItem(item)}
-                            className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition">
+                            className="p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
                             <Pencil className="w-4 h-4" />
                           </button>
                         )}

@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_ROLES, SUB_MANAGER_ROLES } from "@/lib/managed-scope";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth } from "@/lib/api-auth";
 
 const include = {
   template: { select: { id: true, code: true, title: true } },
   reviewedBy: { select: { id: true, fullName: true } },
 } as const;
 
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const userRole = session.user.role;
+  const userRole = auth.roleName;
   const canRead = ADMIN_ROLES.includes(userRole) || SUB_MANAGER_ROLES.includes(userRole);
   if (!canRead) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -30,4 +30,4 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ data: items });
-}
+});

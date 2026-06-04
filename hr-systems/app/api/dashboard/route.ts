@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth } from "@/lib/api-auth";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"];
 const SUB_MANAGER_ROLES = ["MANAGER", "TEAM_LEAD"];
 
-export async function GET(req: NextRequest) {
+export const GET = withContext(async (req: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireApiAuth();
+    if (!auth.ok) return auth.response;
 
     const { searchParams } = new URL(req.url);
     const now = new Date();
@@ -21,8 +21,8 @@ export async function GET(req: NextRequest) {
     const handlerId = searchParams.get("handlerId") ? Number(searchParams.get("handlerId")) : null;
     const taskType = searchParams.get("taskType") || null;
 
-    const userId = Number(session.user.id);
-    const userRole = session.user.role;
+    const userId = auth.actorId;
+    const userRole = auth.roleName;
     const isAdmin = ADMIN_ROLES.includes(userRole);
     const isSubManager = SUB_MANAGER_ROLES.includes(userRole);
     const isManager = isAdmin || isSubManager;
@@ -165,4 +165,4 @@ export async function GET(req: NextRequest) {
     console.error("[dashboard GET]", error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
-}
+});

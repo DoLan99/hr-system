@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useSession } from "next-auth/react";
+import { useCurrentUser } from "@/lib/contexts/current-user-context";
 import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { vi as viLocale } from "date-fns/locale";
@@ -33,18 +33,17 @@ interface Props {
 }
 
 const TYPE_COLOR: Record<string, { color: string; sign: string }> = {
-  SALARY: { color: "bg-blue-100 text-blue-700", sign: "+" },
-  BONUS: { color: "bg-green-100 text-green-700", sign: "+" },
-  ADVANCE: { color: "bg-yellow-100 text-yellow-700", sign: "-" },
-  DEDUCTION: { color: "bg-red-100 text-red-700", sign: "-" },
-  OTHER: { color: "bg-slate-100 text-slate-700", sign: "+" },
+  SALARY: { color: "bg-blue-100 dark:bg-blue-950/60 text-blue-700", sign: "+" },
+  BONUS: { color: "bg-green-100 dark:bg-green-950/60 text-green-700", sign: "+" },
+  ADVANCE: { color: "bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700", sign: "-" },
+  DEDUCTION: { color: "bg-red-100 dark:bg-red-950/60 text-red-700", sign: "-" },
+  OTHER: { color: "bg-slate-100 dark:bg-slate-800 text-slate-700", sign: "+" },
 };
 
 export function PaymentsClient({ initialPayments, initialMonth, initialYear, employees }: Props) {
-  const { data: session } = useSession();
+  const user = useCurrentUser();
   const { t, locale } = useLocale();
-  const role = (session?.user as any)?.role ?? "";
-  const isManager = MANAGER_ROLES.includes(role);
+  const isManager = MANAGER_ROLES.includes(user.role.name);
   const dateFnsLocale = locale === "vi" ? viLocale : undefined;
 
   const [viewDate, setViewDate] = useState(new Date(initialYear, initialMonth - 1));
@@ -117,33 +116,33 @@ export function PaymentsClient({ initialPayments, initialMonth, initialYear, emp
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-xl border border-slate-100 p-4">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4">
           <p className="text-xs text-slate-500">{t("payments.paidOut")}</p>
-          <p className="text-xl font-bold text-blue-600 mt-1">{formatCurrency(totalIn)}</p>
+          <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">{formatCurrency(totalIn)}</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-100 p-4">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4">
           <p className="text-xs text-slate-500">{t("payments.deductions")}</p>
           <p className="text-xl font-bold text-red-500 mt-1">{formatCurrency(totalOut)}</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-100 p-4">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4">
           <p className="text-xs text-slate-500">{t("payments.netPaid")}</p>
-          <p className="text-xl font-bold text-slate-900 mt-1">{formatCurrency(totalIn - totalOut)}</p>
+          <p className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-1">{formatCurrency(totalIn - totalOut)}</p>
         </div>
       </div>
 
       {/* Controls */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 px-3 py-2">
-          <button onClick={() => navigate(-1)} className="p-1 hover:bg-slate-100 rounded"><ChevronLeft className="w-4 h-4" /></button>
+        <div className="flex items-center gap-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2">
+          <button onClick={() => navigate(-1)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><ChevronLeft className="w-4 h-4" /></button>
           <span className="text-sm font-medium w-28 text-center">{format(viewDate, "MMMM yyyy", { locale: dateFnsLocale })}</span>
-          <button onClick={() => navigate(1)} className="p-1 hover:bg-slate-100 rounded"><ChevronRight className="w-4 h-4" /></button>
+          <button onClick={() => navigate(1)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><ChevronRight className="w-4 h-4" /></button>
         </div>
 
         <div className="flex gap-1.5 flex-wrap">
           {["ALL", "SALARY", "BONUS", "ADVANCE", "DEDUCTION", "OTHER"].map(typKey => (
             <button key={typKey} onClick={() => setFilterType(typKey)}
               className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition",
-                filterType === typKey ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}>
+                filterType === typKey ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200")}>
               {typKey === "ALL" ? t("common.all") : t(`paymentType.${typKey}`)}
             </button>
           ))}
@@ -151,7 +150,7 @@ export function PaymentsClient({ initialPayments, initialMonth, initialYear, emp
 
         {isManager && (
           <select value={filterEmpId} onChange={e => setFilterEmpId(e.target.value)}
-            className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="ALL">{t("payments.allEmployees")}</option>
             {employees.map(e => <option key={e.id} value={e.id}>{e.fullName}</option>)}
           </select>
@@ -161,8 +160,8 @@ export function PaymentsClient({ initialPayments, initialMonth, initialYear, emp
       {/* List grouped by employee */}
       <div className="space-y-4">
         {byEmployee.map(({ emp, items }) => (
-          <div key={emp.id} className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-            <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+          <div key={emp.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+            <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <p className="text-sm font-semibold text-slate-900">{emp.fullName}</p>
               <p className="text-xs text-slate-500">{items.length} {t("payments.transactions")}</p>
             </div>
@@ -187,7 +186,7 @@ export function PaymentsClient({ initialPayments, initialMonth, initialYear, emp
                     {isManager && (
                       <div className="flex gap-1 shrink-0">
                         <button onClick={() => setEditingItem(p)}
-                          className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg">
+                          className="p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button onClick={() => handleDelete(p.id)}
@@ -204,7 +203,7 @@ export function PaymentsClient({ initialPayments, initialMonth, initialYear, emp
         ))}
 
         {filtered.length === 0 && (
-          <div className="text-center py-16 text-slate-400 text-sm">{t("payments.noPayments")}</div>
+          <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">{t("payments.noPayments")}</div>
         )}
       </div>
 

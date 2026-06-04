@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
-const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"];
+import { prisma } from "@/lib/prisma";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth } from "@/lib/api-auth";
 
 const updateSchema = z.object({
   label: z.string().min(1).optional(),
@@ -13,12 +11,10 @@ const updateSchema = z.object({
   permissions: z.record(z.any()).optional(),
 });
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const isAdmin = ADMIN_ROLES.includes((session.user as any).role);
-  if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+export const PUT = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
+  if (!auth.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
   const parsed = updateSchema.safeParse(body);
@@ -37,4 +33,4 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   });
 
   return NextResponse.json({ data: role });
-}
+});

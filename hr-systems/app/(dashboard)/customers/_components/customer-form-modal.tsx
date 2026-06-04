@@ -62,7 +62,7 @@ export function CustomerFormModal({ customer, employees, onClose, onSaved }: Pro
   const [error, setError] = useState("");
 
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
-  const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const inputCls = "w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -99,13 +99,13 @@ export function CustomerFormModal({ customer, employees, onClose, onSaved }: Pro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg my-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg my-4">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <h2 className="text-base font-semibold text-slate-900">{customer ? "Chỉnh sửa khách hàng" : "Thêm khách hàng"}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400"><X className="w-4 h-4" /></button>
         </div>
 
-        <div className="flex border-b border-slate-100 px-6">
+        <div className="flex border-b border-slate-100 dark:border-slate-800 px-6">
           {(["info", "contact"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={cn("py-2.5 px-3 text-xs font-medium border-b-2 -mb-px transition",
@@ -120,35 +120,35 @@ export function CustomerFormModal({ customer, employees, onClose, onSaved }: Pro
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Tên khách hàng</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Tên khách hàng</label>
                   <input value={form.customerName} onChange={e => set("customerName", e.target.value)} className={inputCls} placeholder="Nguyễn Văn A" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Tên doanh nghiệp</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Tên doanh nghiệp</label>
                   <input value={form.businessName} onChange={e => set("businessName", e.target.value)} className={inputCls} placeholder="ABC Co., Ltd" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Mã KH</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Mã KH</label>
                   <input value={form.custId} onChange={e => set("custId", e.target.value)} className={inputCls} placeholder="KH001" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">MST</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">MST</label>
                   <input value={form.vatTaxId} onChange={e => set("vatTaxId", e.target.value)} className={inputCls} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Trạng thái</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Trạng thái</label>
                   <select value={form.status} onChange={e => set("status", e.target.value)} className={inputCls}>
                     {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Nhân viên phụ trách</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nhân viên phụ trách</label>
                   <select value={form.responsibleStaffId} onChange={e => set("responsibleStaffId", e.target.value)} className={inputCls}>
                     <option value="">-- Không có --</option>
                     {employees.map(e => <option key={e.id} value={e.id}>{e.fullName}</option>)}
@@ -157,7 +157,7 @@ export function CustomerFormModal({ customer, employees, onClose, onSaved }: Pro
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Ngôn ngữ ưu tiên</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Ngôn ngữ ưu tiên</label>
                 <select value={form.preferredLanguage} onChange={e => set("preferredLanguage", e.target.value)} className={inputCls}>
                   <option value="">-- Chọn --</option>
                   {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
@@ -165,7 +165,7 @@ export function CustomerFormModal({ customer, employees, onClose, onSaved }: Pro
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Ghi chú</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Ghi chú</label>
                 <textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={3}
                   className={cn(inputCls, "resize-none")} placeholder="Ghi chú về khách hàng..." />
               </div>
@@ -176,37 +176,37 @@ export function CustomerFormModal({ customer, employees, onClose, onSaved }: Pro
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Người liên hệ</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Người liên hệ</label>
                   <input value={form.contactPerson} onChange={e => set("contactPerson", e.target.value)} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Điện thoại</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Điện thoại</label>
                   <input value={form.phone} onChange={e => set("phone", e.target.value)} className={inputCls} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
                 <input type="email" value={form.email} onChange={e => set("email", e.target.value)} className={inputCls} />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Website</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Website</label>
                 <input type="url" value={form.website} onChange={e => set("website", e.target.value)} className={inputCls} placeholder="https://..." />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Địa chỉ</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Địa chỉ</label>
                 <input value={form.address} onChange={e => set("address", e.target.value)} className={inputCls} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Thành phố</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Thành phố</label>
                   <input value={form.city} onChange={e => set("city", e.target.value)} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">PLZ</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">PLZ</label>
                   <input value={form.plz} onChange={e => set("plz", e.target.value)} className={inputCls} />
                 </div>
               </div>
@@ -217,7 +217,7 @@ export function CustomerFormModal({ customer, employees, onClose, onSaved }: Pro
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
-              className="px-4 py-2 text-sm text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50">Hủy</button>
+              className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50">Hủy</button>
             <button type="submit" disabled={loading}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-lg flex items-center gap-2">
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 import { getManagedEmployeeIds, buildAssignedScope, ADMIN_ROLES, SUB_MANAGER_ROLES } from "@/lib/managed-scope";
+import { withContext } from "@/lib/with-context";
+import { requireApiAuth } from "@/lib/api-auth";
 
 const TASK_TYPES = ["NORMAL", "LEARNING", "NEW_RESEARCH", "MEETING", "ADMIN", "BILLABLE_CLIENT", "INTERNAL"] as const;
 const TASK_STATUSES = ["BACKLOG", "IN_PROGRESS", "BLOCKED", "REVIEW", "DONE", "CANCELLED"] as const;
@@ -35,9 +35,9 @@ const TASK_INCLUDE = {
   _count: { select: { timeLogs: true, subTasks: true } },
 } as const;
 
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
@@ -49,8 +49,8 @@ export async function GET(req: NextRequest) {
   const billable = searchParams.get("billable");
   const search = searchParams.get("search");
 
-  const userId = Number(session.user.id);
-  const userRole = session.user.role;
+  const userId = auth.actorId;
+  const userRole = auth.roleName;
   const isManager = ADMIN_ROLES.includes(userRole) || SUB_MANAGER_ROLES.includes(userRole);
 
   const where: any = {};
@@ -86,14 +86,14 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ data: items });
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withContext(async (req: NextRequest) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
 
-  const userId = Number(session.user.id);
-  const userRole = session.user.role;
+  const userId = auth.actorId;
+  const userRole = auth.roleName;
   const isManager = ADMIN_ROLES.includes(userRole) || SUB_MANAGER_ROLES.includes(userRole);
 
   const body = await req.json();
@@ -102,16 +102,14 @@ export async function POST(req: NextRequest) {
 
   const d = parsed.data;
 
-  // Resolve template defaults if templateId given
   let template: { defaultTaskType: any; defaultEstimatedTime: number | null; defaultPriority: any; requiresVideo: boolean | null; title: string } | null = null;
   if (d.templateId) {
-    template = await prisma.taskTemplate.findUnique({
+    template = await prisma.taskTemplate.findFirst({
       where: { id: d.templateId },
       select: { defaultTaskType: true, defaultEstimatedTime: true, defaultPriority: true, requiresVideo: true, title: true },
     });
   }
 
-  // Default assignedTo: self (if not manager); manager can assign to others
   const assignedToId = d.assignedToId ?? userId;
   if (!isManager && assignedToId !== userId) {
     return NextResponse.json({ error: "Không có quyền giao task cho người khác" }, { status: 403 });
@@ -123,23 +121,19 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Generate next TSK-xxxx code
   const last = await prisma.task.findFirst({ orderBy: { id: "desc" } });
   const seq = last ? Number(last.code.replace("TSK-", "")) + 1 : 1;
   const code = `TSK-${String(seq).padStart(4, "0")}`;
 
-  // Compute task_type and requires_video
   const taskType = d.taskType ?? template?.defaultTaskType ?? "NORMAL";
   const requiresVideo = d.requiresVideo ??
     template?.requiresVideo ??
     ["LEARNING", "NEW_RESEARCH"].includes(taskType);
 
-  // Validate billable → customer required
   if (d.billable && !d.customerId) {
     return NextResponse.json({ error: "Task billable phải có khách hàng" }, { status: 422 });
   }
 
-  // Default status: self-assigned → IN_PROGRESS, manager-assigned → BACKLOG
   const status = d.status ?? (assignedToId === userId ? "IN_PROGRESS" : "BACKLOG");
 
   const task = await prisma.task.create({
@@ -166,7 +160,6 @@ export async function POST(req: NextRequest) {
     include: TASK_INCLUDE,
   });
 
-  // Increment template usage_count
   if (d.templateId) {
     await prisma.taskTemplate.update({
       where: { id: d.templateId },
@@ -175,4 +168,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ data: task }, { status: 201 });
-}
+});
