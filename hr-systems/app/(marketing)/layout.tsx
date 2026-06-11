@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { NavHeader } from "./_components/NavHeader";
+import { ZaloWidget } from "./_components/ZaloWidget";
+import { StickyHeader } from "./_components/StickyHeader";
 
 const BLUE = "#3B5BDB";
 
@@ -29,6 +31,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen flex flex-col bg-white text-slate-900">
       <NavHeader isSignedIn={isSignedIn} />
+      <StickyHeader />
 
       <main className="flex-1 pt-14">{children}</main>
 
@@ -90,6 +93,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
           </div>
         </div>
       </footer>
+      <ZaloWidget />
     </div>
   );
 }

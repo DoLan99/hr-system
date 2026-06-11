@@ -145,31 +145,19 @@ export function NavHeader({ isSignedIn }: { isSignedIn: boolean }) {
 
         {/* Desktop right */}
         <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
-          {isSignedIn ? (
-            <Link
-              href="/welcome"
-              className="h-9 px-4 text-[13.5px] font-semibold text-white rounded-lg flex items-center gap-1.5 transition-opacity hover:opacity-90"
-              style={{ background: BLUE }}
-            >
-              Vào workspace <ArrowRight size={13} />
-            </Link>
-          ) : (
-            <>
-              <Link
-                href="/sign-in"
-                className="h-9 px-4 text-[13.5px] font-medium text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg flex items-center transition-colors hover:border-gray-300"
-              >
-                Đăng nhập
-              </Link>
-              <Link
-                href="/sign-up"
-                className="h-9 px-4 text-[13.5px] font-semibold text-white rounded-lg flex items-center gap-1.5 transition-opacity hover:opacity-90"
-                style={{ background: BLUE }}
-              >
-                Dùng thử miễn phí <ArrowRight size={13} />
-              </Link>
-            </>
-          )}
+          <Link
+            href="/sign-in"
+            className="h-9 px-4 text-[13.5px] font-medium text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg flex items-center transition-colors hover:border-gray-300"
+          >
+            Đăng nhập
+          </Link>
+          <Link
+            href="/sign-up"
+            className="h-9 px-4 text-[13.5px] font-semibold text-white rounded-lg flex items-center gap-1.5 transition-opacity hover:opacity-90"
+            style={{ background: BLUE }}
+          >
+            Dùng thử miễn phí <ArrowRight size={13} />
+          </Link>
         </div>
 
         {/* Mobile toggle */}
@@ -240,26 +228,16 @@ export function NavHeader({ isSignedIn }: { isSignedIn: boolean }) {
             </Link>
 
             <div className="border-t border-gray-100 mt-2 pt-4 flex flex-col gap-2">
-              {isSignedIn ? (
-                <Link href="/welcome"
-                  className="h-10 flex items-center justify-center rounded-lg text-[14px] font-semibold text-white"
-                  style={{ background: BLUE }} onClick={() => setMobileOpen(false)}>
-                  Vào workspace
-                </Link>
-              ) : (
-                <>
-                  <Link href="/sign-in"
-                    className="h-10 flex items-center justify-center border border-gray-200 rounded-lg text-[14px] font-medium text-gray-700"
-                    onClick={() => setMobileOpen(false)}>
-                    Đăng nhập
-                  </Link>
-                  <Link href="/sign-up"
-                    className="h-10 flex items-center justify-center rounded-lg text-[14px] font-semibold text-white"
-                    style={{ background: BLUE }} onClick={() => setMobileOpen(false)}>
-                    Dùng thử miễn phí
-                  </Link>
-                </>
-              )}
+              <Link href="/sign-in"
+                className="h-10 flex items-center justify-center border border-gray-200 rounded-lg text-[14px] font-medium text-gray-700"
+                onClick={() => setMobileOpen(false)}>
+                Đăng nhập
+              </Link>
+              <Link href="/sign-up"
+                className="h-10 flex items-center justify-center rounded-lg text-[14px] font-semibold text-white"
+                style={{ background: BLUE }} onClick={() => setMobileOpen(false)}>
+                Dùng thử miễn phí
+              </Link>
             </div>
           </div>
         </div>

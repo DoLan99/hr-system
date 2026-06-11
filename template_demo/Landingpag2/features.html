@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tính năng — jobihome.vn</title>
+<meta name="description" content="Task management, time tracking, performance reviews, lương, leave, capacity planning, vault và audit — toàn bộ tính năng của jobihome." />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<section class="page-hero glow">
+  <span class="blob b1"></span><span class="blob b2"></span>
+  <div class="wrap">
+    <span class="eyebrow center reveal">Features · Tính năng</span>
+    <h1 class="display text-balance reveal">Mọi công cụ quản lý team, trong một nơi</h1>
+    <p class="lead text-pretty reveal">jobihome thay thế hàng loạt công cụ rời rạc bằng một workspace liền mạch — từ giao việc, bấm giờ, tính lương đến đánh giá hiệu suất khách quan.</p>
+    <div class="reveal" style="display:flex; gap:12px; justify-content:center; margin-top: 30px; flex-wrap:wrap;">
+      <a class="btn btn-primary btn-lg" href="contact.html">Dùng thử miễn phí</a>
+      <a class="btn btn-ghost btn-lg" href="solutions.html">Giải pháp theo module</a>
+    </div>
+  </div>
+</section>
+
+<!-- bento overview -->
+<section class="section" style="padding-top: 64px;">
+  <div class="wrap">
+    <div class="grid" style="grid-template-columns: repeat(6, 1fr); grid-auto-rows: minmax(0, auto);">
+      <!-- big: tasks -->
+      <div class="card hover reveal" style="grid-column: span 4;">
+        <span class="pill">Tasks &amp; Workflow</span>
+        <h3 class="h3" style="margin-top: 14px;">Giao việc, theo dõi, duyệt — một mạch</h3>
+        <p style="margin-top: 8px; max-width: 50ch;">Task theo trạng thái Cần làm · Đang làm · Done, gắn ưu tiên và ước tính thời gian. Dùng task template cho quy trình lặp lại và review workflow để kiểm soát chất lượng.</p>
+        <div class="mock" style="margin-top: 20px; box-shadow: var(--shadow);">
+          <div style="padding: 16px;">
+            <div style="display:flex; gap: 12px; overflow:hidden;">
+              <div style="flex:1; min-width:0;"><div style="font-size:0.72rem; font-family:var(--font-mono); color:var(--text-3); text-transform:uppercase; margin-bottom:8px;">Cần làm · 4</div><div class="tasklist"><div class="task"><div class="cb"></div><div class="tt">API webhook Git</div></div><div class="task"><div class="cb"></div><div class="tt">Audit log UI</div></div></div></div>
+              <div style="flex:1; min-width:0;"><div style="font-size:0.72rem; font-family:var(--font-mono); color:var(--accent-ink); text-transform:uppercase; margin-bottom:8px;">Đang làm · 2</div><div class="tasklist"><div class="task"><div class="cb"></div><div class="tt">Salary calc</div><div class="badge hi">▶</div></div></div></div>
+              <div style="flex:1; min-width:0;"><div style="font-size:0.72rem; font-family:var(--font-mono); color:var(--ok); text-transform:uppercase; margin-bottom:8px;">Done · 7</div><div class="tasklist"><div class="task done"><div class="cb"></div><div class="tt">Setup CI</div></div><div class="task done"><div class="cb"></div><div class="tt">Schema</div></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- timer -->
+      <div class="card hover reveal" style="grid-column: span 2; display:flex; flex-direction:column;">
+        <span class="pill">Time tracking</span>
+        <h3 class="h3" style="margin-top: 14px;">Bấm giờ theo task</h3>
+        <p style="margin-top: 8px;">Timer start/stop lưu actual time, làm nền cho chấm công và lương.</p>
+        <div style="margin-top:auto; padding-top: 20px;">
+          <div style="font-family: var(--font-mono); font-size: 2.4rem; font-weight: 800; letter-spacing: -0.02em;">01:24<span style="color:var(--text-3); font-size:1.4rem;">:08</span></div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;"></span><span style="font-size:0.85rem; color:var(--text-2);">API endpoint chấm công</span></div>
+        </div>
+      </div>
+      <!-- office time -->
+      <div class="card hover reveal" style="grid-column: span 2;">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg></div>
+        <h3>Office Time</h3>
+        <p>Chấm công vào/ra auto-derive từ time log, manager duyệt nhanh, cấu hình work rules cho org.</p>
+      </div>
+      <!-- payroll -->
+      <div class="card hover reveal" style="grid-column: span 2;">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <h3>Lương &amp; Thanh toán</h3>
+        <p>Tính lương liên kết trực tiếp time log &amp; work rules. Quản lý lịch sử payment từng nhân viên.</p>
+      </div>
+      <!-- reviews -->
+      <div class="card hover reveal" style="grid-column: span 2;">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z"/></svg></div>
+        <h3>Performance Reviews</h3>
+        <p>Auto-KPI + self-review + manager review, 5 tiêu chí chấm điểm khách quan.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- detail split: summary/reporting -->
+<section class="section" style="background: var(--bg-elev); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+  <div class="wrap">
+    <div class="split">
+      <div class="reveal">
+        <span class="eyebrow">Summary &amp; Reporting</span>
+        <h2 class="h2 text-balance" style="margin-top:16px;">Bức tranh toàn cảnh, cập nhật real-time</h2>
+        <p class="lead" style="margin-top:16px;">Dashboard tổng hợp KPI của cả team, trend theo thời gian và gợi ý thông minh — giúp lead ra quyết định nhanh và đúng.</p>
+        <ul class="feat-list">
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span><div><b>Trend &amp; KPI theo thời gian</b><p>Theo dõi năng suất, đúng hạn, giờ làm qua các kỳ.</p></div></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span><div><b>AI-suggest KPI tiếp theo</b><p>Gợi ý mục tiêu kế tiếp dựa trên dữ liệu thực tế.</p></div></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span><div><b>Capacity forecast theo skill</b><p>Dự báo năng lực nhóm, hỗ trợ quyết định tuyển dụng &amp; phân công.</p></div></li>
+        </ul>
+      </div>
+      <div class="split-media reveal">
+        <div class="mock">
+          <div class="mock-bar"><div class="mock-dots"><i></i><i></i><i></i></div><div class="mock-url">app.jobihome.vn/summary</div></div>
+          <div style="padding: 20px;">
+            <div class="mock-kpis"><div class="mk"><div class="lab">Velocity</div><div class="val">42</div><div class="chg">▲ 9%</div></div><div class="mk"><div class="lab">Đúng hạn</div><div class="val">94%</div><div class="chg">▲ 6%</div></div><div class="mk"><div class="lab">Capacity</div><div class="val">78%</div><div class="chg" style="color:var(--warn)">▲ cao</div></div></div>
+            <div class="mock-panel"><div class="mp-h">Năng suất 12 tuần <span>tasks</span></div><div class="chart"><div class="bar" style="height:35%"></div><div class="bar" style="height:48%"></div><div class="bar" style="height:42%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:55%"></div><div class="bar hi" style="height:72%"></div><div class="bar" style="height:64%"></div><div class="bar" style="height:80%"></div><div class="bar" style="height:70%"></div><div class="bar hi" style="height:90%"></div><div class="bar" style="height:82%"></div><div class="bar hi" style="height:96%"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- security / admin split -->
+<section class="section">
+  <div class="wrap">
+    <div class="split rev">
+      <div class="reveal">
+        <span class="eyebrow">Admin · Bảo mật · Audit</span>
+        <h2 class="h2 text-balance" style="margin-top:16px;">An toàn và minh bạch ở mọi thao tác</h2>
+        <p class="lead" style="margin-top:16px;">Multi-tenant với dữ liệu tách biệt hoàn toàn, audit log đầy đủ và phát hiện bất thường tự động.</p>
+        <ul class="feat-list">
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span><div><b>Audit log toàn bộ hành động</b><p>Lưu 30 ngày đến không giới hạn tùy gói.</p></div></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span><div><b>Anomaly detection</b><p>Vercel Cron quét bất thường định kỳ, cảnh báo sớm.</p></div></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span><div><b>Vault — mã hóa credentials</b><p>Lưu mật khẩu khách hàng an toàn, gắn theo từng khách.</p></div></li>
+        </ul>
+      </div>
+      <div class="split-media reveal">
+        <div class="mock">
+          <div class="mock-bar"><div class="mock-dots"><i></i><i></i><i></i></div><div class="mock-url">app.jobihome.vn/admin/audit</div></div>
+          <div style="padding: 18px;">
+            <div class="mp-h" style="font-size:0.82rem; font-weight:600; margin-bottom:13px; display:flex; justify-content:space-between;">Audit log <span style="color:var(--text-3); font-weight:500; font-size:0.72rem;">live</span></div>
+            <div class="tasklist" style="font-family: var(--font-mono); font-size:0.74rem;">
+              <div class="task"><span style="width:7px;height:7px;border-radius:50%;background:var(--ok);"></span><div class="tt" style="color:var(--text-2)">salary.approve · Minh Anh</div><div class="badge">10:24</div></div>
+              <div class="task"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent);"></span><div class="tt" style="color:var(--text-2)">task.review · Hoàng</div><div class="badge">10:21</div></div>
+              <div class="task"><span style="width:7px;height:7px;border-radius:50%;background:var(--warn);"></span><div class="tt" style="color:var(--text-2)">anomaly: login mới</div><div class="badge hi">10:18</div></div>
+              <div class="task"><span style="width:7px;height:7px;border-radius:50%;background:var(--ok);"></span><div class="tt" style="color:var(--text-2)">leave.approve · Lan</div><div class="badge">09:55</div></div>
+              <div class="task"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent);"></span><div class="tt" style="color:var(--text-2)">vault.read · Khách A</div><div class="badge">09:40</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- arch strip -->
+<section class="section-sm" style="background: var(--bg-elev); border-top: 1px solid var(--border);">
+  <div class="wrap">
+    <div class="section-head center reveal" style="margin-bottom: 36px;">
+      <span class="eyebrow center">Built on a modern stack</span>
+      <h2 class="h2 text-balance">Nền tảng kỹ thuật vững chắc</h2>
+    </div>
+    <div class="grid grid-4 reveal">
+      <div class="card"><div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.05em;">Framework</div><h3 style="font-size:1.05rem; margin-top:6px;">Next.js 14 · TypeScript</h3></div>
+      <div class="card"><div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.05em;">Database</div><h3 style="font-size:1.05rem; margin-top:6px;">PostgreSQL · Prisma</h3></div>
+      <div class="card"><div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.05em;">Auth</div><h3 style="font-size:1.05rem; margin-top:6px;">Clerk · Multi-tenant</h3></div>
+      <div class="card"><div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.05em;">Hosting</div><h3 style="font-size:1.05rem; margin-top:6px;">Vercel · Edge</h3></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section">
+  <div class="wrap">
+    <div class="cta-band reveal">
+      <h2 class="text-balance">Xem jobihome hoạt động</h2>
+      <p>Tạo workspace dùng thử và khám phá toàn bộ tính năng trong 14 ngày.</p>
+      <div class="cta-actions">
+        <a class="btn btn-primary btn-lg" href="contact.html">Bắt đầu miễn phí</a>
+        <a class="btn btn-ghost btn-lg" href="pricing.html">Xem bảng giá</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tài nguyên — jobihome.vn</title>
+<meta name="description" content="Bài viết, hướng dẫn và góc nhìn về quản lý team, chấm công, đánh giá hiệu suất cho startup Việt." />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<section class="page-hero glow">
+  <span class="blob b1"></span><span class="blob b2"></span>
+  <div class="wrap">
+    <span class="eyebrow center reveal">Resources · Tài nguyên</span>
+    <h1 class="display text-balance reveal">Góc nhìn về quản lý team</h1>
+    <p class="lead text-pretty reveal">Bài viết, hướng dẫn và kinh nghiệm thực tế cho tech lead người Việt — từ chấm công đến xây văn hóa đánh giá khách quan.</p>
+  </div>
+</section>
+
+<!-- featured -->
+<section class="section" style="padding-top: 56px;">
+  <div class="wrap">
+    <a class="card hover reveal" href="#" style="display:grid; grid-template-columns: 1.1fr 1fr; gap: 0; padding: 0; overflow:hidden;">
+      <div class="ph-media" style="min-height: 320px; border-right:1px solid var(--border);"><span class="ph-lab">cover · featured</span></div>
+      <div style="padding: clamp(28px, 4vw, 48px); display:flex; flex-direction:column; justify-content:center;">
+        <div style="display:flex; gap:10px; align-items:center; font-family:var(--font-mono); font-size:0.76rem; color:var(--text-3);"><span class="pill">Nổi bật</span><span>Quản lý · 8 phút đọc</span></div>
+        <h2 class="h2 text-balance" style="margin-top:16px; font-size: clamp(1.5rem, 3vw, 2.2rem);">Xây văn hóa đánh giá khách quan với Auto-KPI</h2>
+        <p class="lead" style="margin-top:14px; font-size:1.05rem;">Vì sao điểm tự động từ dữ liệu task và time log lại công bằng hơn cảm tính — và cách triển khai ở team 10 người mà không tạo áp lực.</p>
+        <span class="read" style="margin-top: 22px; font-weight:600; color:var(--accent-ink); display:inline-flex; gap:8px; align-items:center;">Đọc bài viết <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </div>
+    </a>
+  </div>
+</section>
+
+<!-- category chips -->
+<section class="section-sm" style="padding: 0 0 8px;">
+  <div class="wrap">
+    <div class="chips reveal">
+      <span class="chip on">Tất cả</span>
+      <span class="chip">Quản lý</span>
+      <span class="chip">Chấm công &amp; lương</span>
+      <span class="chip">Hiệu suất</span>
+      <span class="chip">Sản phẩm</span>
+      <span class="chip">Văn hóa</span>
+    </div>
+  </div>
+</section>
+
+<!-- post grid -->
+<section class="section" style="padding-top: 36px;">
+  <div class="wrap">
+    <div class="post-grid" id="postGrid"></div>
+  </div>
+</section>
+
+<!-- newsletter -->
+<section class="section" style="padding-top: 0;">
+  <div class="wrap">
+    <div class="card reveal" style="display:flex; align-items:center; justify-content:space-between; gap:28px; flex-wrap:wrap; padding: clamp(28px, 4vw, 44px); background: var(--surface-2);">
+      <div style="max-width: 460px;">
+        <span class="eyebrow">Newsletter</span>
+        <h3 class="h3" style="margin-top:12px;">Nhận bài mới mỗi tháng</h3>
+        <p class="muted" style="margin-top:6px;">Kinh nghiệm quản lý team gói gọn — không spam.</p>
+      </div>
+      <form style="display:flex; gap:10px; flex-wrap:wrap; flex:1; min-width: 280px; max-width: 440px;" onsubmit="return false;">
+        <input class="input" type="email" placeholder="email@congty.vn" style="flex:1; min-width: 200px;" />
+        <button class="btn btn-primary" type="submit">Đăng ký</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  var posts = [
+    ["Chấm công &amp; lương", "5 phút", "Bỏ Excel chấm công: lộ trình 1 tuần", "Cách chuyển team từ bảng tính sang Office Time mà không gây xáo trộn."],
+    ["Hiệu suất", "6 phút", "5 tiêu chí đánh giá một kỹ sư", "Tốc độ, chất lượng, đúng hạn, học hỏi, chủ động — đo thế nào cho đúng."],
+    ["Quản lý", "7 phút", "Capacity planning cho team nhỏ", "Khi nào nên tuyển thêm, khi nào nên tái phân công theo skill."],
+    ["Sản phẩm", "4 phút", "Có gì mới trong jobihome quý này", "Vault, anomaly detection và những cải tiến cho gói Team."],
+    ["Văn hóa", "5 phút", "Self-review không còn hình thức", "Biến tự đánh giá thành đối thoại hai chiều thực chất."],
+    ["Quản lý", "6 phút", "Audit log: vì sao team nào cũng cần", "Minh bạch hành động giúp tin tưởng và xử lý sự cố nhanh hơn."]
+  ];
+  document.getElementById("postGrid").innerHTML = posts.map(function (p) {
+    return '<a class="post reveal" href="#">' +
+      '<div class="thumb ph-media"><span class="ph-lab">cover</span></div>' +
+      '<div class="body">' +
+        '<div class="meta"><span style="color:var(--accent-ink)">' + p[0] + '</span><span>·</span><span>' + p[1] + '</span></div>' +
+        '<h3>' + p[2] + '</h3><p>' + p[3] + '</p>' +
+        '<span class="read">Đọc tiếp <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>' +
+      '</div></a>';
+  }).join("");
+})();
+</script>
+<script src="js/app.js"></script>
+</body>
+</html>
