@@ -3,23 +3,18 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
-import { ArrowRight, Check, Star, TrendingUp, CheckSquare } from "lucide-react";
 import { PLANS, formatVnd } from "@/lib/pricing";
-import { FaqAccordion } from "./_components/FaqAccordion";
-import { FeaturesTabSection } from "./_components/FeaturesTabSection";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://jobihome.vn";
-const BLUE = "#3B5BDB";
-const GREEN = "#0CA678";
 
 export const metadata: Metadata = {
-  title: "Quản lý team & nhân sự cho startup Việt",
+  title: "Quản lý nhân sự & team trong một workspace",
   description:
-    "Tasks, time tracking, payroll, audit — tất cả trong 1 workspace. Built for tech lead Việt Nam quản lý team 5-20 người. Dùng thử miễn phí 14 ngày.",
+    "SaaS HR & Team Management cho startup và SME Việt Nam. Task, chấm công, lương, đánh giá hiệu suất — gom toàn bộ vòng đời quản lý nhân sự vào một nơi.",
   alternates: { canonical: SITE_URL },
   openGraph: {
-    title: "jobihome.vn — Quản lý team & nhân sự cho startup Việt",
-    description: "Tasks, time tracking, payroll, audit — tất cả trong 1 workspace.",
+    title: "jobihome.vn — Quản lý nhân sự & team trong một workspace",
+    description: "Task, chấm công, lương, đánh giá — trong một workspace duy nhất.",
     url: SITE_URL,
     type: "website",
     locale: "vi_VN",
@@ -41,105 +36,121 @@ function StructuredData() {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />;
 }
 
-function HeroMockup() {
-  const cols = [
-    {
-      label: "Cần làm", dot: "#9CA3AF", color: "#6B7280",
-      cards: [
-        { title: "Thiết kế màn hình onboarding", tag: "Design", av: "MT", avBg: BLUE, badge: "Cao", badgeClr: "#EF4444" },
-        { title: "Review tài liệu API v2.0", tag: "Dev", av: "DH", avBg: "#7C3AED", badge: "TB", badgeClr: "#F59E0B" },
-        { title: "Cập nhật chính sách bảo mật", tag: "Content", av: "LA", avBg: GREEN, badge: "Thấp", badgeClr: "#9CA3AF" },
-      ],
-    },
-    {
-      label: "Đang làm", dot: "#3B5BDB", color: "#2563EB",
-      cards: [
-        { title: "Tích hợp cổng thanh toán VNPAY", tag: "Dev", av: "MT", avBg: BLUE, badge: "Cao", badgeClr: "#EF4444", progress: 65 },
-        { title: "Viết bài blog SEO Q2/2025", tag: "Marketing", av: "NK", avBg: "#EA580C", badge: "TB", badgeClr: "#F59E0B", progress: 38 },
-      ],
-    },
-    {
-      label: "Hoàn thành", dot: "#059669", color: "#059669",
-      cards: [
-        { title: "Setup CI/CD môi trường staging", tag: "DevOps", av: "DH", avBg: "#7C3AED", badge: "Cao", badgeClr: "#EF4444", done: true },
-        { title: "Phân tích yêu cầu Sprint 4", tag: "PM", av: "LA", avBg: GREEN, badge: "TB", badgeClr: "#F59E0B", done: true },
-      ],
-    },
-  ];
+const MODULES = [
+  {
+    title: "Nhân sự",
+    desc: "Hồ sơ, phòng ban, vai trò, kỹ năng & career path.",
+    svg: (
+      <>
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" strokeLinecap="round" />
+        <path d="M16 4a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-5" strokeLinecap="round" />
+      </>
+    ),
+  },
+  {
+    title: "Task Management",
+    desc: "Trạng thái, ưu tiên, template & review workflow.",
+    svg: (
+      <>
+        <path d="M9 11l3 3L22 4" />
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+      </>
+    ),
+  },
+  {
+    title: "Time Tracking",
+    desc: "Time logs, Office Time, work rules cho org.",
+    svg: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" strokeLinecap="round" />
+      </>
+    ),
+  },
+  {
+    title: "Performance",
+    desc: "Auto-KPI, self-review & manager review.",
+    svg: <path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z" />,
+  },
+  {
+    title: "Lương & Thanh toán",
+    desc: "Tính lương liên kết time log, lịch sử payment.",
+    svg: <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />,
+  },
+  {
+    title: "Leave Management",
+    desc: "Đơn nghỉ phép nhiều loại, duyệt & theo dõi.",
+    svg: (
+      <>
+        <rect x="3" y="4" width="18" height="17" rx="2" />
+        <path d="M16 2v4M8 2v4M3 10h18" />
+      </>
+    ),
+  },
+  {
+    title: "Customers & Messages",
+    desc: "Danh sách khách hàng, giao tiếp đa kênh.",
+    svg: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
+  },
+  {
+    title: "Summary & Báo cáo",
+    desc: "Dashboard KPI, trend, AI-suggest, forecast.",
+    svg: (
+      <>
+        <path d="M3 3v18h18" />
+        <path d="M7 14l4-4 3 3 5-6" strokeLinecap="round" strokeLinejoin="round" />
+      </>
+    ),
+  },
+  {
+    title: "Capacity Planning",
+    desc: "Phân tích workload, dự báo năng lực theo skill.",
+    svg: <path d="M3 12h4l3 8 4-16 3 8h4" strokeLinecap="round" strokeLinejoin="round" />,
+  },
+  {
+    title: "Vault",
+    desc: "Lưu credentials khách hàng dạng mã hóa.",
+    svg: (
+      <>
+        <rect x="4" y="11" width="16" height="10" rx="2" />
+        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      </>
+    ),
+  },
+  {
+    title: "Admin & Audit",
+    desc: "Heatmap, anomaly detection, audit log đầy đủ.",
+    svg: (
+      <>
+        <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
+        <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+      </>
+    ),
+  },
+];
+
+function ArrowIco({ size = 17 }: { size?: number }) {
   return (
-    <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white select-none" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)" }}>
-      <div className="bg-gray-100 px-4 py-2.5 flex items-center gap-3 border-b border-gray-200">
-        <div className="flex gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-          <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-          <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
-        </div>
-        <div className="flex-1 bg-white rounded-md px-3 py-1 text-[11px] text-gray-400 border border-gray-200 text-center max-w-[240px] mx-auto">
-          app.jobihome.vn/sprint-4
-        </div>
-      </div>
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-white">
-        <div className="flex items-center gap-3">
-          <span className="text-[12px] font-bold text-gray-800">Sprint 4</span>
-          <span className="text-gray-200 text-xs">·</span>
-          <span className="text-[11px] text-gray-400">Tháng 5/2025</span>
-          <div className="flex ml-1">
-            {["Board", "List", "Calendar"].map((t, i) => (
-              <button key={t} className="text-[10px] px-2 py-0.5 rounded font-medium"
-                style={i === 0 ? { background: BLUE, color: "#fff" } : { color: "#9CA3AF" }}>{t}</button>
-            ))}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex -space-x-1">
-            {[BLUE, GREEN, "#7C3AED", "#EA580C"].map((bg, i) => (
-              <div key={i} className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-white text-[7px] font-bold" style={{ background: bg }}>
-                {["MT", "LA", "DH", "NK"][i]}
-              </div>
-            ))}
-          </div>
-          <span className="text-[10px] text-gray-400 bg-gray-100 rounded px-1.5 py-0.5">+ Lọc</span>
-        </div>
-      </div>
-      <div className="flex gap-3 p-4 bg-gray-50 overflow-hidden" style={{ height: 280 }}>
-        {cols.map((col) => (
-          <div key={col.label} className="flex-1 flex flex-col min-w-0">
-            <div className="flex items-center gap-1.5 mb-2">
-              <div className="w-2 h-2 rounded-full" style={{ background: col.dot }} />
-              <span className="text-[10px] font-bold" style={{ color: col.color }}>{col.label}</span>
-              <span className="text-[9px] text-gray-400 bg-gray-200 rounded-full px-1.5 leading-4">{col.cards.length}</span>
-            </div>
-            <div className="flex flex-col gap-2 overflow-hidden">
-              {col.cards.map((card) => (
-                <div key={card.title} className="bg-white rounded-lg p-2.5 border border-gray-100 shadow-sm"
-                  style={{ opacity: "done" in card && card.done ? 0.5 : 1 }}>
-                  <p className="text-[10px] font-medium text-gray-800 leading-tight mb-2"
-                    style={{ textDecoration: "done" in card && card.done ? "line-through" : "none" }}>
-                    {card.title}
-                  </p>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[8px] font-medium px-1.5 py-px rounded-full bg-blue-50 text-blue-600">{card.tag}</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[8px] font-medium px-1.5 py-px rounded-full"
-                        style={{ background: `${card.badgeClr}18`, color: card.badgeClr }}>{card.badge}</span>
-                      <div className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[7px] font-bold" style={{ background: card.avBg }}>{card.av}</div>
-                    </div>
-                  </div>
-                  {"progress" in card && card.progress && (
-                    <div className="mt-1.5">
-                      <div className="w-full bg-gray-100 rounded-full h-1">
-                        <div className="h-1 rounded-full" style={{ width: `${card.progress}%`, background: BLUE }} />
-                      </div>
-                      <span className="text-[7px] text-gray-400">{card.progress}%</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+function CheckIco({ size = 13 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12l5 5L20 6" />
+    </svg>
+  );
+}
+
+function CheckPlanIco() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12l5 5L20 6" />
+    </svg>
   );
 }
 
@@ -150,365 +161,489 @@ export default async function LandingPage() {
 
   if (tenantSlug && session.userId) redirect("/welcome");
 
-  const avatars = [
-    { initials: "MT", bg: BLUE },
-    { initials: "LA", bg: GREEN },
-    { initials: "DA", bg: "#7C3AED" },
-    { initials: "DH", bg: "#EA580C" },
-    { initials: "NK", bg: "#DB2777" },
-  ];
-
-  const testimonials = [
-    { quote: "jobihome giúp chúng tôi giảm 3 buổi họp báo cáo mỗi tuần. Manager chỉ cần nhìn dashboard là nắm được tiến độ.", name: "Minh Tuấn", title: "CTO", company: "Finsify", initials: "MT", bg: BLUE },
-    { quote: "Payroll tự động giúp HR tiết kiệm gần 2 ngày làm việc mỗi tháng. Không còn sai sót khi tính lương nữa.", name: "Lan Anh", title: "HR Manager", company: "GrowthHack Agency", initials: "LA", bg: GREEN },
-    { quote: "Setup 15 phút, team dùng ngay không cần training. Đơn giản hơn Jira mà vẫn đủ tính năng cho startup.", name: "Đức Anh", title: "Founder", company: "Techlab Studio", initials: "DA", bg: "#7C3AED" },
-  ];
-
   const plans = Object.values(PLANS);
 
   return (
     <>
       <StructuredData />
 
-      <style>{`
-        .lp-headline { font-family: var(--font-plus-jakarta, 'Plus Jakarta Sans', system-ui, sans-serif); }
-        .lp-btn { transition: filter 150ms ease, transform 150ms ease; }
-        .lp-btn:hover { filter: brightness(1.07); transform: scale(1.015); }
-        .lp-card { transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
-        .lp-card:hover { border-color: #3B5BDB !important; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59,91,219,0.10) !important; }
-        .lp-testimonial-scroll { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-        .lp-testimonial-scroll::-webkit-scrollbar { display: none; }
-        @media (max-width: 767px) {
-          .lp-stats-item:nth-child(odd)  { border-right: 1px solid #F3F4F6; }
-          .lp-stats-item:nth-child(-n+2) { border-bottom: 1px solid #F3F4F6; }
-        }
-        @media (min-width: 768px) {
-          .lp-stats-item:not(:last-child) { border-right: 1px solid #F3F4F6; }
-        }
-      `}</style>
-
-      {/* ── HERO ── */}
-      <section className="pt-24 pb-16 bg-white overflow-hidden">
-        <div className="max-w-[1160px] mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.08fr] gap-10 xl:gap-16 items-center">
-
-            {/* Left */}
-            <div className="flex flex-col items-start">
-              <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 mb-7 border text-xs font-medium"
-                style={{ background: "#EEF2FF", borderColor: "#C7D2FE", color: BLUE }}>
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: GREEN }} />
-                Mới: Tích hợp Zalo OA &amp; VNPAY
-              </div>
-              <h1 className="lp-headline mb-5" style={{ fontSize: 46, fontWeight: 800, lineHeight: 1.2, maxWidth: 460 }}>
-                <span className="block text-gray-900">Quản lý team &amp;</span>
-                <span className="block text-gray-900">nhân sự,</span>
-                <span className="block" style={{ color: BLUE }}>tất cả trong một.</span>
-              </h1>
-              <p className="text-[16px] text-gray-500 leading-[1.75] mb-8 max-w-[430px]">
-                Tasks · Time tracking · Payroll · Audit.{" "}
-                <span className="font-semibold text-gray-800">jobihome</span> giúp tech lead Việt Nam quản lý team 5–20 người mà không cần 5 công cụ khác nhau.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 mb-8 w-full sm:w-auto">
-                <Link href="/sign-up"
-                  className="lp-btn lp-headline inline-flex items-center justify-center gap-2 h-12 px-6 text-white text-[14px] font-semibold rounded-xl w-full sm:w-auto"
-                  style={{ background: BLUE, boxShadow: `0 6px 20px ${BLUE}40` }}>
-                  Dùng thử miễn phí 14 ngày <ArrowRight size={15} />
-                </Link>
-                <Link href="#features"
-                  className="lp-btn inline-flex items-center justify-center gap-2 h-12 px-5 text-gray-700 text-[14px] font-semibold rounded-xl border border-gray-200 bg-white w-full sm:w-auto">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "#EEF2FF" }}>
-                    <span className="text-[9px]" style={{ color: BLUE }}>▶</span>
-                  </span>
-                  Xem tính năng
-                </Link>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-2.5">
-                  {avatars.map(({ initials, bg }) => (
-                    <div key={initials} className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-white text-[10px] font-bold shadow-sm" style={{ background: bg }}>
-                      {initials}
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <div className="flex items-center gap-0.5 mb-0.5">
-                    {[1,2,3,4,5].map((i) => <Star key={i} size={11} className="fill-yellow-400 text-yellow-400" />)}
-                    <span className="text-[11px] text-gray-400 ml-1">4.8/5</span>
-                  </div>
-                  <p className="text-[13px] text-gray-500">
-                    Đang được dùng bởi <strong className="text-gray-900 font-semibold">120+ startup Việt</strong>
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-x-5 gap-y-2 mt-5">
-                {["Không cần thẻ tín dụng", "Setup trong 2 phút", "Hỗ trợ tiếng Việt"].map((b) => (
-                  <div key={b} className="flex items-center gap-1.5 text-[12px] text-gray-400">
-                    <Check size={12} style={{ color: GREEN }} /> {b}
-                  </div>
-                ))}
-              </div>
+      {/* ============ HERO ============ */}
+      <section className="lp-glow relative overflow-hidden" style={{ padding: "clamp(48px, 7vw, 92px) 0 clamp(64px, 9vw, 130px)" }}>
+        <span className="lp-blob lp-blob-1" />
+        <span className="lp-blob lp-blob-2" />
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="max-w-[820px] mx-auto text-center">
+            <span className="lp-eyebrow lp-center">HR & Team Management · SaaS</span>
+            <h1
+              className="text-balance mt-6 font-extrabold text-lp-text"
+              style={{ fontSize: "clamp(2.6rem, 6vw, 4.3rem)", lineHeight: 1.02, letterSpacing: "-0.035em" }}
+            >
+              Quản lý cả đội ngũ trong{" "}
+              <span className="lp-grad-text">một workspace</span> duy nhất
+            </h1>
+            <p
+              className="mt-6 mx-auto text-lp-text-2"
+              style={{ fontSize: "clamp(1.05rem, 1.6vw, 1.28rem)", lineHeight: 1.6, maxWidth: "60ch" }}
+            >
+              Task, chấm công, tính lương đến đánh giá hiệu suất — jobihome gom toàn bộ vòng đời quản lý nhân sự vào một nơi. Thay thế Excel và các công cụ rời rạc, được thiết kế cho team công nghệ Việt 5–25 người.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3 mt-9">
+              <Link href="/sign-up" className="lp-btn lp-btn-primary lp-btn-lg">
+                Dùng thử 14 ngày miễn phí <ArrowIco />
+              </Link>
+              <Link href="/tinh-nang" className="lp-btn lp-btn-ghost lp-btn-lg">
+                Xem tính năng
+              </Link>
             </div>
-
-            {/* Right */}
-            <div className="relative hidden lg:block">
-              <div className="absolute -inset-8 rounded-3xl -z-10"
-                style={{ background: "radial-gradient(ellipse at 55% 45%, #EEF2FF 0%, #F0FDF4 55%, transparent 80%)" }} />
-              <HeroMockup />
-              <div className="absolute -bottom-4 -left-5 bg-white rounded-2xl shadow-xl border border-gray-100 px-3.5 py-3 flex items-center gap-3 z-10">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${GREEN}18` }}>
-                  <TrendingUp size={17} style={{ color: GREEN }} />
-                </div>
-                <div>
-                  <p className="text-[10px] text-gray-400 leading-tight">Hiệu suất sprint</p>
-                  <p className="text-[12px] font-bold text-gray-900 leading-tight">+34% so với Sprint 3</p>
-                </div>
-              </div>
-              <div className="absolute -top-3 -right-4 bg-white rounded-2xl shadow-xl border border-gray-100 px-3 py-2.5 flex items-center gap-2.5 z-10">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#EEF2FF" }}>
-                  <CheckSquare size={13} style={{ color: BLUE }} />
-                </div>
-                <div>
-                  <p className="text-[9px] text-gray-400">Task hoàn thành</p>
-                  <p className="text-[11px] font-semibold text-gray-900">8 / 12 task Sprint 4</p>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ── STATS BAR ── */}
-      <section className="w-full" style={{ background: "#F9FAFB", borderTop: "1px solid #F3F4F6", borderBottom: "1px solid #F3F4F6", marginTop: 48 }}>
-        <div className="max-w-[1200px] mx-auto px-6 py-14">
-          <div className="grid grid-cols-2 md:grid-cols-4">
-            {[
-              { value: "120+", label: "Công ty đang dùng" },
-              { value: "4.8★", label: "Đánh giá trung bình" },
-              { value: "2 phút", label: "Thời gian setup" },
-              { value: "98%", label: "Tỷ lệ gia hạn" },
-            ].map((s) => (
-              <div key={s.label} className="lp-stats-item flex flex-col items-center text-center px-4 md:px-8 py-8 md:py-0">
-                <span className="lp-headline font-extrabold leading-none mb-2" style={{ fontSize: 32, color: "#111827", letterSpacing: "-0.02em" }}>
-                  {s.value}
-                </span>
-                <span className="text-[13px]" style={{ color: "#6B7280" }}>{s.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── PAIN POINTS ── */}
-      <section className="py-24 bg-white">
-        <div className="max-w-[1200px] mx-auto px-6">
-          <div className="text-center mb-12">
-            <span className="inline-flex items-center rounded-full px-4 py-1.5 text-[12px] font-semibold mb-4"
-              style={{ background: "#FFF3CD", color: "#B45309" }}>
-              Vấn đề
-            </span>
-            <h2 className="lp-headline mb-4" style={{ fontSize: 36, fontWeight: 800, color: "#111827", lineHeight: 1.15 }}>
-              Bạn đang gặp khó khăn?
-            </h2>
-            <p className="mx-auto text-[16px] leading-relaxed" style={{ color: "#6B7280", maxWidth: 520 }}>
-              3 vấn đề chính của mọi tech lead Việt — và cách jobihome giải quyết tất cả
+            <p className="mt-4 lp-mono text-[0.85rem] text-lp-text-3">
+              Không cần thẻ tín dụng · Hỗ trợ tiếng Việt
             </p>
           </div>
-          <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-0 rounded-2xl overflow-hidden border border-gray-200 mx-auto"
-            style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06)", maxWidth: 860 }}>
-            <div className="p-10" style={{ background: "#FFF5F5" }}>
-              <p className="lp-headline text-[13px] font-bold mb-6 flex items-center gap-2" style={{ color: "#E03131" }}>
-                ❌ Trước jobihome
-              </p>
-              <div className="flex flex-col gap-5">
-                {["Excel + Google Sheet đã lỗi thời", "Nhiều việc, không đủ thời gian", "Họp báo cáo tiến độ mỗi 2 ngày"].map((item) => (
-                  <div key={item} className="flex items-start gap-3">
-                    <span className="flex-shrink-0 mt-0.5 text-[14px]" style={{ color: "#E03131" }}>✕</span>
-                    <span className="text-[14px] leading-snug" style={{ color: "#374151" }}>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="hidden sm:block absolute left-1/2 top-8 bottom-8 w-px" style={{ background: "#E5E7EB" }} />
-            <div className="p-10" style={{ background: "#F0FFF4" }}>
-              <p className="lp-headline text-[13px] font-bold mb-6 flex items-center gap-2" style={{ color: "#2F9E44" }}>
-                ✅ Sau jobihome
-              </p>
-              <div className="flex flex-col gap-5">
-                {["Dashboard visual + filter mượt mà", "Auto timer + heartbeat tự động", "Auto tính lương 1 click"].map((item) => (
-                  <div key={item} className="flex items-start gap-3">
-                    <span className="flex-shrink-0 mt-0.5 text-[14px]" style={{ color: "#2F9E44" }}>✓</span>
-                    <span className="text-[14px] leading-snug" style={{ color: "#374151" }}>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ── FEATURES TAB ── */}
-      <FeaturesTabSection />
-
-      {/* ── TESTIMONIALS ── */}
-      <section className="py-24 bg-white">
-        <div className="max-w-[1200px] mx-auto px-6">
-          <div className="text-center mb-12">
-            <span className="inline-flex items-center rounded-full px-4 py-1.5 text-[12px] font-semibold mb-4"
-              style={{ background: "#F3F0FF", color: "#7C3AED" }}>
-              Khách hàng
-            </span>
-            <h2 className="lp-headline mb-3" style={{ fontSize: 36, fontWeight: 800, color: "#111827", lineHeight: 1.15 }}>
-              Khách hàng nói gì về <span style={{ color: BLUE }}>jobihome.vn</span>
-            </h2>
-            <p className="mx-auto text-[16px]" style={{ color: "#6B7280", maxWidth: 460 }}>
-              Hơn 120 startup Việt đang dùng mỗi ngày
-            </p>
-          </div>
-          <div className="lp-testimonial-scroll flex md:grid md:grid-cols-3 gap-5 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none -mx-6 md:mx-0 px-6 md:px-0 pb-3 md:pb-0">
-            {testimonials.map((c) => (
-              <div key={c.name}
-                className="lp-card flex-none md:flex-auto min-w-[82vw] md:min-w-0 snap-start flex flex-col bg-white rounded-2xl p-7 border border-gray-100"
-                style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.05)" }}>
-                <div className="flex gap-0.5 mb-5">
-                  {[1,2,3,4,5].map((i) => <Star key={i} size={15} className="fill-yellow-400 text-yellow-400" />)}
+          {/* dashboard mockup */}
+          <div className="lp-mock lp-float-soft mt-14 mx-auto" style={{ maxWidth: 1040 }}>
+            <div className="lp-mock-bar">
+              <div className="lp-mock-dots"><i /><i /><i /></div>
+              <div className="lp-mock-url">app.jobihome.vn/dashboard</div>
+            </div>
+            <div className="grid" style={{ gridTemplateColumns: "188px 1fr", minHeight: 360 }}>
+              <aside className="lp-mock-side">
+                <div className="flex items-center gap-2 font-extrabold text-[0.92rem] px-2 pt-1 pb-4">
+                  <i className="block w-5 h-5 rounded-md" style={{ background: "linear-gradient(135deg, var(--lp-accent), var(--lp-accent-2))" }} />
+                  <span>jobihome</span>
                 </div>
-                <p className="text-[14.5px] leading-[1.8] flex-1 mb-6" style={{ color: "#374151" }}>"{c.quote}"</p>
-                <div className="flex items-center gap-3 pt-5 border-t border-gray-100">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-[12px] font-bold flex-shrink-0" style={{ background: c.bg }}>
-                    {c.initials}
-                  </div>
+                <nav className="lp-mock-nav flex flex-col gap-0.5">
+                  <a className="on" href="#">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="7" height="7" rx="1" />
+                      <rect x="14" y="3" width="7" height="7" rx="1" />
+                      <rect x="3" y="14" width="7" height="7" rx="1" />
+                      <rect x="14" y="14" width="7" height="7" rx="1" />
+                    </svg>
+                    <span>Tổng quan</span>
+                  </a>
+                  <a href="#">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M9 11l3 3L22 4" />
+                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                    </svg>
+                    <span>Công việc</span>
+                  </a>
+                  <a href="#">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M12 7v5l3 2" strokeLinecap="round" />
+                    </svg>
+                    <span>Chấm công</span>
+                  </a>
+                  <a href="#">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                    <span>Lương</span>
+                  </a>
+                  <a href="#">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z" />
+                    </svg>
+                    <span>Đánh giá</span>
+                  </a>
+                  <a href="#">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="9" cy="8" r="3" />
+                      <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" strokeLinecap="round" />
+                      <path d="M16 4a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-5" strokeLinecap="round" />
+                    </svg>
+                    <span>Nhân sự</span>
+                  </a>
+                </nav>
+              </aside>
+
+              <main className="p-5 overflow-hidden">
+                <div className="flex items-center justify-between mb-5">
                   <div>
-                    <p className="text-[13px] font-semibold leading-tight" style={{ color: "#111827" }}>{c.name}</p>
-                    <p className="text-[11px] leading-tight mt-0.5" style={{ color: "#9CA3AF" }}>{c.title}, {c.company}</p>
+                    <div className="font-bold text-[1.05rem]">Tổng quan team</div>
+                    <div className="text-[0.76rem] text-lp-text-3">Quý 2 · 2026 — 14 thành viên</div>
+                  </div>
+                  <div className="lp-avs">
+                    <i /><i /><i /><i />
+                    <i style={{ background: "var(--lp-surface-2)", color: "var(--lp-text-3)", fontSize: 10, display: "grid", placeItems: "center", fontWeight: 700 }}>+9</i>
                   </div>
                 </div>
-              </div>
-            ))}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="lp-mk">
+                    <div className="text-[0.68rem] text-lp-text-3 lp-mono uppercase tracking-wider">Tasks done</div>
+                    <div className="text-[1.5rem] font-extrabold leading-tight mt-1">187</div>
+                    <div className="text-[0.72rem] font-semibold" style={{ color: "var(--lp-ok)" }}>▲ 12% so với tháng trước</div>
+                  </div>
+                  <div className="lp-mk">
+                    <div className="text-[0.68rem] text-lp-text-3 lp-mono uppercase tracking-wider">Giờ làm</div>
+                    <div className="text-[1.5rem] font-extrabold leading-tight mt-1">1.842h</div>
+                    <div className="text-[0.72rem] font-semibold" style={{ color: "var(--lp-ok)" }}>▲ 4%</div>
+                  </div>
+                  <div className="lp-mk">
+                    <div className="text-[0.68rem] text-lp-text-3 lp-mono uppercase tracking-wider">Đúng hạn</div>
+                    <div className="text-[1.5rem] font-extrabold leading-tight mt-1">94%</div>
+                    <div className="text-[0.72rem] font-semibold" style={{ color: "var(--lp-ok)" }}>▲ 6%</div>
+                  </div>
+                </div>
+                <div className="grid gap-3" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
+                  <div className="lp-mock-panel">
+                    <div className="flex justify-between items-center text-[0.8rem] font-semibold mb-3">
+                      Năng suất theo tuần <span className="text-lp-text-3 font-medium text-[0.72rem]">tasks / tuần</span>
+                    </div>
+                    <div className="lp-chart">
+                      {[42, 58, 50, 72, 88, 64, 80, 96].map((h, i) => (
+                        <div key={i} className={`lp-bar${h >= 85 ? " lp-bar-hi" : ""}`} style={{ height: `${h}%` }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="lp-mock-panel">
+                    <div className="flex justify-between items-center text-[0.8rem] font-semibold mb-3">
+                      Việc hôm nay <span className="text-lp-text-3 font-medium text-[0.72rem]">6 task</span>
+                    </div>
+                    <div className="lp-tasklist">
+                      <div className="lp-task lp-task-done"><div className="lp-cb" /><div className="lp-tt">Review PR #284</div><div className="lp-badge">2h</div></div>
+                      <div className="lp-task"><div className="lp-cb" /><div className="lp-tt">Thiết kế onboarding</div><div className="lp-badge lp-badge-hi">Ưu tiên</div></div>
+                      <div className="lp-task"><div className="lp-cb" /><div className="lp-tt">Họp sprint planning</div><div className="lp-badge">1h</div></div>
+                      <div className="lp-task lp-task-done"><div className="lp-cb" /><div className="lp-tt">Fix bug thanh toán</div><div className="lp-badge">3h</div></div>
+                    </div>
+                  </div>
+                </div>
+              </main>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── PRICING ── */}
-      <section className="py-24" style={{ background: "#F9FAFB" }}>
-        <div className="max-w-[1200px] mx-auto px-6">
-          <div className="text-center mb-12">
-            <span className="inline-flex items-center rounded-full px-4 py-1.5 text-[12px] font-semibold mb-4"
-              style={{ background: "#E6FCF5", color: "#2F9E44" }}>
-              Bảng giá
-            </span>
-            <h2 className="lp-headline mb-3" style={{ fontSize: 36, fontWeight: 800, color: "#111827", lineHeight: 1.15 }}>
-              Giá rõ ràng, không phụ phí
+      {/* ============ STAT / TRUST STRIP ============ */}
+      <section style={{ padding: "clamp(48px, 6vw, 84px) 0" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <p className="text-center lp-mono text-[0.82rem] tracking-wider uppercase text-lp-text-3 mb-8">
+            Được xây cho team công nghệ Việt Nam
+          </p>
+          <div className="lp-stats">
+            <div className="lp-stat"><div className="n">11</div><div className="l">module trong một hệ thống</div></div>
+            <div className="lp-stat"><div className="n">5–25</div><div className="l">người mỗi đội ngũ</div></div>
+            <div className="lp-stat"><div className="n">14 ngày</div><div className="l">dùng thử, không cần thẻ</div></div>
+            <div className="lp-stat"><div className="n">100%</div><div className="l">giao diện tiếng Việt</div></div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ PROBLEM → SOLUTION ============ */}
+      <section style={{ padding: "clamp(64px, 9vw, 130px) 0" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="text-center max-w-[680px] mx-auto mb-14">
+            <span className="lp-eyebrow lp-center">The problem · Bài toán</span>
+            <h2 className="text-balance mt-4 font-extrabold" style={{ fontSize: "clamp(1.9rem, 3.6vw, 2.9rem)", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
+              Hết thời Excel rời rạc và công cụ chắp vá
             </h2>
-            <p className="mx-auto text-[16px]" style={{ color: "#6B7280", maxWidth: 480 }}>
-              Bắt đầu miễn phí 14 ngày. Hủy bất cứ lúc nào. Không cần thẻ tín dụng.
+            <p className="mt-4 text-lp-text-2" style={{ fontSize: "clamp(1.05rem, 1.6vw, 1.28rem)" }}>
+              Mỗi đầu việc quản lý team nằm ở một nơi khác nhau. jobihome thay từng mảnh ghép bằng một quy trình liền mạch.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {plans.map((plan) => (
-              <div key={plan.id}
-                className="lp-card relative flex flex-col rounded-2xl bg-white"
-                style={
-                  plan.recommended
-                    ? { border: `2px solid ${BLUE}`, boxShadow: `0 16px 40px ${BLUE}1F` }
-                    : { border: "1px solid #F3F4F6", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }
-                }>
-                {plan.recommended && (
-                  <div className="absolute -top-3.5 inset-x-0 flex justify-center">
-                    <span className="lp-headline text-[11px] font-bold px-4 py-1 rounded-full text-white"
-                      style={{ background: BLUE }}>
-                      Phổ biến nhất
-                    </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-[920px] mx-auto">
+            <div className="lp-card">
+              <div className="lp-ico" style={{ background: "rgba(217,119,6,0.1)", color: "var(--lp-warn)", borderColor: "rgba(217,119,6,0.2)" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M10.3 3.9l-7 12A2 2 0 0 0 5 19h14a2 2 0 0 0 1.7-3l-7-12a2 2 0 0 0-3.4 0z" />
+                  <path d="M12 9v4M12 17h.01" />
+                </svg>
+              </div>
+              <h3 className="text-[1.12rem] font-bold mb-2">Task & tiến độ phân tán</h3>
+              <p className="text-lp-text-2 text-[0.95rem]">Theo dõi công việc rải rác trên chat, sheet, sticky note — không ai nắm được bức tranh tổng thể.</p>
+            </div>
+            <div className="lp-card">
+              <div className="lp-ico">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+              </div>
+              <h3 className="text-[1.12rem] font-bold mb-2">Task management tích hợp</h3>
+              <p className="text-lp-text-2 text-[0.95rem]">Trạng thái, ưu tiên, ước tính thời gian và timer theo từng task — tất cả ở một nơi.</p>
+            </div>
+            <div className="lp-card">
+              <div className="lp-ico" style={{ background: "rgba(217,119,6,0.1)", color: "var(--lp-warn)", borderColor: "rgba(217,119,6,0.2)" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="16" rx="2" />
+                  <path d="M3 9h18M8 4v16" strokeLinecap="round" />
+                </svg>
+              </div>
+              <h3 className="text-[1.12rem] font-bold mb-2">Chấm công & lương thủ công</h3>
+              <p className="text-lp-text-2 text-[0.95rem]">Tổng hợp giờ làm bằng tay trên Excel, tính lương mất nhiều công và dễ sai sót.</p>
+            </div>
+            <div className="lp-card">
+              <div className="lp-ico">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <h3 className="text-[1.12rem] font-bold mb-2">Office Time + lương tự động</h3>
+              <p className="text-lp-text-2 text-[0.95rem]">Chấm công auto-derive từ time log, manager duyệt nhanh, lương liên kết trực tiếp.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ FEATURE SPLIT 1 — Task & Time ============ */}
+      <section
+        style={{
+          background: "var(--lp-bg-elev)",
+          borderTop: "1px solid var(--lp-border)",
+          borderBottom: "1px solid var(--lp-border)",
+          padding: "clamp(64px, 9vw, 130px) 0",
+        }}
+      >
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-center" style={{ gap: "clamp(34px, 5vw, 76px)" }}>
+            <div>
+              <span className="lp-eyebrow">Tasks & Time tracking</span>
+              <h2 className="text-balance mt-4 font-extrabold" style={{ fontSize: "clamp(1.9rem, 3.6vw, 2.9rem)", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
+                Từ giao việc đến bấm giờ, liền một mạch
+              </h2>
+              <p className="mt-4 text-lp-text-2" style={{ fontSize: "clamp(1.05rem, 1.6vw, 1.28rem)", lineHeight: 1.6 }}>
+                Tạo task theo trạng thái Cần làm · Đang làm · Done, gắn ưu tiên và ước tính thời gian. Bấm giờ ngay trên task để ghi nhận actual time chính xác.
+              </p>
+              <ul className="lp-feat-list">
+                <li><span className="lp-ck"><CheckIco /></span><div><b>Task template & review workflow</b><p>Chuẩn hoá quy trình lặp lại, duyệt task trước khi đóng.</p></div></li>
+                <li><span className="lp-ck"><CheckIco /></span><div><b>Timer start/stop theo task</b><p>Mỗi phiên làm việc được lưu lại, làm nền cho chấm công và lương.</p></div></li>
+                <li><span className="lp-ck"><CheckIco /></span><div><b>Office Time auto-derive</b><p>Giờ vào/ra suy ra tự động từ time log, manager chỉ cần duyệt.</p></div></li>
+              </ul>
+              <Link href="/tinh-nang" className="lp-btn lp-btn-text mt-7 inline-flex">
+                Tìm hiểu Task & Time <ArrowIco size={16} />
+              </Link>
+            </div>
+            <div>
+              <div className="lp-mock">
+                <div className="lp-mock-bar"><div className="lp-mock-dots"><i /><i /><i /></div><div className="lp-mock-url">app.jobihome.vn/tasks</div></div>
+                <div className="p-5">
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="font-bold">Sprint 14</div>
+                    <span className="lp-tag">Đang làm · 8</span>
                   </div>
-                )}
-                <div className="p-7 flex flex-col flex-1">
-                  <p className="lp-headline text-[15px] font-bold mb-5" style={{ color: "#111827" }}>{plan.name}</p>
-                  <div className="mb-1">
-                    <span className="lp-headline font-extrabold" style={{ fontSize: 36, color: plan.recommended ? BLUE : "#111827", lineHeight: 1 }}>
-                      {plan.priceVnd === 0 ? "0đ" : formatVnd(plan.priceVnd)}
-                    </span>
+                  <div className="lp-tasklist">
+                    <div className="lp-task lp-task-done"><div className="lp-cb" /><div className="lp-tt">Setup CI/CD pipeline</div><div className="lp-badge">est 4h</div></div>
+                    <div className="lp-task"><div className="lp-cb" /><div className="lp-tt">API endpoint chấm công</div><div className="lp-badge lp-badge-hi">▶ 01:24:08</div></div>
+                    <div className="lp-task"><div className="lp-cb" /><div className="lp-tt">Migrate Prisma schema</div><div className="lp-badge">est 2h</div></div>
+                    <div className="lp-task lp-task-done"><div className="lp-cb" /><div className="lp-tt">Viết test cho salary module</div><div className="lp-badge">3h</div></div>
+                    <div className="lp-task"><div className="lp-cb" /><div className="lp-tt">Review thiết kế dashboard</div><div className="lp-badge">est 1h</div></div>
                   </div>
-                  <p className="text-[12.5px] mb-1" style={{ color: "#6B7280" }}>{plan.priceVnd === 0 ? "Mãi mãi" : "/tháng"}</p>
-                  <p className="text-[12.5px] mb-6" style={{ color: "#6B7280" }}>{plan.seatLimit} thành viên</p>
-                  <ul className="flex flex-col gap-3 mb-8 flex-1">
-                    {plan.features.slice(0, 4).map((f) => (
-                      <li key={f} className="flex items-start gap-2.5">
-                        <Check size={14} className="flex-shrink-0 mt-0.5" strokeWidth={2.5}
-                          style={{ color: plan.recommended ? BLUE : "#2F9E44" }} />
-                        <span className="text-[13px] leading-snug" style={{ color: "#374151" }}>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/sign-up"
-                    className="lp-btn lp-headline w-full flex items-center justify-center rounded-xl text-[13.5px] font-semibold"
-                    style={
-                      plan.recommended
-                        ? { height: 44, background: BLUE, color: "#fff", boxShadow: `0 4px 16px ${BLUE}40` }
-                        : { height: 44, background: "#F3F4F6", color: "#374151" }
-                    }>
-                    {plan.priceVnd === 0 ? "Dùng miễn phí" : "Bắt đầu trial"}
-                  </Link>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ FEATURE SPLIT 2 — Performance ============ */}
+      <section style={{ padding: "clamp(64px, 9vw, 130px) 0" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-center" style={{ gap: "clamp(34px, 5vw, 76px)" }}>
+            <div className="order-2 lg:order-1">
+              <div className="lp-mock">
+                <div className="lp-mock-bar"><div className="lp-mock-dots"><i /><i /><i /></div><div className="lp-mock-url">app.jobihome.vn/reviews</div></div>
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="font-bold">Review Q2 · Minh Anh</div>
+                    <span className="lp-tag">Frontend Lead</span>
+                  </div>
+                  <div className="grid items-center gap-5" style={{ gridTemplateColumns: "110px 1fr" }}>
+                    <div>
+                      <div className="lp-donut" style={{ ["--p" as string]: 86 }}>
+                        <div className="inner">8.6</div>
+                      </div>
+                      <div className="text-center text-[0.72rem] text-lp-text-3 lp-mono mt-1">ĐIỂM TỔNG</div>
+                    </div>
+                    <div className="lp-tasklist">
+                      <div className="lp-task"><div className="lp-tt">Tốc độ</div><div className="lp-badge lp-badge-hi">9.2</div></div>
+                      <div className="lp-task"><div className="lp-tt">Chất lượng</div><div className="lp-badge lp-badge-hi">8.8</div></div>
+                      <div className="lp-task"><div className="lp-tt">Đúng hạn</div><div className="lp-badge lp-badge-hi">8.5</div></div>
+                      <div className="lp-task"><div className="lp-tt">Học hỏi</div><div className="lp-badge">7.9</div></div>
+                      <div className="lp-task"><div className="lp-tt">Chủ động</div><div className="lp-badge lp-badge-hi">8.6</div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="order-1 lg:order-2">
+              <span className="lp-eyebrow">Performance Reviews</span>
+              <h2 className="text-balance mt-4 font-extrabold" style={{ fontSize: "clamp(1.9rem, 3.6vw, 2.9rem)", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
+                Đánh giá khách quan từ dữ liệu thật
+              </h2>
+              <p className="mt-4 text-lp-text-2" style={{ fontSize: "clamp(1.05rem, 1.6vw, 1.28rem)", lineHeight: 1.6 }}>
+                Chu kỳ review theo quý/năm với 3 nguồn điểm chạy song song — không còn đánh giá cảm tính.
+              </p>
+              <ul className="lp-feat-list">
+                <li><span className="lp-ck"><CheckIco /></span><div><b>Auto-KPI từ data</b><p>5 tiêu chí: Tốc độ · Chất lượng · Đúng hạn · Học hỏi · Chủ động.</p></div></li>
+                <li><span className="lp-ck"><CheckIco /></span><div><b>Self-review & Manager review</b><p>Nhân viên tự đánh giá, manager cho điểm chính thức dùng cho lương/thăng chức.</p></div></li>
+                <li><span className="lp-ck"><CheckIco /></span><div><b>AI-suggest KPI tiếp theo</b><p>Hệ thống gợi ý mục tiêu kế tiếp dựa trên xu hướng hiệu suất.</p></div></li>
+              </ul>
+              <Link href="/tinh-nang" className="lp-btn lp-btn-text mt-7 inline-flex">
+                Cách tính Auto-KPI <ArrowIco size={16} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ ALL MODULES ============ */}
+      <section
+        style={{
+          background: "var(--lp-bg-elev)",
+          borderTop: "1px solid var(--lp-border)",
+          padding: "clamp(64px, 9vw, 130px) 0",
+        }}
+      >
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="text-center max-w-[680px] mx-auto mb-13">
+            <span className="lp-eyebrow lp-center">Everything included · 11 module</span>
+            <h2 className="text-balance mt-4 font-extrabold" style={{ fontSize: "clamp(1.9rem, 3.6vw, 2.9rem)", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
+              Một hệ thống, trọn vòng đời nhân sự
+            </h2>
+            <p className="mt-4 text-lp-text-2" style={{ fontSize: "clamp(1.05rem, 1.6vw, 1.28rem)" }}>
+              Từ hồ sơ nhân viên đến vault mật khẩu khách hàng — mọi thứ một tech lead cần.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-10">
+            {MODULES.map((m) => (
+              <div key={m.title} className="lp-card lp-card-hover">
+                <div className="lp-ico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{m.svg}</svg>
+                </div>
+                <h3 className="text-[1.12rem] font-bold mb-2">{m.title}</h3>
+                <p className="text-lp-text-2 text-[0.95rem]">{m.desc}</p>
               </div>
             ))}
           </div>
-          <div className="text-center">
-            <Link href="/pricing"
-              className="lp-btn lp-headline inline-flex items-center gap-2 text-[13.5px] font-semibold"
-              style={{ height: 40, paddingLeft: 24, paddingRight: 24, border: `1px solid ${BLUE}`, color: BLUE, borderRadius: 8 }}>
-              Xem chi tiết bảng giá <ArrowRight size={14} />
+          <div className="text-center mt-10">
+            <Link href="/tinh-nang" className="lp-btn lp-btn-ghost">Xem tất cả tính năng</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ INTEGRATIONS ============ */}
+      <section style={{ padding: "clamp(64px, 9vw, 130px) 0" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-center" style={{ gap: "clamp(34px, 5vw, 76px)" }}>
+            <div>
+              <span className="lp-eyebrow">Integrations</span>
+              <h2 className="text-balance mt-4 font-extrabold" style={{ fontSize: "clamp(1.9rem, 3.6vw, 2.9rem)", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
+                Kết nối với công cụ đội ngũ đang dùng
+              </h2>
+              <p className="mt-4 text-lp-text-2" style={{ fontSize: "clamp(1.05rem, 1.6vw, 1.28rem)", lineHeight: 1.6 }}>
+                jobihome tích hợp sẵn với hệ sinh thái quen thuộc, dữ liệu đồng bộ tự động.
+              </p>
+              <Link href="/tich-hop" className="lp-btn lp-btn-text mt-7 inline-flex">
+                Xem tất cả tích hợp <ArrowIco size={16} />
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-5">
+              <div className="lp-card">
+                <div className="lp-ico">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2a10 10 0 1 0 10 10" strokeLinecap="round" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-[1rem]">Clerk</h3>
+                <p className="text-lp-text-2 text-[0.88rem]">Auth & quản lý người dùng, multi-tenant.</p>
+              </div>
+              <div className="lp-card">
+                <div className="lp-ico">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+                    <path d="M8 3l-6 10 3 5h6M16 3l6 10-3 5h-6M8 3h8l-4 7z" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-[1rem]">Google Drive</h3>
+                <p className="text-lp-text-2 text-[0.88rem]">Lấy thông tin video từ link Drive.</p>
+              </div>
+              <div className="lp-card">
+                <div className="lp-ico">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="6" cy="6" r="2.5" />
+                    <circle cx="6" cy="18" r="2.5" />
+                    <circle cx="18" cy="9" r="2.5" />
+                    <path d="M6 8.5v7M18 11.5c0 3-3 3.5-6 3.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-[1rem]">Git webhook</h3>
+                <p className="text-lp-text-2 text-[0.88rem]">Đưa commit/PR vào activity log.</p>
+              </div>
+              <div className="lp-card">
+                <div className="lp-ico">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+                    <path d="M12 2L2 20h20z" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-[1rem]">Vercel Cron</h3>
+                <p className="text-lp-text-2 text-[0.88rem]">Anomaly detection & đóng session định kỳ.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ PRICING TEASER ============ */}
+      <section
+        style={{
+          background: "var(--lp-bg-elev)",
+          borderTop: "1px solid var(--lp-border)",
+          padding: "clamp(64px, 9vw, 130px) 0",
+        }}
+      >
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="text-center max-w-[680px] mx-auto mb-13">
+            <span className="lp-eyebrow lp-center">Pricing · Minh bạch</span>
+            <h2 className="text-balance mt-4 font-extrabold" style={{ fontSize: "clamp(1.9rem, 3.6vw, 2.9rem)", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
+              Bắt đầu miễn phí, nâng cấp khi team lớn lên
+            </h2>
+            <p className="mt-4 text-lp-text-2" style={{ fontSize: "clamp(1.05rem, 1.6vw, 1.28rem)" }}>
+              Ba gói phù hợp từng giai đoạn. Dùng thử 14 ngày, không cần thẻ.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-10 items-stretch">
+            {plans.map((plan) => (
+              <div key={plan.id} className={`lp-plan${plan.recommended ? " lp-plan-feature" : ""}`}>
+                <div className="pname">{plan.name}</div>
+                <div className="pprice">
+                  {plan.priceVnd === 0 ? "Miễn phí" : (
+                    <>
+                      {formatVnd(plan.priceVnd)}<small> /tháng</small>
+                    </>
+                  )}
+                </div>
+                <p className="pdesc">{plan.priceVnd === 0 ? "Cho cá nhân khởi đầu." : plan.id === "STARTER" ? "Cho team đang tăng tốc." : "Cho đội ngũ trưởng thành."}</p>
+                <ul>
+                  {plan.features.slice(0, 4).map((f) => (
+                    <li key={f}><CheckPlanIco />{f}</li>
+                  ))}
+                </ul>
+                <Link href="/sign-up" className={`lp-btn ${plan.recommended ? "lp-btn-primary" : "lp-btn-ghost"} lp-btn-block`}>
+                  {plan.priceVnd === 0 ? "Bắt đầu" : "Dùng thử 14 ngày"}
+                </Link>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-10">
+            <Link href="/pricing" className="lp-btn lp-btn-text inline-flex">
+              Xem chi tiết bảng giá <ArrowIco size={16} />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── FAQ ── */}
-      <section id="faq" className="py-24 bg-white">
-        <div className="max-w-[720px] mx-auto px-6">
-          <div className="text-center mb-12">
-            <span className="inline-flex items-center rounded-full px-4 py-1.5 text-[12px] font-semibold mb-4"
-              style={{ background: "#EEF2FF", color: BLUE }}>
-              FAQ
-            </span>
-            <h2 className="lp-headline" style={{ fontSize: 36, fontWeight: 800, color: "#111827" }}>
-              Câu hỏi thường gặp
-            </h2>
-          </div>
-          <FaqAccordion />
-        </div>
-      </section>
-
-      {/* ── FINAL CTA ── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-[1200px] mx-auto px-6">
-          <div className="relative overflow-hidden rounded-2xl" style={{ background: BLUE, padding: "64px 64px" }}>
-            <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white opacity-[0.04] pointer-events-none" />
-            <div className="absolute -bottom-12 -left-12 w-52 h-52 rounded-full bg-white opacity-[0.04] pointer-events-none" />
-            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-              <div>
-                <h2 className="lp-headline text-white mb-3" style={{ fontSize: 32, fontWeight: 800, lineHeight: 1.2 }}>
-                  Sẵn sàng quản lý team tốt hơn?
-                </h2>
-                <p className="mb-8 leading-relaxed text-[15px]" style={{ color: "#93C5FD" }}>
-                  Tạo workspace trong 2 phút. Free trial 14 ngày, không cần thẻ tín dụng.
-                </p>
-                <Link href="/sign-up"
-                  className="lp-btn lp-headline inline-flex items-center justify-center gap-2 text-white"
-                  style={{ height: 48, paddingLeft: 28, paddingRight: 28, border: "1.5px solid rgba(255,255,255,0.55)", borderRadius: 10, fontSize: 15, fontWeight: 600 }}>
-                  Bắt đầu miễn phí →
-                </Link>
-              </div>
-              <ul className="flex flex-col gap-4">
-                {["Không cần thẻ tín dụng", "Hủy bất cứ lúc nào", "Onboarding miễn phí", "Hỗ trợ tiếng Việt 24/7"].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-[15px] text-white">
-                    <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: "rgba(255,255,255,0.18)" }}>
-                      <Check size={11} color="#fff" strokeWidth={3} />
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
+      {/* ============ CTA ============ */}
+      <section style={{ padding: "clamp(64px, 9vw, 130px) 0" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="lp-cta-band">
+            <h2 className="text-balance">Sẵn sàng thay thế Excel?</h2>
+            <p>Tạo workspace cho team của bạn trong vài phút. Dùng thử 14 ngày miễn phí, không cần thẻ tín dụng.</p>
+            <div className="flex gap-3 justify-center flex-wrap relative">
+              <Link href="/sign-up" className="lp-btn lp-btn-primary lp-btn-lg">Bắt đầu miễn phí</Link>
+              <Link href="/pricing" className="lp-btn lp-btn-ghost lp-btn-lg">Xem bảng giá</Link>
             </div>
           </div>
         </div>

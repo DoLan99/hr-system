@@ -7,10 +7,13 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <article className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
+    <article className="w-full max-w-[760px] mx-auto px-7" style={{ padding: "clamp(48px, 7vw, 92px) 28px clamp(64px, 9vw, 130px)" }}>
       <header className="mb-10">
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100">Chính sách bảo mật</h1>
-        <p className="text-sm text-slate-500 mt-2">Cập nhật lần cuối: 25/05/2026</p>
+        <span className="lp-eyebrow">Legal · Privacy</span>
+        <h1 className="font-extrabold mt-4" style={{ fontSize: "clamp(2rem, 4vw, 2.7rem)", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
+          Chính sách bảo mật
+        </h1>
+        <p className="lp-mono text-[0.82rem] text-lp-text-3 mt-3">Cập nhật lần cuối: 25/05/2026</p>
       </header>
 
       <Section title="1. Cam kết">
@@ -117,7 +120,7 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
-      <p className="text-xs text-slate-500 italic mt-12">
+      <p className="lp-mono text-[0.78rem] text-lp-text-3 italic mt-12 pt-6" style={{ borderTop: "1px solid var(--lp-border)" }}>
         Tài liệu này có giá trị tham khảo. Để được tư vấn pháp lý đầy đủ, vui lòng liên hệ luật sư.
       </p>
     </article>
@@ -127,8 +130,8 @@ export default function PrivacyPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-8">
-      <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-8 mb-3">{title}</h2>
-      <div className="text-slate-700 dark:text-slate-300 space-y-2 leading-relaxed prose prose-slate dark:prose-invert prose-sm">{children}</div>
+      <h2 className="font-bold text-lp-text mt-10 mb-3" style={{ fontSize: "1.25rem" }}>{title}</h2>
+      <div className="text-lp-text-2 leading-relaxed text-[0.95rem] space-y-2 [&_a]:text-lp-accent-ink [&_a]:underline [&_strong]:text-lp-text [&_ul]:list-disc [&_ul]:pl-6 [&_ul>li]:my-1.5">{children}</div>
     </section>
   );
 }

@@ -1,163 +1,137 @@
-"use client";
-
 import Link from "next/link";
-import { ArrowRight, Quote } from "lucide-react";
+import type { Metadata } from "next";
 
-const BLUE = "#3B5BDB";
-const GREEN = "#0CA678";
+export const metadata: Metadata = {
+  title: "Khách hàng — jobihome.vn",
+  description: "Các startup và doanh nghiệp Việt đã thay đổi cách quản lý team như thế nào.",
+};
 
 const STORIES = [
   {
-    initials: "LS", company: "Loship", logoColor: "#FF6B35",
-    industry: "Logistics & Giao vận", industryColor: "#FFF3EE", industryText: "#CC4A10",
+    initials: "LS", company: "Loship",
+    industry: "Logistics & Giao vận",
     result: "Giảm 3 buổi họp/tuần",
     resultDesc: "Toàn bộ cập nhật tiến độ chuyển lên jobihome — team lead không cần họp daily nữa.",
     quote: "jobihome giúp chúng tôi biết ai đang làm gì mà không cần hỏi. Tiết kiệm cả tiếng mỗi ngày.",
-    name: "Minh Tuấn", title: "CTO", avatar: "MT", avatarBg: BLUE,
+    name: "Minh Tuấn", title: "CTO",
     metrics: [{ value: "3×", label: "ít cuộc họp hơn" }, { value: "40%", label: "tăng năng suất" }],
   },
   {
-    initials: "TK", company: "Teko Vietnam", logoColor: "#7C3AED",
-    industry: "Fintech & Công nghệ", industryColor: "#F3F0FF", industryText: "#5B21B6",
+    initials: "TK", company: "Teko Vietnam",
+    industry: "Fintech & Công nghệ",
     result: "Tính lương tự động 100%",
     resultDesc: "Từ 2 ngày làm thủ công trong Excel xuống còn 20 phút — kế toán dành thời gian cho việc khác.",
     quote: "Trước đây mỗi tháng tôi mất 2 ngày tính lương. Bây giờ jobihome làm hết, tôi chỉ ký duyệt.",
-    name: "Ngọc Kim", title: "Kế toán trưởng", avatar: "NK", avatarBg: "#7C3AED",
+    name: "Ngọc Kim", title: "Kế toán trưởng",
     metrics: [{ value: "2 ngày", label: "→ 20 phút" }, { value: "0 lỗi", label: "tính lương/tháng" }],
   },
   {
-    initials: "BV", company: "Base.vn", logoColor: GREEN,
-    industry: "SaaS & Phần mềm", industryColor: "#ECFDF5", industryText: "#065F46",
+    initials: "BV", company: "Base.vn",
+    industry: "SaaS & Phần mềm",
     result: "Onboard nhân viên mới trong 1 ngày",
     resultDesc: "Workflow tự động gửi checklist, phân quyền, mời workspace — HR không cần làm thủ công từng bước.",
     quote: "Nhân viên mới ngày đầu đã có đủ tool, task và quyền truy cập. Không ai phải hỏi lại nữa.",
-    name: "Đức Hiệp", title: "Head of People", avatar: "DH", avatarBg: GREEN,
+    name: "Đức Hiệp", title: "Head of People",
     metrics: [{ value: "1 ngày", label: "onboarding hoàn chỉnh" }, { value: "5×", label: "nhanh hơn trước" }],
   },
 ];
 
-const LOGOS = [
-  { name: "Loship", color: "#FF6B35" }, { name: "Teko", color: "#7C3AED" },
-  { name: "Base.vn", color: GREEN }, { name: "MoMo", color: "#A21CAF" },
-  { name: "Vnpay", color: "#1D4ED8" }, { name: "Ahamove", color: "#D97706" },
-];
+const LOGOS = ["Loship", "Teko", "Base.vn", "MoMo", "VNPAY", "Ahamove"];
 
 export default function CustomersPage() {
   return (
-    <div className="bg-white min-h-screen">
+    <>
       {/* Hero */}
-      <section className="pt-20 pb-16 text-center px-6">
-        <div className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold mb-6 border"
-          style={{ background: "#EEF2FF", borderColor: "#C7D2FE", color: BLUE }}>
-          Câu chuyện khách hàng
+      <section className="lp-glow relative overflow-hidden" style={{ padding: "clamp(56px, 8vw, 96px) 0 0", textAlign: "center" }}>
+        <span className="lp-blob lp-blob-1" />
+        <span className="lp-blob lp-blob-2" />
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <span className="lp-eyebrow lp-center" style={{ justifyContent: "center" }}>Customers · Khách hàng</span>
+          <h1 className="text-balance mt-5 font-extrabold mx-auto" style={{ fontSize: "clamp(2.6rem, 6vw, 4.3rem)", lineHeight: 1.02, letterSpacing: "-0.035em", maxWidth: "16ch" }}>
+            Khách hàng của <span className="lp-grad-text">jobihome.vn</span>
+          </h1>
+          <p className="mt-6 mx-auto text-lp-text-2" style={{ fontSize: "clamp(1.05rem, 1.6vw, 1.28rem)", maxWidth: "60ch" }}>
+            Các startup và doanh nghiệp Việt đã thay đổi cách quản lý team như thế nào — bằng số liệu thực tế.
+          </p>
         </div>
-        <h1 className="text-[38px] lg:text-[48px] font-extrabold text-gray-900 tracking-tight leading-[1.12] mb-4">
-          Khách hàng của <span style={{ color: BLUE }}>jobihome.vn</span>
-        </h1>
-        <p className="text-[16px] text-gray-400 max-w-[480px] mx-auto leading-relaxed">
-          Các startup và doanh nghiệp Việt đã thay đổi cách quản lý team như thế nào — bằng số liệu thực tế.
-        </p>
       </section>
 
       {/* Logo strip */}
-      <section className="border-y border-gray-100 py-8 px-6 mb-20">
-        <p className="text-center text-[12px] font-semibold uppercase tracking-widest text-gray-300 mb-6">
-          Tin dùng bởi các công ty
-        </p>
-        <div className="max-w-[860px] mx-auto flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-          {LOGOS.map((l) => (
-            <div key={l.name} className="flex items-center gap-2 opacity-50 hover:opacity-80 transition-opacity">
-              <div className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[9px] font-black flex-shrink-0"
-                style={{ background: l.color }}>
-                {l.name[0]}
-              </div>
-              <span className="text-[13px] font-bold text-gray-500 tracking-tight">{l.name}</span>
-            </div>
-          ))}
+      <section style={{ padding: "44px 0", borderTop: "1px solid var(--lp-border)", borderBottom: "1px solid var(--lp-border)", background: "var(--lp-bg-elev)", marginTop: 44 }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <p className="text-center lp-mono text-[0.78rem] uppercase tracking-wider text-lp-text-3 mb-6">
+            Tin dùng bởi các công ty
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4 max-w-[860px] mx-auto">
+            {LOGOS.map((name) => (
+              <span key={name} className="lp-mono font-semibold text-[1.05rem] text-lp-text-3 opacity-80 hover:opacity-100 transition-opacity tracking-tight">
+                {name}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Case study cards */}
-      <section className="max-w-[1060px] mx-auto px-6 pb-28">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {STORIES.map((s) => (
-            <article key={s.company} className="group flex flex-col rounded-2xl bg-white transition-all duration-300 cursor-pointer hover:-translate-y-1"
-              style={{ border: "1px solid #E5E7EB", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-              <div className="h-1.5 rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${s.logoColor}, ${s.logoColor}99)` }} />
-              <div className="p-7 flex flex-col flex-1">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-[14px] flex-shrink-0"
-                      style={{ background: s.logoColor }}>
-                      {s.initials}
-                    </div>
-                    <div>
-                      <p className="text-[14px] font-bold text-gray-900 leading-tight">{s.company}</p>
-                      <span className="inline-block mt-1 text-[10.5px] font-semibold px-2.5 py-0.5 rounded-full"
-                        style={{ background: s.industryColor, color: s.industryText }}>
-                        {s.industry}
-                      </span>
-                    </div>
+      {/* Case studies */}
+      <section style={{ padding: "clamp(64px, 9vw, 130px) 0" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {STORIES.map((s) => (
+              <article key={s.company} className="lp-card lp-card-hover flex flex-col">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-11 h-11 rounded-xl grid place-items-center text-white font-black text-[14px] flex-shrink-0" style={{ background: "linear-gradient(135deg, var(--lp-accent-2), var(--lp-accent))" }}>
+                    {s.initials}
+                  </div>
+                  <div>
+                    <p className="font-bold text-[1rem]">{s.company}</p>
+                    <span className="lp-tag mt-1 inline-flex">{s.industry}</span>
                   </div>
                 </div>
-                <div className="rounded-xl px-4 py-3.5 mb-5" style={{ background: "#F8F9FF", border: `1px solid ${BLUE}18` }}>
-                  <p className="text-[20px] font-extrabold leading-tight mb-1" style={{ color: BLUE }}>{s.result}</p>
-                  <p className="text-[12.5px] text-gray-400 leading-snug">{s.resultDesc}</p>
+
+                <div className="lp-mock-panel mb-4">
+                  <p className="text-[1.25rem] font-extrabold leading-tight mb-1 text-lp-accent-ink">{s.result}</p>
+                  <p className="text-[0.82rem] text-lp-text-3 leading-snug">{s.resultDesc}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3 mb-6">
+
+                <div className="grid grid-cols-2 gap-3 mb-5">
                   {s.metrics.map((m) => (
-                    <div key={m.label} className="rounded-xl px-3.5 py-3 text-center"
-                      style={{ background: "#F9FAFB", border: "1px solid #F0F0F0" }}>
-                      <p className="text-[18px] font-extrabold text-gray-900 leading-none mb-0.5">{m.value}</p>
-                      <p className="text-[11px] text-gray-400 leading-snug">{m.label}</p>
+                    <div key={m.label} className="lp-mk text-center" style={{ padding: "10px 8px" }}>
+                      <p className="text-[1.1rem] font-extrabold leading-none mb-1">{m.value}</p>
+                      <p className="text-[0.7rem] text-lp-text-3 leading-snug">{m.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="flex-1 mb-6">
-                  <Quote size={16} className="mb-2 opacity-30" style={{ color: BLUE }} />
-                  <p className="text-[13.5px] text-gray-600 leading-[1.75] italic">"{s.quote}"</p>
-                </div>
-                <div className="flex items-center justify-between pt-5 border-t border-gray-100">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
-                      style={{ background: s.avatarBg }}>
-                      {s.avatar}
-                    </div>
-                    <div>
-                      <p className="text-[12.5px] font-semibold text-gray-800 leading-tight">{s.name}</p>
-                      <p className="text-[11px] text-gray-400 leading-tight">{s.title} · {s.company}</p>
-                    </div>
-                  </div>
-                  <span className="flex items-center gap-1 text-[12.5px] font-semibold" style={{ color: BLUE }}>
-                    Đọc câu chuyện <ArrowRight size={13} />
-                  </span>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
 
-        {/* Bottom CTA */}
-        <div className="mt-16 rounded-2xl px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left"
-          style={{ background: "#F8F9FF", border: `1px solid ${BLUE}20` }}>
-          <div>
-            <p className="text-[18px] font-bold text-gray-900 mb-1">Câu chuyện tiếp theo có thể là của bạn</p>
-            <p className="text-[13.5px] text-gray-400">Tham gia 120+ startup Việt đang dùng jobihome mỗi ngày.</p>
+                <div className="flex-1 mb-5">
+                  <p className="text-[0.92rem] text-lp-text-2 leading-relaxed italic">"{s.quote}"</p>
+                </div>
+
+                <div className="flex items-center gap-2.5 pt-5" style={{ borderTop: "1px solid var(--lp-border)" }}>
+                  <div className="w-8 h-8 rounded-full grid place-items-center text-[11px] font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, var(--lp-accent-2), var(--lp-accent))" }}>
+                    {s.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                  </div>
+                  <div>
+                    <p className="text-[0.84rem] font-semibold leading-tight">{s.name}</p>
+                    <p className="text-[0.74rem] text-lp-text-3 leading-tight">{s.title} · {s.company}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <Link href="/dat-lich-demo"
-              className="inline-flex items-center gap-2 h-11 px-6 rounded-xl text-[13.5px] font-bold text-white transition-opacity hover:opacity-90"
-              style={{ background: BLUE, boxShadow: `0 4px 16px ${BLUE}40` }}>
-              Đặt lịch demo <ArrowRight size={14} />
-            </Link>
-            <Link href="/pricing"
-              className="inline-flex items-center h-11 px-5 rounded-xl text-[13.5px] font-semibold border transition-colors hover:bg-white"
-              style={{ borderColor: "#D1D5DB", color: "#374151" }}>
-              Xem bảng giá
-            </Link>
+
+          {/* Bottom CTA */}
+          <div className="lp-card mt-14 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
+            <div>
+              <p className="font-bold text-[1.1rem]">Câu chuyện tiếp theo có thể là của bạn</p>
+              <p className="text-[0.92rem] text-lp-text-3 mt-1">Tham gia các startup Việt đang dùng jobihome mỗi ngày.</p>
+            </div>
+            <div className="flex gap-3 flex-shrink-0">
+              <Link href="/dat-lich-demo" className="lp-btn lp-btn-primary">Đặt lịch demo</Link>
+              <Link href="/pricing" className="lp-btn lp-btn-ghost">Xem bảng giá</Link>
+            </div>
           </div>
         </div>
       </section>
-    </div>
+    </>
   );
 }

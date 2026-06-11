@@ -1,137 +1,152 @@
-import type { Metadata } from "next";
 import Link from "next/link";
-import { Heart, Target, Users, Zap, ArrowRight } from "lucide-react";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Giới thiệu — jobihome.vn",
-  description: "Câu chuyện và sứ mệnh của jobihome.vn — xây dựng công cụ quản lý team đơn giản cho startup Việt.",
+  title: "Về chúng tôi — jobihome.vn",
+  description: "jobihome được xây cho tech lead và founder người Việt: một công cụ đủ chuyên nghiệp nhưng không phức tạp như SAP/Workday, hợp quy trình Việt Nam.",
 };
+
+function CheckIco() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" width="13" height="13">
+      <path d="M5 12l5 5L20 6" />
+    </svg>
+  );
+}
+
+const VALUES = [
+  {
+    title: "Khách quan hơn cảm tính",
+    desc: "Quyết định nhân sự nên dựa trên dữ liệu thật, không phải ấn tượng.",
+    svg: <path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z" strokeLinecap="round" strokeLinejoin="round" />,
+  },
+  {
+    title: "Minh bạch & an toàn",
+    desc: "Audit log đầy đủ, dữ liệu tách biệt theo tổ chức, không nhập nhằng.",
+    svg: (
+      <>
+        <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
+        <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+      </>
+    ),
+  },
+  {
+    title: "Đơn giản đến mức dùng được ngay",
+    desc: "Sức mạnh không nên đánh đổi bằng sự rườm rà.",
+    svg: <path d="M13 2L3 14h7l-1 8 10-12h-7z" strokeLinecap="round" strokeLinejoin="round" />,
+  },
+];
 
 export default function AboutPage() {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 space-y-16">
-      <header className="text-center space-y-4">
-        <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-slate-100">
-          Tại sao chúng tôi xây <span className="text-blue-600">jobihome.vn</span>
-        </h1>
-        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-          Là tech lead Việt Nam, tôi đã chứng kiến quá nhiều team quản lý nhân sự bằng 5 công cụ + 10 file Excel. Không nên như vậy.
-        </p>
-      </header>
-
-      {/* Story */}
-      <section className="prose prose-slate dark:prose-invert max-w-none">
-        <h2 className="text-2xl font-bold mb-4">Câu chuyện</h2>
-        <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-          Năm 2025, khi quản lý team 12 người với mix giữa full-time và freelancer, tôi mất gần 2 ngày
-          mỗi cuối tháng chỉ để tổng hợp time sheet, tính lương, đối chiếu task hoàn thành. Excel rối,
-          công cụ track time tách rời với task, không có audit log...
-        </p>
-        <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-          Tôi thử Jira (quá phức tạp), Trello (thiếu time tracking), Toggl + Google Sheet (rời rạc).
-          Cuối cùng tôi quyết định <strong>tự build</strong> — và <strong>jobihome.vn</strong> ra đời.
-        </p>
-        <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-          Mục tiêu: 1 workspace, làm được mọi thứ team startup Việt cần — không thừa, không thiếu.
-        </p>
-      </section>
-
-      {/* Values */}
-      <section>
-        <h2 className="text-2xl font-bold text-center mb-10">Giá trị cốt lõi</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <ValueCard
-            icon={<Target className="w-5 h-5" />}
-            title="Đơn giản hơn Jira"
-            desc="Cho team 5-20 người, không phải Fortune 500. Không cần workflow 12 trạng thái — chỉ cần thứ chạy được."
-          />
-          <ValueCard
-            icon={<Heart className="w-5 h-5" />}
-            title="Built in Vietnam, for Vietnam"
-            desc="Tiếng Việt native, VAT/hóa đơn đỏ, support qua Zalo. Hiểu pain point của tech lead Việt vì tôi cũng là một."
-          />
-          <ValueCard
-            icon={<Zap className="w-5 h-5" />}
-            title="Tự động hóa thật"
-            desc="Auto timer, auto credited minutes, auto salary. Bạn không phải nhập lại số liệu 3 lần."
-          />
-          <ValueCard
-            icon={<Users className="w-5 h-5" />}
-            title="Audit-ready"
-            desc="Mọi thay đổi đều có log. Phát hiện bất thường tự động. Investor / kiểm toán nhìn vào sẽ tin tưởng."
-          />
+    <>
+      {/* Page hero */}
+      <section className="lp-glow relative overflow-hidden" style={{ padding: "clamp(56px, 8vw, 96px) 0 0", textAlign: "center" }}>
+        <span className="lp-blob lp-blob-1" />
+        <span className="lp-blob lp-blob-2" />
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <span className="lp-eyebrow lp-center" style={{ justifyContent: "center" }}>About · Về chúng tôi</span>
+          <h1 className="text-balance mt-5 font-extrabold mx-auto" style={{ fontSize: "clamp(2.6rem, 6vw, 4.3rem)", lineHeight: 1.02, letterSpacing: "-0.035em", maxWidth: "18ch" }}>
+            Công cụ HR cho người Việt làm công nghệ
+          </h1>
+          <p className="mt-6 mx-auto text-lp-text-2" style={{ fontSize: "clamp(1.05rem, 1.6vw, 1.28rem)", maxWidth: "60ch" }}>
+            Chúng tôi tin rằng một tech lead không nên mất nửa ngày làm việc cho bảng tính. jobihome ra đời để quản lý team trở nên đơn giản, minh bạch và đúng cách Việt Nam.
+          </p>
         </div>
       </section>
 
-      {/* Roadmap */}
-      <section>
-        <h2 className="text-2xl font-bold text-center mb-10">Roadmap 2026-2027</h2>
-        <div className="space-y-4 max-w-2xl mx-auto">
-          <RoadmapItem
-            quarter="Q2 2026"
-            title="Launch + Onboarding 50 khách đầu tiên"
-            status="current"
-          />
-          <RoadmapItem
-            quarter="Q3 2026"
-            title="VNPay / Momo integration (auto recurring)"
-            status="planned"
-          />
-          <RoadmapItem
-            quarter="Q4 2026"
-            title="Mobile app (iOS + Android)"
-            status="planned"
-          />
-          <RoadmapItem
-            quarter="Q1 2027"
-            title="API + Webhooks cho 3rd party integrations"
-            status="planned"
-          />
-          <RoadmapItem
-            quarter="Q2 2027"
-            title="Mở rộng thị trường Đông Nam Á"
-            status="planned"
-          />
+      {/* Mission */}
+      <section style={{ padding: "56px 0 clamp(64px, 9vw, 130px)" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="lp-card text-center mx-auto" style={{ padding: "clamp(32px, 5vw, 60px)", maxWidth: 920 }}>
+            <span className="lp-eyebrow lp-center" style={{ justifyContent: "center" }}>Sứ mệnh</span>
+            <p className="text-balance mt-5 font-bold" style={{ fontSize: "clamp(1.4rem, 3vw, 2.1rem)", letterSpacing: "-0.02em", lineHeight: 1.3 }}>
+              Gom toàn bộ vòng đời quản lý nhân sự — task, chấm công, lương, đánh giá — vào{" "}
+              <span className="text-lp-accent-ink">một workspace duy nhất</span>, đủ chuyên nghiệp nhưng không phức tạp như SAP hay Workday.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Who it's for */}
+      <section style={{ padding: "clamp(64px, 9vw, 130px) 0" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-center" style={{ gap: "clamp(34px, 5vw, 76px)" }}>
+            <div>
+              <span className="lp-eyebrow">Đối tượng</span>
+              <h2 className="text-balance mt-4 font-extrabold" style={{ fontSize: "clamp(1.9rem, 3.6vw, 2.9rem)", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
+                Dành cho tech lead & founder Việt
+              </h2>
+              <p className="mt-4 text-lp-text-2" style={{ fontSize: "clamp(1.05rem, 1.6vw, 1.28rem)", lineHeight: 1.6 }}>
+                jobihome nhắm đến người đang quản lý team 5–20 người tại startup hoặc công ty phần mềm nhỏ — những người cần một hệ thống nghiêm túc nhưng nhẹ nhàng, và hiểu quy trình làm việc kiểu Việt Nam.
+              </p>
+              <ul className="lp-feat-list">
+                <li><span className="lp-ck"><CheckIco /></span><div><b>Đủ chuyên nghiệp</b><p>Phân quyền, audit, đánh giá khách quan — không thua công cụ lớn.</p></div></li>
+                <li><span className="lp-ck"><CheckIco /></span><div><b>Không phức tạp</b><p>Dùng được ngay, không cần đội triển khai hay đào tạo dài ngày.</p></div></li>
+                <li><span className="lp-ck"><CheckIco /></span><div><b>Hợp quy trình Việt</b><p>Giao diện tiếng Việt, thanh toán nội địa, chấm công đúng thói quen.</p></div></li>
+              </ul>
+            </div>
+            <div className="lp-ph-media rounded-2xl" style={{ aspectRatio: "4 / 3", border: "1px solid var(--lp-border)" }}>
+              <span className="lp-ph-lab">team / founder photo</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Values */}
+      <section style={{ background: "var(--lp-bg-elev)", borderTop: "1px solid var(--lp-border)", padding: "clamp(64px, 9vw, 130px) 0" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="text-center max-w-[680px] mx-auto mb-11">
+            <span className="lp-eyebrow lp-center">Giá trị cốt lõi</span>
+            <h2 className="text-balance mt-4 font-extrabold" style={{ fontSize: "clamp(1.9rem, 3.6vw, 2.9rem)", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
+              Điều chúng tôi tin
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {VALUES.map((v) => (
+              <div key={v.title} className="lp-card lp-card-hover">
+                <div className="lp-ico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{v.svg}</svg>
+                </div>
+                <h3 className="text-[1.12rem] font-bold mb-2">{v.title}</h3>
+                <p className="text-lp-text-2 text-[0.95rem]">{v.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why stats */}
+      <section style={{ padding: "clamp(64px, 9vw, 130px) 0" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="text-center max-w-[680px] mx-auto mb-10">
+            <span className="lp-eyebrow lp-center">Vì sao jobihome</span>
+            <h2 className="text-balance mt-4 font-extrabold" style={{ fontSize: "clamp(1.9rem, 3.6vw, 2.9rem)", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
+              Thay nhiều công cụ bằng một
+            </h2>
+          </div>
+          <div className="lp-stats">
+            <div className="lp-stat"><div className="n">1</div><div className="l">workspace thay vì 5–6 công cụ</div></div>
+            <div className="lp-stat"><div className="n">11</div><div className="l">module liền mạch một nguồn dữ liệu</div></div>
+            <div className="lp-stat"><div className="n">5 tiêu chí</div><div className="l">Auto-KPI đánh giá khách quan</div></div>
+            <div className="lp-stat"><div className="n">🇻🇳</div><div className="l">made & hosted cho người Việt</div></div>
+          </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="text-center space-y-4 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 sm:p-12 text-white">
-        <h2 className="text-2xl sm:text-3xl font-bold">Sẵn sàng dùng thử?</h2>
-        <p className="text-blue-100">
-          14 ngày miễn phí. Không cần thẻ tín dụng. Setup trong 2 phút.
-        </p>
-        <Link
-          href="/sign-up"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition"
-        >
-          Bắt đầu ngay <ArrowRight className="w-4 h-4" />
-        </Link>
+      <section style={{ padding: "0 0 clamp(64px, 9vw, 130px)" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="lp-cta-band">
+            <h2 className="text-balance">Cùng xây cách quản lý team tốt hơn</h2>
+            <p>Thử jobihome cho đội ngũ của bạn — hoặc nói cho chúng tôi biết bạn cần gì.</p>
+            <div className="flex gap-3 justify-center flex-wrap relative">
+              <Link href="/sign-up" className="lp-btn lp-btn-primary lp-btn-lg">Dùng thử miễn phí</Link>
+              <Link href="/contact" className="lp-btn lp-btn-ghost lp-btn-lg">Liên hệ</Link>
+            </div>
+          </div>
+        </div>
       </section>
-    </div>
-  );
-}
-
-function ValueCard({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-      <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
-        {icon}
-      </div>
-      <h3 className="font-semibold mb-1.5 text-slate-900 dark:text-slate-100">{title}</h3>
-      <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{desc}</p>
-    </div>
-  );
-}
-
-function RoadmapItem({ quarter, title, status }: { quarter: string; title: string; status: "current" | "planned" }) {
-  return (
-    <div className={`flex items-start gap-4 p-4 rounded-xl border ${status === "current" ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40" : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"}`}>
-      <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${status === "current" ? "bg-blue-500 animate-pulse" : "bg-slate-300 dark:bg-slate-700"}`} />
-      <div>
-        <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{quarter}</p>
-        <p className="font-medium text-slate-900 dark:text-slate-100 mt-0.5">{title}</p>
-      </div>
-    </div>
+    </>
   );
 }

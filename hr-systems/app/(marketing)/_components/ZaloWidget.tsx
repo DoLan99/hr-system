@@ -13,12 +13,12 @@ export function ZaloWidget() {
         style={{
           width: 44,
           height: 44,
-          background: "#fff",
-          border: "1.5px solid #E9ECEF",
-          boxShadow: "0 4px 14px rgba(0,0,0,0.10)",
+          background: "var(--lp-surface, #fff)",
+          border: "1px solid var(--lp-border-strong, #E9ECEF)",
+          boxShadow: "var(--lp-shadow, 0 4px 14px rgba(0,0,0,0.10))",
         }}
       >
-        <MessageCircle size={20} color="#3B5BDB" strokeWidth={2} />
+        <MessageCircle size={20} color="var(--lp-accent-ink, #3B5BDB)" strokeWidth={2} />
       </a>
 
       {/* Zalo button */}
