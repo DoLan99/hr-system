@@ -21,6 +21,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   "/api/webhooks(.*)",
   "/api/cron(.*)",
+  "/api/auth/microsoft/callback",
 ]);
 
 const NON_TENANT_SUBDOMAINS = new Set([

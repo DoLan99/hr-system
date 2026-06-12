@@ -35,6 +35,9 @@ import {
   ShieldAlert,
   Crown,
   X,
+  FolderOpen,
+  ClipboardCheck,
+  GitBranch as WorkflowIcon,
 } from "lucide-react";
 
 interface NavItem {
@@ -108,6 +111,24 @@ function useNavSections(): NavSection[] {
           roles: ["SUPER_ADMIN", "ADMIN", "ACCOUNTANT"],
         },
         { label: t("nav.leave"), href: "/leave", icon: CalendarOff },
+      ],
+    },
+    {
+      title: "Tài liệu",
+      items: [
+        { label: "Tài liệu", href: "/documents", icon: FolderOpen },
+      ],
+    },
+    {
+      title: "Phê duyệt",
+      items: [
+        { label: "Hộp duyệt", href: "/approvals", icon: ClipboardCheck },
+        {
+          label: "Cấu hình Workflow",
+          href: "/workflows",
+          icon: WorkflowIcon,
+          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"],
+        },
       ],
     },
     {

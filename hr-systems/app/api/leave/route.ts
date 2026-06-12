@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withContext } from "@/lib/with-context";
 import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
+import { triggerWorkflow } from "@/lib/workflow-engine";
 
 const createSchema = z.object({
   date: z.string().min(1),
@@ -77,6 +78,14 @@ export const POST = withContext(async (req: NextRequest) => {
       employee: { select: { id: true, fullName: true, department: true } },
       approvedBy: { select: { id: true, fullName: true } },
     },
+  });
+
+  // Tự động khởi động workflow nếu org có template LEAVE
+  void triggerWorkflow({
+    orgId: auth.orgId,
+    targetType: "LEAVE",
+    targetId: String(leave.id),
+    initiatorId: auth.actorId,
   });
 
   return NextResponse.json({ data: leave }, { status: 201 });

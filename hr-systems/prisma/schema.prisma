@@ -62,6 +62,10 @@ model Organization {
   skills               Skill[]
   employeeSkills       EmployeeSkill[]
   roleSkillRequirements RoleSkillRequirement[]
+  microsoftToken        MicrosoftToken?
+  drivePermissions      DrivePermission[]
+  workflowTemplates     WorkflowTemplate[]
+  workflowInstances     WorkflowInstance[]
 
   @@map("organizations")
 }
@@ -231,6 +235,13 @@ model Employee {
   // Skills
   employeeSkills       EmployeeSkill[]       @relation("EmpSkillEmployee")
   verifiedEmployeeSkills EmployeeSkill[]     @relation("EmpSkillVerifier")
+
+  // Drive permissions
+  drivePermissions          DrivePermission[]
+
+  // Workflow
+  workflowsInitiated        WorkflowInstance[]   @relation("WorkflowInitiator")
+  workflowApprovalsAssigned WorkflowApproval[]   @relation("WorkflowApprover")
 
   // Tracking layer
   userSessions         UserSession[]
@@ -1248,6 +1259,153 @@ enum PerfReviewStatus {
   PENDING
   SELF_DONE
   COMPLETED
+}
+
+// ─────────────────────────────────────────────────────────────
+// APPROVAL WORKFLOW ENGINE (Sprint 2)
+// ─────────────────────────────────────────────────────────────
+
+model WorkflowTemplate {
+  id             String               @id @default(cuid())
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  targetType     WorkflowTargetType
+  isActive       Boolean              @default(true)
+  steps          WorkflowStep[]
+  instances      WorkflowInstance[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([organizationId])
+  @@map("workflow_templates")
+}
+
+model WorkflowStep {
+  id            Int                @id @default(autoincrement())
+  templateId    String
+  template      WorkflowTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  stepOrder     Int
+  name          String
+  approverType  WorkflowApprover
+  approverRef   String?            // roleId (số) hoặc employeeId (số), tuỳ approverType
+  slaHours      Int?               // null = không giới hạn
+  approvals     WorkflowApproval[]
+
+  @@unique([templateId, stepOrder])
+  @@map("workflow_steps")
+}
+
+model WorkflowInstance {
+  id             String            @id @default(cuid())
+  templateId     String
+  template       WorkflowTemplate  @relation(fields: [templateId], references: [id])
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  targetType     WorkflowTargetType
+  targetId       String            // ID của Leave / Document / ...
+  status         WorkflowStatus    @default(RUNNING)
+  currentStep    Int               @default(1)
+  initiatorId    Int
+  initiator      Employee          @relation("WorkflowInitiator", fields: [initiatorId], references: [id])
+  approvals      WorkflowApproval[]
+  startedAt      DateTime          @default(now())
+  completedAt    DateTime?
+
+  @@index([organizationId, status])
+  @@index([targetType, targetId])
+  @@map("workflow_instances")
+}
+
+model WorkflowApproval {
+  id          String            @id @default(cuid())
+  instanceId  String
+  instance    WorkflowInstance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  stepId      Int
+  step        WorkflowStep      @relation(fields: [stepId], references: [id])
+  stepOrder   Int
+  approverId  Int?
+  approver    Employee?         @relation("WorkflowApprover", fields: [approverId], references: [id])
+  action      ApprovalAction?
+  comment     String?
+  actedAt     DateTime?
+  dueAt       DateTime?
+
+  @@index([instanceId])
+  @@index([approverId, action])
+  @@map("workflow_approvals")
+}
+
+enum WorkflowTargetType {
+  LEAVE
+  DOCUMENT
+  PURCHASE
+  TIMELOG
+  CUSTOM
+}
+
+enum WorkflowStatus {
+  RUNNING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum WorkflowApprover {
+  ROLE
+  SPECIFIC_EMPLOYEE
+  DEPARTMENT_HEAD
+  DIRECT_MANAGER
+}
+
+enum ApprovalAction {
+  APPROVED
+  REJECTED
+  DELEGATED
+}
+
+// ─────────────────────────────────────────────────────────────
+// MICROSOFT GRAPH / ONEDRIVE INTEGRATION (Sprint 1)
+// ─────────────────────────────────────────────────────────────
+
+model MicrosoftToken {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  accessToken    String       @db.Text
+  refreshToken   String       @db.Text
+  expiresAt      DateTime
+  scope          String
+  msUserId       String?
+  msUserEmail    String?
+  msUserName     String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@map("microsoft_tokens")
+}
+
+model DrivePermission {
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  driveItemId    String
+  grantedToId    Int?
+  grantedTo      Employee?       @relation(fields: [grantedToId], references: [id], onDelete: Cascade)
+  grantedToRole  String?
+  level          DriveAccessLevel @default(VIEW)
+  createdAt      DateTime        @default(now())
+
+  @@unique([organizationId, driveItemId, grantedToId])
+  @@index([organizationId, driveItemId])
+  @@map("drive_permissions")
+}
+
+enum DriveAccessLevel {
+  VIEW
+  EDIT
+  ADMIN
 }
 
 enum SkillImportance {

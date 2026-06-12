@@ -182,3 +182,8 @@ Vào https://clerk.com → đăng ký free account
 Tạo application mới (chọn Next.js)
 Bật Organizations trong Settings → Organizations
 Copy 2 keys: CLERK_PUBLISHABLE_KEY và CLERK_SECRET_KEY
+
+
+Vào Azure Portal → App Registration → lấy CLIENT_ID, CLIENT_SECRET, TENANT_ID điền vào .env
+Thêm AZURE_REDIRECT_URI vào Redirect URIs trong Azure App Registration
+Cấp quyền: Files.ReadWrite.All, Sites.ReadWrite.All, User.Read
