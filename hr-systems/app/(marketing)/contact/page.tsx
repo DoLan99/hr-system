@@ -70,7 +70,7 @@ export default function ContactPage() {
   return (
     <>
       {/* Hero */}
-      <section className="lp-glow relative overflow-hidden" style={{ padding: "clamp(56px, 8vw, 96px) 0 0", textAlign: "center" }}>
+      <section className="lp-glow relative overflow-hidden" style={{ padding: "clamp(40px, 5vw, 64px) 0 0", textAlign: "center" }}>
         <span className="lp-blob lp-blob-1" />
         <span className="lp-blob lp-blob-2" />
         <div className="w-full max-w-[1180px] mx-auto px-7">
@@ -85,7 +85,7 @@ export default function ContactPage() {
       </section>
 
       {/* Channels grid */}
-      <section style={{ padding: "56px 0 clamp(64px, 9vw, 130px)" }}>
+      <section style={{ padding: "clamp(48px, 6vw, 80px) 0" }}>
         <div className="w-full max-w-[920px] mx-auto px-7">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {CHANNELS.map((c) => {

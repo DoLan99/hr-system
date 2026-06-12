@@ -6,10 +6,16 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/tinh-nang", label: "Tính năng" },
-  { href: "/so-sanh/jobihome-vs-excel", label: "Giải pháp" },
   { href: "/pricing", label: "Bảng giá" },
   { href: "/about", label: "Về chúng tôi" },
   { href: "/blog", label: "Tài nguyên" },
+];
+
+const COMPARE_LINKS = [
+  { href: "/so-sanh/jobihome-vs-excel", label: "jobihome vs Excel", icon: "📊", desc: "Thay thế bảng tính HR" },
+  { href: "/so-sanh/jobihome-vs-jira", label: "jobihome vs Jira", icon: "🔵", desc: "HR + task trong một tool" },
+  { href: "/so-sanh/jobihome-vs-trello", label: "jobihome vs Trello", icon: "🟦", desc: "Vượt xa Kanban đơn thuần" },
+  { href: "/so-sanh/jobihome-vs-slack", label: "jobihome vs Slack", icon: "💬", desc: "Quản lý người, không chỉ chat" },
 ];
 
 function MenuIcon() {
@@ -36,7 +42,9 @@ function isActiveFor(pathname: string, href: string) {
 export function NavHeader({ isSignedIn }: { isSignedIn: boolean }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
   const pathname = usePathname();
+  const compareActive = pathname.startsWith("/so-sanh");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -79,8 +87,64 @@ export function NavHeader({ isSignedIn }: { isSignedIn: boolean }) {
             </span>
           </Link>
 
-          {/* Desktop links — flat, no dropdowns */}
+          {/* Desktop links */}
           <div className="hidden lg:flex items-center" style={{ gap: 4, marginLeft: 8 }}>
+            {/* Giải pháp dropdown */}
+            <div className="relative" onMouseEnter={() => setCompareOpen(true)} onMouseLeave={() => setCompareOpen(false)}>
+              <button
+                className="transition-colors whitespace-nowrap flex items-center gap-1"
+                style={{
+                  fontSize: "0.93rem",
+                  fontWeight: compareActive ? 600 : 500,
+                  color: compareActive ? "var(--lp-text)" : "var(--lp-text-2)",
+                  padding: "8px 13px",
+                  borderRadius: 6,
+                  background: compareOpen ? "var(--lp-accent-soft)" : "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Giải pháp
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transition: "transform 0.15s", transform: compareOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+              {compareOpen && (
+                <div
+                  className="absolute top-full left-0 rounded-xl overflow-hidden"
+                  style={{
+                    marginTop: 4, minWidth: 260,
+                    background: "var(--lp-bg-elev)",
+                    border: "1px solid var(--lp-border)",
+                    boxShadow: "var(--lp-shadow)",
+                    padding: "6px",
+                    zIndex: 100,
+                  }}
+                >
+                  {COMPARE_LINKS.map((c) => {
+                    const active = pathname === c.href;
+                    return (
+                      <Link
+                        key={c.href}
+                        href={c.href}
+                        className="flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors"
+                        style={{ background: active ? "var(--lp-accent-soft)" : "transparent" }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--lp-accent-soft)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = active ? "var(--lp-accent-soft)" : "transparent"; }}
+                        onClick={() => setCompareOpen(false)}
+                      >
+                        <span style={{ fontSize: "1rem", lineHeight: 1, marginTop: 1 }}>{c.icon}</span>
+                        <div>
+                          <div className="text-[0.88rem] font-semibold" style={{ color: "var(--lp-text)" }}>{c.label}</div>
+                          <div className="text-[0.78rem]" style={{ color: "var(--lp-text-3)" }}>{c.desc}</div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             {LINKS.map((l) => {
               const active = isActiveFor(pathname, l.href);
               return (
@@ -114,8 +178,14 @@ export function NavHeader({ isSignedIn }: { isSignedIn: boolean }) {
           <div className="flex items-center gap-2.5 ml-auto">
             <Link
               href={isSignedIn ? "/welcome" : "/sign-in"}
-              className="lp-btn lp-btn-ghost hidden lg:inline-flex"
-              style={{ height: 40, fontSize: "0.88rem", padding: "0 16px" }}
+              className="hidden lg:inline-flex items-center transition-colors whitespace-nowrap"
+              style={{
+                height: 40, fontSize: 14, fontWeight: 500,
+                color: "rgba(255,255,255,0.85)", padding: "0 14px",
+                borderRadius: 6,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#ffffff"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.85)"; }}
             >
               {isSignedIn ? "Vào workspace" : "Đăng nhập"}
             </Link>
@@ -159,6 +229,23 @@ export function NavHeader({ isSignedIn }: { isSignedIn: boolean }) {
           }}
         >
           <div className="flex flex-col" style={{ gap: 4 }}>
+            {/* Giải pháp group */}
+            <div className="text-[0.72rem] lp-mono uppercase tracking-[0.08em] px-3 pt-2 pb-1" style={{ color: "var(--lp-text-3)" }}>Giải pháp</div>
+            {COMPARE_LINKS.map((c) => {
+              const active = pathname === c.href;
+              return (
+                <Link
+                  key={c.href}
+                  href={c.href}
+                  className="flex items-center gap-2.5"
+                  style={{ fontSize: "0.95rem", fontWeight: active ? 600 : 500, color: active ? "var(--lp-text)" : "var(--lp-text-2)", padding: "10px 13px", borderRadius: 6 }}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <span>{c.icon}</span>{c.label}
+                </Link>
+              );
+            })}
+            <div style={{ height: 1, background: "var(--lp-border)", margin: "4px 0" }} />
             {LINKS.map((l) => {
               const active = isActiveFor(pathname, l.href);
               return (

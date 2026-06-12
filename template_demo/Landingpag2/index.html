@@ -10,27 +10,82 @@
 <body>
 
 <!-- ============ HERO ============ -->
-<section class="section glow" style="padding-top: clamp(48px, 7vw, 92px);">
+<style>
+  .hero {
+    background: #0A0F1E;
+    padding: 100px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero .blob { opacity: 0.7; }
+  .hero-inner { max-width: 820px; margin: 0 auto; text-align: center; position: relative; z-index: 1; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid #2A3A6E;
+    background: rgba(59, 91, 219, 0.15);
+    color: #7B9EFF;
+    font-size: 12px; font-weight: 500;
+    padding: 7px 15px; border-radius: 100px;
+    letter-spacing: 0.01em;
+  }
+  .hero-badge .dotpulse { width: 6px; height: 6px; border-radius: 50%; background: #4F7AFF; box-shadow: 0 0 8px #4F7AFF; }
+  .hero h1 {
+    font-size: clamp(2.4rem, 5.6vw, 56px);
+    font-weight: 800; line-height: 1.15;
+    letter-spacing: -0.03em; color: #ffffff;
+    margin-top: 24px;
+  }
+  .hero h1 .accent-line { color: #4F7AFF; }
+  .hero-sub {
+    font-size: 16px; line-height: 1.65; color: #8B9CC0;
+    max-width: 600px; margin: 22px auto 0;
+  }
+  .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 36px; }
+  .hero-cta a {
+    display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+    height: 48px; padding: 0 24px; border-radius: 10px;
+    font-family: var(--font-sans); font-weight: 600; font-size: 0.97rem;
+    transition: transform 0.18s var(--ease), box-shadow 0.2s, background 0.2s, border-color 0.2s;
+  }
+  .hero-cta .c-primary {
+    background: #3B5BDB; color: #fff;
+    box-shadow: 0 12px 30px rgba(59, 91, 219, 0.45);
+  }
+  .hero-cta .c-primary:hover { background: #4865e6; transform: translateY(-2px); box-shadow: 0 18px 40px rgba(59, 91, 219, 0.6); }
+  .hero-cta .c-primary .arrow { transition: transform 0.2s var(--ease); }
+  .hero-cta .c-primary:hover .arrow { transform: translateX(3px); }
+  .hero-cta .c-secondary {
+    background: transparent; border: 1px solid #2A3A6E; color: #8B9CC0;
+  }
+  .hero-cta .c-secondary:hover { border-color: #3B5BDB; color: #cdd8f0; transform: translateY(-2px); }
+  .hero-note { margin-top: 16px; font-size: 0.82rem; color: #5f7095; font-family: var(--font-mono); }
+
+  .hero-mock {
+    background: #111827; border: 1px solid #1E2D5A;
+    border-radius: 16px; padding: 20px;
+    box-shadow: 0 40px 80px rgba(0, 0, 50, 0.5);
+    max-width: 1000px; margin: 60px auto 0;
+    position: relative; z-index: 1;
+  }
+  @media (max-width: 760px) { .hero { padding: 72px 0; } .hero-mock { padding: 14px; } }
+</style>
+<section class="hero glow">
   <span class="blob b1"></span><span class="blob b2"></span>
   <div class="wrap">
-    <div style="max-width: 820px; margin: 0 auto; text-align: center;">
-      <span class="eyebrow center reveal">HR &amp; Team Management · SaaS</span>
-      <h1 class="display text-balance reveal" style="margin-top: 22px;">Quản lý cả đội ngũ trong <span class="grad-text">một workspace</span> duy nhất</h1>
-      <p class="lead text-pretty reveal" style="margin: 24px auto 0; max-width: 60ch;">Task, chấm công, tính lương đến đánh giá hiệu suất — jobihome gom toàn bộ vòng đời quản lý nhân sự vào một nơi. Thay thế Excel và các công cụ rời rạc, được thiết kế cho team công nghệ Việt 5–25 người.</p>
-      <div class="reveal" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 34px;">
-        <a class="btn btn-primary btn-lg" href="contact.html">Dùng thử 14 ngày miễn phí <svg class="arrow" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-        <a class="btn btn-ghost btn-lg" href="features.html">Xem tính năng</a>
+    <div class="hero-inner">
+      <span class="hero-badge reveal"><span class="dotpulse"></span>Hệ thống quản lý team cho startup Việt</span>
+      <h1 class="reveal text-balance">Quản lý cả đội ngũ trong<br /><span class="accent-line">một workspace duy nhất</span></h1>
+      <p class="hero-sub reveal text-pretty">Tasks, chấm công, trả lương đến đánh giá hiệu suất — jobihome giúp quản lý đội ngũ toàn vẹn, từ khâu tuyển dụng đến khi nghỉ việc.</p>
+      <div class="hero-cta reveal">
+        <a class="c-primary" href="contact.html">Dùng thử 14 ngày miễn phí <svg class="arrow" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="c-secondary" href="features.html">Xem tính năng</a>
       </div>
-      <p class="reveal" style="margin-top: 16px; font-size: 0.85rem; color: var(--text-3); font-family: var(--font-mono);">Không cần thẻ tín dụng · Hỗ trợ tiếng Việt</p>
+      <p class="hero-note reveal">Không cần thẻ tín dụng · Hỗ trợ tiếng Việt</p>
     </div>
 
     <!-- dashboard mockup -->
-    <div class="mock reveal float-soft" style="margin-top: 60px; max-width: 1040px; margin-left: auto; margin-right: auto;">
-      <div class="mock-bar">
-        <div class="mock-dots"><i></i><i></i><i></i></div>
-        <div class="mock-url">app.jobihome.vn/dashboard</div>
-      </div>
-      <div class="mock-app">
+    <div class="hero-mock mock reveal float-soft">
+      <div class="mock-app" style="border-radius: 10px; overflow: hidden; border: 1px solid #1E2D5A;">
         <aside class="mock-side">
           <div class="ms-brand"><i></i><span>jobihome</span></div>
           <nav class="mock-nav">
@@ -83,61 +138,249 @@
 </section>
 
 <!-- ============ STAT / TRUST STRIP ============ -->
-<section class="section-sm">
+<style>
+  .statbar {
+    background: #0D1225;
+    border-top: 1px solid #1A2444;
+    border-bottom: 1px solid #1A2444;
+    padding: 40px 0;
+  }
+  .statbar-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+  }
+  .statbar-item {
+    text-align: center; padding: 6px 24px;
+    border-left: 1px solid #1A2444;
+  }
+  .statbar-item:first-child { border-left: none; }
+  .statbar-item .sn { font-size: 40px; font-weight: 800; color: #fff; line-height: 1.05; letter-spacing: -0.03em; }
+  .statbar-item .sl { font-size: 13px; color: #6B7FA8; margin-top: 8px; }
+  @media (max-width: 760px) {
+    .statbar-grid { grid-template-columns: 1fr 1fr; gap: 28px 0; }
+    .statbar-item:nth-child(odd) { border-left: none; }
+    .statbar-item:nth-child(3), .statbar-item:nth-child(4) { padding-top: 28px; }
+    .statbar-item .sn { font-size: 32px; }
+  }
+</style>
+<section class="statbar">
   <div class="wrap">
-    <p class="reveal" style="text-align: center; font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 0.04em; color: var(--text-3); text-transform: uppercase; margin-bottom: 30px;">Được xây cho team công nghệ Việt Nam</p>
-    <div class="stats reveal">
-      <div class="stat"><div class="n">11</div><div class="l">module trong một hệ thống</div></div>
-      <div class="stat"><div class="n">5–25</div><div class="l">người mỗi đội ngũ</div></div>
-      <div class="stat"><div class="n">14 ngày</div><div class="l">dùng thử, không cần thẻ</div></div>
-      <div class="stat"><div class="n">100%</div><div class="l">giao diện tiếng Việt</div></div>
+    <div class="statbar-grid reveal">
+      <div class="statbar-item"><div class="sn">11</div><div class="sl">workspace đang hoạt động</div></div>
+      <div class="statbar-item"><div class="sn">5–25</div><div class="sl">nhân sự trên team</div></div>
+      <div class="statbar-item"><div class="sn">14 ngày</div><div class="sl">dùng thử miễn phí</div></div>
+      <div class="statbar-item"><div class="sn">100%</div><div class="sl">hoàn tiền nếu không hài lòng</div></div>
     </div>
   </div>
 </section>
 
 <!-- ============ PROBLEM → SOLUTION ============ -->
-<section class="section">
+<style>
+  .ps-sec { background: #0A0F1E; padding: 96px 0; }
+  .ps-tags { display: flex; gap: 10px; justify-content: center; }
+  .ps-tag { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 13px; border-radius: 100px; }
+  .ps-tag.problem { background: #2D0F0F; color: #FF6B6B; }
+  .ps-tag.solution { background: #0F2D1A; color: #4ADE80; }
+  .ps-head { text-align: center; max-width: 560px; margin: 22px auto 0; }
+  .ps-head h2 { font-size: clamp(1.7rem, 4vw, 36px); font-weight: 800; color: #fff; letter-spacing: -0.03em; line-height: 1.15; }
+  .ps-head p { font-size: 15px; color: #6B7FA8; max-width: 500px; margin: 16px auto 0; line-height: 1.6; }
+  .ps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 980px; margin: 56px auto 0; }
+  .ps-col { display: flex; flex-direction: column; gap: 24px; }
+  .ps-col-label { display: flex; align-items: center; gap: 9px; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .ps-col-label.problem { color: #FF6B6B; }
+  .ps-col-label.solution { color: #4ADE80; }
+  .ps-col-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  .ps-card { background: #111827; border: 1px solid #1E2D5A; border-radius: 12px; padding: 24px; transition: transform 0.22s var(--ease), box-shadow 0.22s; }
+  .ps-card.sol { border-color: #1E3A2A; }
+  .ps-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .ps-card .ps-ico { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 16px; }
+  .ps-card .ps-ico svg { width: 20px; height: 20px; }
+  .ps-card.prob .ps-ico { background: rgba(255, 107, 107, 0.13); color: #FF6B6B; }
+  .ps-card.sol .ps-ico { background: rgba(74, 222, 128, 0.13); color: #4ADE80; }
+  .ps-card h3 { font-size: 15px; font-weight: 600; color: #fff; }
+  .ps-card p { font-size: 13px; color: #6B7FA8; margin-top: 6px; line-height: 1.55; }
+
+  .ps-banner { max-width: 980px; margin: 40px auto 0; background: #0D1A3A; border: 1px solid #1E2D5A; border-radius: 16px; padding: 22px 28px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .ps-banner .pb-logo { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 1.1rem; color: #fff; letter-spacing: -0.03em; }
+  .ps-banner .pb-logo .lm { width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, var(--accent-2), var(--accent)); display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 0.95rem; }
+  .ps-banner .pb-pills { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; justify-content: center; }
+  .ps-banner .pb-pill { font-size: 0.78rem; font-weight: 500; color: #9eb0d0; padding: 6px 13px; border-radius: 100px; background: rgba(47,107,255,0.12); border: 1px solid #1E2D5A; }
+  .ps-banner .pb-cta { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 20px; border-radius: 100px; background: #3B5BDB; color: #fff; font-weight: 600; font-size: 0.9rem; white-space: nowrap; transition: background 0.18s, transform 0.18s; }
+  .ps-banner .pb-cta:hover { background: #4865e6; transform: translateY(-2px); }
+  @media (max-width: 820px) {
+    .ps-grid { grid-template-columns: 1fr; }
+    .ps-banner { flex-direction: column; text-align: center; }
+    .ps-banner .pb-pills { justify-content: center; }
+  }
+</style>
+<section class="ps-sec">
   <div class="wrap">
-    <div class="section-head center reveal" style="margin-bottom: 56px;">
-      <span class="eyebrow center">The problem · Bài toán</span>
-      <h2 class="h2 text-balance">Hết thời Excel rời rạc và công cụ chắp vá</h2>
-      <p class="lead">Mỗi đầu việc quản lý team nằm ở một nơi khác nhau. jobihome thay từng mảnh ghép bằng một quy trình liền mạch.</p>
+    <div class="ps-tags reveal">
+      <span class="ps-tag problem">Vấn đề</span>
+      <span class="ps-tag solution">Giải pháp</span>
     </div>
-    <div class="grid grid-2" style="max-width: 920px; margin: 0 auto;">
-      <div class="card reveal"><div class="ico" style="background: rgba(217,119,6,0.1); color: var(--warn); border-color: rgba(217,119,6,0.2);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.3 3.9l-7 12A2 2 0 0 0 5 19h14a2 2 0 0 0 1.7-3l-7-12a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></div><h3>Task &amp; tiến độ phân tán</h3><p>Theo dõi công việc rải rác trên chat, sheet, sticky note — không ai nắm được bức tranh tổng thể.</p></div>
-      <div class="card reveal"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h3>Task management tích hợp</h3><p>Trạng thái, ưu tiên, ước tính thời gian và timer theo từng task — tất cả ở một nơi.</p></div>
-      <div class="card reveal"><div class="ico" style="background: rgba(217,119,6,0.1); color: var(--warn); border-color: rgba(217,119,6,0.2);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16" stroke-linecap="round"/></svg></div><h3>Chấm công &amp; lương thủ công</h3><p>Tổng hợp giờ làm bằng tay trên Excel, tính lương mất nhiều công và dễ sai sót.</p></div>
-      <div class="card reveal"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h3>Office Time + lương tự động</h3><p>Chấm công auto-derive từ time log, manager duyệt nhanh, lương liên kết trực tiếp.</p></div>
+    <div class="ps-head reveal">
+      <h2 class="text-balance">Hết thời Excel rời rạc và công cụ chắp vá.</h2>
+      <p class="text-pretty">Mỗi đầu việc quản lý team nằm ở một nơi khác nhau. jobihome thay từng mảnh ghép rời rạc bằng một quy trình liền mạch.</p>
+    </div>
+    <div class="ps-grid">
+      <div class="ps-col reveal">
+        <div class="ps-col-label problem">Trước đây</div>
+        <div class="ps-card prob">
+          <div class="ps-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.3 3.9l-7 12A2 2 0 0 0 5 19h14a2 2 0 0 0 1.7-3l-7-12a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+          <h3>Task &amp; tiến độ phân tán</h3>
+          <p>Theo dõi công việc rải rác trên chat, sheet, sticky note — không ai nắm được bức tranh tổng thể.</p>
+        </div>
+        <div class="ps-card prob">
+          <div class="ps-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16" stroke-linecap="round"/></svg></div>
+          <h3>Chấm công &amp; lương thủ công</h3>
+          <p>Tổng hợp giờ làm bằng tay trên Excel, tính lương mất nhiều công và dễ sai sót.</p>
+        </div>
+      </div>
+      <div class="ps-col reveal">
+        <div class="ps-col-label solution">Với jobihome</div>
+        <div class="ps-card sol">
+          <div class="ps-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <h3>Task management tích hợp</h3>
+          <p>Trạng thái, ưu tiên, ước tính thời gian và timer theo từng task — tất cả ở một nơi.</p>
+        </div>
+        <div class="ps-card sol">
+          <div class="ps-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>Office Time + lương tự động</h3>
+          <p>Chấm công auto-derive từ time log, manager duyệt nhanh, lương liên kết trực tiếp.</p>
+        </div>
+      </div>
+    </div>
+    <div class="ps-banner reveal">
+      <div class="pb-logo"><span class="lm">j</span>jobihome<span style="color:var(--accent-ink)">.vn</span></div>
+      <div class="pb-pills">
+        <span class="pb-pill">Tasks</span>
+        <span class="pb-pill">Chấm công</span>
+        <span class="pb-pill">Lương</span>
+        <span class="pb-pill">Đánh giá</span>
+        <span class="pb-pill">Vault</span>
+      </div>
+      <a class="pb-cta" href="contact.html">Dùng thử miễn phí <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
   </div>
 </section>
 
 <!-- ============ FEATURE SPLIT 1 — Task & Time ============ -->
-<section class="section" style="background: var(--bg-elev); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+<style>
+  .tt-sec { background: #0D1225; padding: 96px 0; }
+  .tt-grid { display: grid; grid-template-columns: minmax(0, 45fr) minmax(0, 55fr); gap: clamp(34px, 5vw, 70px); align-items: center; }
+  .tt-crumb { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent-ink); }
+  .tt-left h2 { font-size: clamp(1.7rem, 4vw, 36px); font-weight: 800; color: #fff; letter-spacing: -0.03em; line-height: 1.18; margin-top: 16px; }
+  .tt-left .tt-desc { font-size: 15px; color: #6B7FA8; margin-top: 16px; line-height: 1.6; max-width: 44ch; }
+  .tt-bullets { display: flex; flex-direction: column; gap: 4px; margin-top: 28px; }
+  .tt-bullet { display: flex; gap: 13px; align-items: flex-start; padding: 12px; border-radius: 8px; border-left: 2px solid transparent; transition: background 0.2s, border-color 0.2s; }
+  .tt-bullet .dot { width: 9px; height: 9px; border-radius: 50%; background: #3B5BDB; flex-shrink: 0; margin-top: 6px; box-shadow: 0 0 10px rgba(59,91,219,0.7); }
+  .tt-bullet.active { border-left-color: #3B5BDB; background: rgba(59, 91, 219, 0.08); }
+  .tt-bullet:not(.active) .dot { background: #2b3e69; box-shadow: none; }
+  .tt-bullet .bname { font-size: 14px; font-weight: 700; color: #fff; }
+  .tt-bullet .bdesc { font-size: 13px; color: #6B7FA8; margin-top: 3px; line-height: 1.5; }
+  .tt-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 26px; color: #4F7AFF; font-weight: 600; font-size: 0.95rem; text-decoration: none; }
+  .tt-link:hover { text-decoration: underline; gap: 11px; }
+  .tt-link .arrow { transition: transform 0.2s var(--ease); }
+  .tt-link:hover .arrow { transform: translateX(2px); }
+
+  .tt-mockwrap { position: relative; }
+  .tt-mock { background: #111827; border: 1px solid #1E2D5A; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 80, 0.4); }
+  .tt-mock-head { display: flex; align-items: center; gap: 4px; padding: 14px 18px 0; border-bottom: 1px solid #1E2D5A; }
+  .tt-tab { font-size: 0.82rem; font-weight: 600; color: #6B7FA8; padding: 9px 14px; border-bottom: 2px solid transparent; cursor: default; white-space: nowrap; }
+  .tt-tab.on { color: #fff; border-bottom-color: #3B5BDB; }
+  .tt-tab .cnt { font-size: 0.7rem; color: #5f7095; margin-left: 5px; }
+  .tt-body { padding: 16px 18px 20px; }
+  .tt-row { display: grid; grid-template-columns: 14px 1fr auto auto; gap: 12px; align-items: center; padding: 12px 10px; border-radius: 9px; transition: background 0.16s; }
+  .tt-row + .tt-row { border-top: 1px solid #182240; }
+  .tt-row:hover { background: rgba(59,91,219,0.06); }
+  .tt-prio { width: 8px; height: 8px; border-radius: 50%; }
+  .tt-prio.hi { background: #FF6B6B; box-shadow: 0 0 8px rgba(255,107,107,0.6); }
+  .tt-prio.md { background: #fbbf24; }
+  .tt-prio.lo { background: #4ADE80; }
+  .tt-task-name { font-size: 0.86rem; color: #e6ecf8; font-weight: 500; }
+  .tt-task-name.done { color: #5f7095; text-decoration: line-through; }
+  .tt-chip { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 600; padding: 3px 9px; border-radius: 100px; white-space: nowrap; }
+  .tt-chip.todo { background: #1a2444; color: #8B9CC0; }
+  .tt-chip.doing { background: rgba(59,91,219,0.18); color: #7B9EFF; }
+  .tt-chip.done { background: rgba(74,222,128,0.14); color: #4ADE80; }
+  .tt-av { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-2), var(--accent)); border: 2px solid #111827; }
+  .tt-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border-radius: 50%; background: #111827; border: 1px solid #1E2D5A; color: #8B9CC0; display: grid; place-items: center; box-shadow: var(--shadow); transition: color 0.16s, border-color 0.16s, transform 0.16s; }
+  .tt-nav:hover { color: #fff; border-color: #3B5BDB; }
+  .tt-nav.prev { left: -19px; }
+  .tt-nav.next { right: -19px; }
+  .tt-nav svg { width: 17px; height: 17px; }
+  @media (max-width: 900px) {
+    .tt-grid { grid-template-columns: 1fr; }
+    .tt-nav { display: none; }
+  }
+</style>
+<section class="tt-sec">
   <div class="wrap">
-    <div class="split">
-      <div class="reveal">
-        <span class="eyebrow">Tasks &amp; Time tracking</span>
-        <h2 class="h2 text-balance" style="margin-top: 16px;">Từ giao việc đến bấm giờ, liền một mạch</h2>
-        <p class="lead" style="margin-top: 16px;">Tạo task theo trạng thái Cần làm · Đang làm · Done, gắn ưu tiên và ước tính thời gian. Bấm giờ ngay trên task để ghi nhận actual time chính xác.</p>
-        <ul class="feat-list">
-          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span><div><b>Task template &amp; review workflow</b><p>Chuẩn hoá quy trình lặp lại, duyệt task trước khi đóng.</p></div></li>
-          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span><div><b>Timer start/stop theo task</b><p>Mỗi phiên làm việc được lưu lại, làm nền cho chấm công và lương.</p></div></li>
-          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span><div><b>Office Time auto-derive</b><p>Giờ vào/ra suy ra tự động từ time log, manager chỉ cần duyệt.</p></div></li>
-        </ul>
-        <a class="btn btn-text" href="solutions.html" style="margin-top: 26px;">Tìm hiểu Task &amp; Time <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    <div class="tt-grid">
+      <div class="tt-left reveal">
+        <div class="tt-crumb">Tasks · Time · Payroll</div>
+        <h2 class="text-balance">Từ giao việc đến bấm giờ, liền một mạch.</h2>
+        <p class="tt-desc text-pretty">Tạo task theo trạng thái Cần làm · Đang làm · Done, gắn ưu tiên và ước tính thời gian. Bấm giờ ngay trên task để ghi nhận actual time chính xác.</p>
+        <div class="tt-bullets">
+          <div class="tt-bullet active">
+            <span class="dot"></span>
+            <div><div class="bname">Timer start/stop theo task</div><div class="bdesc">Mỗi phiên làm việc được lưu lại, làm nền cho chấm công &amp; lương.</div></div>
+          </div>
+          <div class="tt-bullet">
+            <span class="dot"></span>
+            <div><div class="bname">Task template &amp; review workflow</div><div class="bdesc">Chuẩn hoá quy trình lặp lại, duyệt task trước khi đóng.</div></div>
+          </div>
+          <div class="tt-bullet">
+            <span class="dot"></span>
+            <div><div class="bname">Office Time auto-derive</div><div class="bdesc">Giờ vào/ra suy ra tự động từ time log, manager chỉ cần duyệt.</div></div>
+          </div>
+          <div class="tt-bullet">
+            <span class="dot"></span>
+            <div><div class="bname">Ưu tiên &amp; ước tính thời gian</div><div class="bdesc">Gắn priority và est-time để lập kế hoạch sprint chính xác.</div></div>
+          </div>
+        </div>
+        <a class="tt-link" href="solutions.html">Tìm hiểu Task &amp; Time <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       </div>
-      <div class="split-media reveal">
-        <div class="mock">
-          <div class="mock-bar"><div class="mock-dots"><i></i><i></i><i></i></div><div class="mock-url">app.jobihome.vn/tasks</div></div>
-          <div style="padding: 20px;">
-            <div class="mock-h" style="margin-bottom: 14px;"><div class="mh-title">Sprint 14</div><div class="tag">Đang làm · 8</div></div>
-            <div class="tasklist">
-              <div class="task done"><div class="cb"></div><div class="tt">Setup CI/CD pipeline</div><div class="badge">est 4h</div></div>
-              <div class="task"><div class="cb"></div><div class="tt">API endpoint chấm công</div><div class="badge hi">▶ 01:24:08</div></div>
-              <div class="task"><div class="cb"></div><div class="tt">Migrate Prisma schema</div><div class="badge">est 2h</div></div>
-              <div class="task done"><div class="cb"></div><div class="tt">Viết test cho salary module</div><div class="badge">3h</div></div>
-              <div class="task"><div class="cb"></div><div class="tt">Review thiết kế dashboard</div><div class="badge">est 1h</div></div>
+
+      <div class="tt-mockwrap reveal">
+        <button class="tt-nav prev" aria-label="Trước"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <button class="tt-nav next" aria-label="Sau"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+        <div class="tt-mock">
+          <div class="tt-mock-head">
+            <div class="tt-tab on">Sprint 14 <span class="cnt">12</span></div>
+            <div class="tt-tab">Backlog <span class="cnt">28</span></div>
+            <div class="tt-tab">Done <span class="cnt">7</span></div>
+          </div>
+          <div class="tt-body">
+            <div class="tt-row">
+              <span class="tt-prio lo"></span>
+              <span class="tt-task-name done">Setup CI/CD pipeline</span>
+              <span class="tt-chip done">Done</span>
+              <span class="tt-av"></span>
+            </div>
+            <div class="tt-row">
+              <span class="tt-prio hi"></span>
+              <span class="tt-task-name">API endpoint chấm công</span>
+              <span class="tt-chip doing">▶ 01:24:08</span>
+              <span class="tt-av"></span>
+            </div>
+            <div class="tt-row">
+              <span class="tt-prio md"></span>
+              <span class="tt-task-name">Migrate Prisma schema</span>
+              <span class="tt-chip todo">Cần làm</span>
+              <span class="tt-av"></span>
+            </div>
+            <div class="tt-row">
+              <span class="tt-prio lo"></span>
+              <span class="tt-task-name done">Viết test cho salary module</span>
+              <span class="tt-chip done">Done</span>
+              <span class="tt-av"></span>
+            </div>
+            <div class="tt-row">
+              <span class="tt-prio md"></span>
+              <span class="tt-task-name">Review thiết kế dashboard</span>
+              <span class="tt-chip doing">Đang làm</span>
+              <span class="tt-av"></span>
             </div>
           </div>
         </div>
@@ -187,35 +430,103 @@
 </section>
 
 <!-- ============ ALL MODULES ============ -->
-<section class="section" style="background: var(--bg-elev); border-top: 1px solid var(--border);">
+<style>
+  .fm-sec { background: #0A0F1E; padding: 96px 0; }
+  .fm-head { text-align: center; max-width: 560px; margin: 0 auto 52px; }
+  .fm-pill { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 13px; border-radius: 100px; background: #1A2444; color: #7B9EFF; white-space: nowrap; }
+  .fm-head h2 { font-size: clamp(1.7rem, 4vw, 36px); font-weight: 800; color: #fff; letter-spacing: -0.03em; line-height: 1.15; margin-top: 18px; }
+  .fm-head p { font-size: 15px; color: #6B7FA8; margin-top: 16px; line-height: 1.6; }
+  .fm-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1px; background: #1A2444;
+    border: 1px solid #1A2444; border-radius: 14px; overflow: hidden;
+  }
+  .fm-card {
+    background: #0D1225; padding: 28px;
+    transition: background 0.2s var(--ease);
+  }
+  .fm-card:hover { background: #111a30; }
+  .fm-card .fm-ico { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: rgba(47,107,255,0.13); color: #7B9EFF; transition: transform 0.22s var(--ease); }
+  .fm-card:hover .fm-ico { transform: scale(1.08) rotate(-3deg); }
+  .fm-card .fm-ico svg { width: 20px; height: 20px; }
+  .fm-card h3 { font-size: 15px; font-weight: 600; color: #fff; margin-top: 16px; }
+  .fm-card p { font-size: 13px; color: #6B7FA8; margin-top: 8px; line-height: 1.5; }
+  .fm-foot { text-align: center; margin-top: 40px; }
+  .fm-link { display: inline-flex; align-items: center; gap: 8px; color: #4F7AFF; font-weight: 600; font-size: 0.97rem; }
+  .fm-link:hover { gap: 11px; text-decoration: underline; }
+  .fm-link .arrow { transition: transform 0.2s var(--ease); }
+  .fm-link:hover .arrow { transform: translateX(2px); }
+  @media (max-width: 900px) { .fm-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .fm-grid { grid-template-columns: 1fr; } .fm-card { padding: 22px; } }
+</style>
+<section class="fm-sec">
   <div class="wrap">
-    <div class="section-head center reveal" style="margin-bottom: 52px;">
-      <span class="eyebrow center">Everything included · 11 module</span>
-      <h2 class="h2 text-balance">Một hệ thống, trọn vòng đời nhân sự</h2>
-      <p class="lead">Từ hồ sơ nhân viên đến vault mật khẩu khách hàng — mọi thứ một tech lead cần.</p>
+    <div class="fm-head reveal">
+      <span class="fm-pill">Tính năng đầy đủ</span>
+      <h2 class="text-balance">Một hệ thống, trọn vẹn đội nhân sự.</h2>
+      <p class="text-pretty">Từ hồ sơ nhân viên đến vault mật khẩu khách hàng — mọi thứ một tech lead cần, trong cùng một workspace.</p>
     </div>
-    <div class="grid grid-3" id="moduleGrid"></div>
-    <div class="reveal" style="text-align:center; margin-top: 40px;">
-      <a class="btn btn-ghost" href="features.html">Xem tất cả tính năng</a>
+    <div class="fm-grid reveal" id="moduleGrid"></div>
+    <div class="fm-foot reveal">
+      <a class="fm-link" href="features.html">Xem tất cả tính năng <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
   </div>
 </section>
 
 <!-- ============ INTEGRATIONS ============ -->
-<section class="section">
+<style>
+  .ig-sec { background: #0D1225; padding: 80px 0; }
+  .ig-grid { display: grid; grid-template-columns: minmax(0, 45fr) minmax(0, 55fr); gap: clamp(34px, 5vw, 64px); align-items: center; }
+  .ig-pill { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 13px; border-radius: 100px; background: #1A2444; color: #7B9EFF; white-space: nowrap; }
+  .ig-left h2 { font-size: clamp(1.6rem, 3.6vw, 32px); font-weight: 800; color: #fff; letter-spacing: -0.03em; line-height: 1.18; margin-top: 18px; }
+  .ig-left .ig-desc { font-size: 15px; color: #6B7FA8; margin-top: 16px; line-height: 1.6; max-width: 42ch; }
+  .ig-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 24px; color: #4F7AFF; font-weight: 600; font-size: 0.95rem; }
+  .ig-link:hover { gap: 11px; text-decoration: underline; }
+  .ig-link .arrow { transition: transform 0.2s var(--ease); }
+  .ig-link:hover .arrow { transform: translateX(2px); }
+  .ig-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .ig-card { background: #111827; border: 1px solid #1E2D5A; border-radius: 12px; padding: 20px; transition: border-color 0.2s, background 0.2s, transform 0.2s var(--ease); }
+  .ig-card:hover { border-color: #3B5BDB; background: rgba(59, 91, 219, 0.05); transform: translateY(-2px); }
+  .ig-card .ig-ico { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; background: rgba(47,107,255,0.12); color: #7B9EFF; }
+  .ig-card .ig-ico svg { width: 19px; height: 19px; }
+  .ig-card h3 { font-size: 14px; font-weight: 600; color: #fff; margin-top: 14px; }
+  .ig-card p { font-size: 12px; color: #6B7FA8; margin-top: 5px; line-height: 1.45; }
+  @media (max-width: 900px) { .ig-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 420px) { .ig-cards { grid-template-columns: 1fr; } }
+</style>
+<section class="ig-sec">
   <div class="wrap">
-    <div class="split">
-      <div class="reveal">
-        <span class="eyebrow">Integrations</span>
-        <h2 class="h2 text-balance" style="margin-top: 16px;">Kết nối với công cụ đội ngũ đang dùng</h2>
-        <p class="lead" style="margin-top: 16px;">jobihome tích hợp sẵn với hệ sinh thái quen thuộc, dữ liệu đồng bộ tự động.</p>
+    <div class="ig-grid">
+      <div class="ig-left reveal">
+        <span class="ig-pill">Tích hợp</span>
+        <h2 class="text-balance">Kết nối với công cụ đội ngũ đang dùng.</h2>
+        <p class="ig-desc text-pretty">jobihome tích hợp sẵn với hệ sinh thái quen thuộc — dữ liệu đồng bộ tự động, không phải nhập tay.</p>
+        <a class="ig-link" href="features.html">Xem tất cả <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       </div>
-      <div class="split-media reveal">
-        <div class="grid grid-2">
-          <div class="card"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10" stroke-linecap="round"/><circle cx="12" cy="12" r="3"/></svg></div><h3 style="font-size:1rem;">Clerk</h3><p style="font-size:0.88rem;">Auth &amp; quản lý người dùng, multi-tenant.</p></div>
-          <div class="card"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M8 3l-6 10 3 5h6M16 3l6 10-3 5h-6M8 3h8l-4 7z"/></svg></div><h3 style="font-size:1rem;">Google Drive</h3><p style="font-size:0.88rem;">Lấy thông tin video từ link Drive.</p></div>
-          <div class="card"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="9" r="2.5"/><path d="M6 8.5v7M18 11.5c0 3-3 3.5-6 3.5" stroke-linecap="round"/></svg></div><h3 style="font-size:1rem;">Git webhook</h3><p style="font-size:0.88rem;">Đưa commit/PR vào activity log.</p></div>
-          <div class="card"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 2L2 20h20z"/></svg></div><h3 style="font-size:1rem;">Vercel Cron</h3><p style="font-size:0.88rem;">Anomaly detection &amp; đóng session định kỳ.</p></div>
+      <div class="ig-cards reveal">
+        <div class="ig-card">
+          <div class="ig-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 15a2 2 0 1 1-2-2h2zM9 15a2 2 0 0 1 4 0v5a2 2 0 0 1-4 0z"/><path d="M9 6a2 2 0 1 1 2 2H9zM9 9a2 2 0 0 1 0-4h5a2 2 0 0 1 0 4z"/><path d="M18 9a2 2 0 1 1 2 2h-2zM15 9a2 2 0 0 1-4 0V4a2 2 0 0 1 4 0z"/><path d="M15 18a2 2 0 1 1-2-2h2zM15 15a2 2 0 0 1 0 4h-5a2 2 0 0 1 0-4z"/></svg></div>
+          <h3>Slack</h3><p>Nhận thông báo task &amp; duyệt ngay trong kênh.</p>
+        </div>
+        <div class="ig-card">
+          <div class="ig-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M8 3l-6 10 3 5h6M16 3l6 10-3 5h-6M8 3h8l-4 7z"/></svg></div>
+          <h3>Google Drive</h3><p>Lấy thông tin tài liệu, video từ link Drive.</p>
+        </div>
+        <div class="ig-card">
+          <div class="ig-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 6v6c0 4 3.5 7 8 8 4.5-1 8-4 8-8V6z"/><path d="M12 11l4-2.2M12 11v4.5M12 11L8 8.8"/></svg></div>
+          <h3>Jira</h3><p>Đồng bộ issue &amp; trạng thái hai chiều.</p>
+        </div>
+        <div class="ig-card">
+          <div class="ig-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="9" r="2.5"/><path d="M6 8.5v7M18 11.5c0 3-3 3.5-6 3.5" stroke-linecap="round"/></svg></div>
+          <h3>Git webhook</h3><p>Đưa commit/PR vào activity log tự động.</p>
+        </div>
+        <div class="ig-card">
+          <div class="ig-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg></div>
+          <h3>All webhook</h3><p>Kết nối bất kỳ dịch vụ nào qua webhook.</p>
+        </div>
+        <div class="ig-card">
+          <div class="ig-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v4h-4"/></svg></div>
+          <h3>Smart Sync</h3><p>Tự đồng bộ &amp; phát hiện bất thường định kỳ.</p>
         </div>
       </div>
     </div>
@@ -223,60 +534,190 @@
 </section>
 
 <!-- ============ PRICING TEASER ============ -->
-<section class="section" style="background: var(--bg-elev); border-top: 1px solid var(--border);">
+<style>
+  .pr-sec { background: #0A0F1E; padding: 96px 0; }
+  .pr-head { text-align: center; max-width: 600px; margin: 0 auto 52px; }
+  .pr-eyebrow { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent-ink); }
+  .pr-head h2 { font-size: clamp(1.7rem, 4vw, 36px); font-weight: 800; color: #fff; letter-spacing: -0.03em; line-height: 1.15; margin-top: 16px; }
+  .pr-head p { font-size: 15px; color: #6B7FA8; margin-top: 16px; }
+  .pr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; max-width: 1000px; margin: 0 auto; }
+  .pr-card { background: #0D1225; border: 1px solid #1A2444; border-radius: 16px; padding: 30px; display: flex; flex-direction: column; position: relative; transition: transform 0.25s var(--ease), box-shadow 0.25s; }
+  .pr-card:not(.feature):hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+  .pr-card.feature { background: #0D1A3A; border: 2px solid #3B5BDB; transform: scale(1.02); box-shadow: 0 20px 60px rgba(59,91,219,0.28); z-index: 1; }
+  .pr-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: #3B5BDB; color: #fff; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 14px; border-radius: 100px; white-space: nowrap; box-shadow: 0 6px 16px rgba(59,91,219,0.5); }
+  .pr-name { font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7FA8; }
+  .pr-price { font-size: 36px; font-weight: 800; color: #fff; letter-spacing: -0.03em; margin-top: 14px; line-height: 1; }
+  .pr-price .per { font-size: 14px; font-weight: 500; color: #6B7FA8; margin-left: 4px; }
+  .pr-sub { color: #6B7FA8; font-size: 13px; margin-top: 10px; min-height: 38px; line-height: 1.5; }
+  .pr-div { height: 1px; background: #1A2444; border: 0; margin: 22px 0; }
+  .pr-card.feature .pr-div { background: #244; background: #1f335f; }
+  .pr-feats { list-style: none; display: flex; flex-direction: column; gap: 13px; margin-bottom: 26px; }
+  .pr-feats li { display: flex; gap: 11px; align-items: flex-start; font-size: 0.9rem; line-height: 1.4; }
+  .pr-feats li .ck { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; display: grid; place-items: center; }
+  .pr-feats li .ck svg { width: 15px; height: 15px; }
+  .pr-feats li.yes { color: #e6ecf8; }
+  .pr-feats li.yes .ck { color: #4ADE80; }
+  .pr-feats li.no { color: #374151; text-decoration: line-through; }
+  .pr-feats li.no .ck { color: #374151; text-decoration: none; }
+  .pr-cta { margin-top: auto; display: inline-flex; align-items: center; justify-content: center; height: 46px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; transition: background 0.18s, border-color 0.18s, transform 0.18s, color 0.18s; }
+  .pr-cta.primary { background: #3B5BDB; color: #fff; box-shadow: 0 12px 28px rgba(59,91,219,0.4); }
+  .pr-cta.primary:hover { background: #4865e6; transform: translateY(-2px); }
+  .pr-cta.ghost { background: transparent; border: 1px solid #2A3A6E; color: #cdd8f0; }
+  .pr-cta.ghost:hover { border-color: #3B5BDB; color: #fff; transform: translateY(-2px); }
+  @media (max-width: 860px) {
+    .pr-grid { grid-template-columns: 1fr; max-width: 420px; }
+    .pr-card.feature { transform: none; }
+  }
+</style>
+<section class="pr-sec">
   <div class="wrap">
-    <div class="section-head center reveal" style="margin-bottom: 52px;">
-      <span class="eyebrow center">Pricing · Minh bạch</span>
-      <h2 class="h2 text-balance">Bắt đầu miễn phí, nâng cấp khi team lớn lên</h2>
-      <p class="lead">Ba gói phù hợp từng giai đoạn. Dùng thử 14 ngày, không cần thẻ.</p>
+    <div class="pr-head reveal">
+      <span class="pr-eyebrow">Phí dịch vụ · Minh bạch</span>
+      <h2 class="text-balance">Bắt đầu miễn phí, nâng cấp khi team lớn lên.</h2>
+      <p class="text-pretty">Ba gói phù hợp từng giai đoạn. Dùng thử 14 ngày, không cần thẻ.</p>
     </div>
-    <div class="price-grid">
-      <div class="plan reveal">
-        <div class="pname">Solo</div>
-        <div class="pprice">Miễn phí</div>
-        <p class="pdesc">Cho cá nhân khởi đầu.</p>
-        <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>1 thành viên</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Tasks &amp; time log cơ bản</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Audit 30 ngày</li>
+    <div class="pr-grid">
+      <!-- Card 1 -->
+      <div class="pr-card reveal">
+        <div class="pr-name">Solo</div>
+        <div class="pr-price">Miễn phí</div>
+        <p class="pr-sub">Cho cá nhân khởi đầu.</p>
+        <hr class="pr-div" />
+        <ul class="pr-feats">
+          <li class="yes"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>1 thành viên</li>
+          <li class="yes"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>Tasks &amp; time log cơ bản</li>
+          <li class="yes"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>Audit 30 ngày</li>
+          <li class="no"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>Office Time &amp; Salary</li>
+          <li class="no"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>Vault &amp; Anomaly detection</li>
         </ul>
-        <a class="btn btn-ghost btn-block" href="pricing.html">Bắt đầu</a>
+        <a class="pr-cta ghost" href="pricing.html">Bắt đầu</a>
       </div>
-      <div class="plan feature reveal">
-        <div class="pname">Starter</div>
-        <div class="pprice">299.000đ<small> /tháng</small></div>
-        <p class="pdesc">Cho team đang tăng tốc, tối đa 10 người.</p>
-        <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Tối đa 10 thành viên</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Office Time, Salary, Payments</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Phân quyền nâng cao · Audit 90 ngày</li>
+      <!-- Card 2 highlighted -->
+      <div class="pr-card feature reveal">
+        <span class="pr-badge">Phổ biến</span>
+        <div class="pr-name">Starter</div>
+        <div class="pr-price">299.000đ<span class="per">/tháng</span></div>
+        <p class="pr-sub">Cho team đang tăng tốc, tối đa 10 người.</p>
+        <hr class="pr-div" />
+        <ul class="pr-feats">
+          <li class="yes"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>Tối đa 10 thành viên</li>
+          <li class="yes"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>Office Time, Salary, Payments</li>
+          <li class="yes"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>Phân quyền nâng cao</li>
+          <li class="yes"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>Performance reviews · Audit 90 ngày</li>
+          <li class="no"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>Vault &amp; Anomaly detection</li>
         </ul>
-        <a class="btn btn-primary btn-block" href="pricing.html">Dùng thử 14 ngày</a>
+        <a class="pr-cta primary" href="pricing.html">Dùng thử 14 ngày</a>
       </div>
-      <div class="plan reveal">
-        <div class="pname">Team</div>
-        <div class="pprice">799.000đ<small> /tháng</small></div>
-        <p class="pdesc">Cho đội ngũ trưởng thành, tối đa 25 người.</p>
-        <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Tối đa 25 thành viên</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Anomaly detection · Vault · Heatmap</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Audit không giới hạn · Priority support</li>
+      <!-- Card 3 -->
+      <div class="pr-card reveal">
+        <div class="pr-name">Team</div>
+        <div class="pr-price">799.000đ<span class="per">/tháng</span></div>
+        <p class="pr-sub">Cho đội ngũ trưởng thành, tối đa 25 người.</p>
+        <hr class="pr-div" />
+        <ul class="pr-feats">
+          <li class="yes"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>Tối đa 25 thành viên</li>
+          <li class="yes"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>Mọi thứ trong gói Starter</li>
+          <li class="yes"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>Anomaly detection · Vault · Heatmap</li>
+          <li class="yes"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>Audit không giới hạn</li>
+          <li class="yes"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>Priority support</li>
         </ul>
-        <a class="btn btn-ghost btn-block" href="pricing.html">Bắt đầu</a>
+        <a class="pr-cta ghost" href="pricing.html">Bắt đầu</a>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ============ CTA ============ -->
-<section class="section">
-  <div class="wrap">
-    <div class="cta-band reveal">
-      <h2 class="text-balance">Sẵn sàng thay thế Excel?</h2>
-      <p>Tạo workspace cho team của bạn trong vài phút. Dùng thử 14 ngày miễn phí, không cần thẻ tín dụng.</p>
-      <div class="cta-actions">
-        <a class="btn btn-primary btn-lg" href="contact.html">Bắt đầu miễn phí</a>
-        <a class="btn btn-ghost btn-lg" href="pricing.html">Xem bảng giá</a>
+<style>
+  .fcta { margin: 0 40px 80px; border-radius: 20px; padding: clamp(40px, 5vw, 72px); position: relative; overflow: hidden;
+    background: #0F172A; }
+  .fcta::before { content: ""; position: absolute; inset: 0; z-index: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+    background-size: 22px 22px; opacity: 0.6; pointer-events: none; }
+  .fcta .deco { position: absolute; border-radius: 50%; filter: blur(60px); background: rgba(59,91,219,0.22); pointer-events: none; z-index: 0; }
+  .fcta .deco.d1 { width: 320px; height: 320px; top: -120px; left: -90px; }
+  .fcta .deco.d2 { width: 340px; height: 340px; bottom: -140px; right: -100px; }
+  .fcta-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+
+  .fc-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #fff; background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 100px; white-space: nowrap; }
+  .fc-left h2 { font-size: clamp(1.9rem, 4vw, 40px); font-weight: 800; color: #fff; letter-spacing: -0.03em; line-height: 1.2; margin-top: 18px; }
+  .fc-left .fc-sub { font-size: 15px; color: rgba(255,255,255,0.7); margin-top: 16px; line-height: 1.6; max-width: 42ch; }
+  .fc-checks { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
+  .fc-checks li { display: flex; align-items: center; gap: 11px; font-size: 14px; color: #fff; }
+  .fc-checks li svg { width: 18px; height: 18px; color: #4ADE80; flex-shrink: 0; }
+  .fc-proof { display: flex; align-items: center; gap: 14px; margin-top: 40px; }
+  .fc-avs { display: flex; }
+  .fc-avs i { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #0F172A; margin-left: -9px; background: linear-gradient(135deg, #8b7bff, #4f7aff); display: block; }
+  .fc-avs i:first-child { margin-left: 0; }
+  .fc-proof span { font-size: 13px; color: rgba(255,255,255,0.7); }
+
+  .fc-card { background: #ffffff; border: 1px solid #E5E7EB; border-radius: 16px; padding: 36px; box-shadow: var(--shadow-lg); }
+  .fc-card h3 { font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 24px; }
+  .fc-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .fc-field label { font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: #6B7280; }
+  .fc-field input, .fc-field select { font-family: inherit; font-size: 0.95rem; color: #111827; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; height: 44px; padding: 0 14px; width: 100%; transition: border-color 0.16s, box-shadow 0.16s; }
+  .fc-field input::placeholder { color: #9CA3AF; }
+  .fc-field input:focus, .fc-field select:focus { outline: none; border-color: #3B5BDB; box-shadow: 0 0 0 3px rgba(59,91,219,0.15); }
+  .fc-field select { appearance: none; -webkit-appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px; }
+  .fc-field select option { color: #111827; background: #fff; }
+  .fc-submit { width: 100%; margin-top: 24px; height: 48px; border-radius: 10px; background: #3B5BDB; color: #fff; font-family: inherit; font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 9px; transition: background 0.2s, transform 0.2s; cursor: pointer; }
+  .fc-submit:hover { background: #2F4AC7; transform: translateY(-2px); }
+  .fc-submit .arrow { transition: transform 0.2s var(--ease); }
+  .fc-submit:hover .arrow { transform: translateX(3px); }
+  .fc-note { text-align: center; font-size: 11px; color: #9CA3AF; margin-top: 14px; }
+  .fc-thanks { display: none; text-align: center; padding: 24px 6px; }
+  .fc-thanks .ok { width: 52px; height: 52px; border-radius: 50%; background: rgba(22,163,74,0.12); color: #16a34a; display: grid; place-items: center; margin: 0 auto 16px; }
+  .fc-thanks h3 { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 8px; }
+  .fc-thanks p { font-size: 14px; color: #6B7280; line-height: 1.55; }
+
+  @media (max-width: 880px) {
+    .fcta { margin: 0 18px 56px; }
+    .fcta-grid { grid-template-columns: 1fr; gap: 40px; }
+  }
+  @media (max-width: 600px) { .fc-card { padding: 26px; } }
+</style>
+<section class="fcta reveal">
+  <span class="deco d1"></span><span class="deco d2"></span>
+  <div class="fcta-grid">
+    <!-- LEFT -->
+    <div class="fc-left">
+      <span class="fc-badge">Miễn phí 14 ngày</span>
+      <h2 class="text-balance">Bắt đầu quản lý team thông minh hơn hôm nay.</h2>
+      <p class="fc-sub text-pretty">Tạo workspace trong 2 phút. Không cần thẻ tín dụng. Hủy bất cứ lúc nào.</p>
+      <ul class="fc-checks">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Không cần thẻ tín dụng</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Setup trong 2 phút</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Hỗ trợ onboarding miễn phí</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Hủy bất cứ lúc nào</li>
+      </ul>
+      <div class="fc-proof">
+        <div class="fc-avs"><i></i><i></i><i></i><i></i><i></i></div>
+        <span>120+ startup Việt đã tin dùng</span>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="fc-card">
+      <form id="leadForm" onsubmit="return false;">
+        <h3>Tạo tài khoản miễn phí</h3>
+        <div class="fc-field"><label for="lf-name">Họ và tên</label><input id="lf-name" type="text" placeholder="Nguyễn Văn A" required /></div>
+        <div class="fc-field"><label for="lf-email">Email công ty</label><input id="lf-email" type="email" placeholder="ban@company.com" required /></div>
+        <div class="fc-field"><label for="lf-company">Tên công ty</label><input id="lf-company" type="text" placeholder="Công ty ABC" required /></div>
+        <div class="fc-field"><label for="lf-size">Số nhân viên</label>
+          <select id="lf-size">
+            <option>1–5</option>
+            <option selected>6–15</option>
+            <option>16–30</option>
+            <option>30+</option>
+          </select>
+        </div>
+        <button class="fc-submit" type="submit">Tạo workspace miễn phí <svg class="arrow" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <p class="fc-note">🔒 Dữ liệu được mã hóa SSL · Không spam email</p>
+      </form>
+      <div class="fc-thanks" id="leadThanks">
+        <div class="ok"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></div>
+        <h3>Đã nhận thông tin 🎉</h3>
+        <p>Chúng tôi sẽ gửi link kích hoạt workspace tới email của bạn trong ít phút.</p>
       </div>
     </div>
   </div>
@@ -290,18 +731,30 @@
     ["Task Management", "Trạng thái, ưu tiên, template &amp; review workflow.", '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'],
     ["Time Tracking", "Time logs, Office Time, work rules cho org.", '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/>'],
     ["Performance", "Auto-KPI, self-review &amp; manager review.", '<path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z"/>'],
-    ["Lương &amp; Thanh toán", "Tính lương liên kết time log, lịch sử payment.", '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'],
+    ["Lương &amp; Thưởng", "Tính lương liên kết time log, lịch sử payment.", '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'],
     ["Leave Management", "Đơn nghỉ phép nhiều loại, duyệt &amp; theo dõi.", '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'],
     ["Customers &amp; Messages", "Danh sách khách hàng, giao tiếp đa kênh.", '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'],
     ["Summary &amp; Báo cáo", "Dashboard KPI, trend, AI-suggest, forecast.", '<path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6" stroke-linecap="round" stroke-linejoin="round"/>'],
     ["Capacity Planning", "Phân tích workload, dự báo năng lực theo skill.", '<path d="M3 12h4l3 8 4-16 3 8h4" stroke-linecap="round" stroke-linejoin="round"/>'],
     ["Vault", "Lưu credentials khách hàng dạng mã hóa.", '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'],
     ["Admin &amp; Audit", "Heatmap, anomaly detection, audit log đầy đủ.", '<path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>'],
+    ["Integrations", "Clerk, Google Drive, Git webhook &amp; cron.", '<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="9" r="2.5"/><path d="M6 8.5v7M18 11.5c0 3-3 3.5-6 3.5" stroke-linecap="round"/>'],
   ];
-  var html = M.map(function (m, i) {
-    return '<div class="card hover reveal"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + m[2] + '</svg></div><h3>' + m[0] + "</h3><p>" + m[1] + "</p></div>";
+  var html = M.map(function (m) {
+    return '<div class="fm-card"><div class="fm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + m[2] + '</svg></div><h3>' + m[0] + "</h3><p>" + m[1] + "</p></div>";
   }).join("");
   document.getElementById("moduleGrid").innerHTML = html;
+})();
+
+/* lead capture form */
+(function () {
+  var form = document.getElementById("leadForm");
+  if (!form) return;
+  form.addEventListener("submit", function () {
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    form.style.display = "none";
+    document.getElementById("leadThanks").style.display = "block";
+  });
 })();
 </script>
 <script src="js/app.js"></script>

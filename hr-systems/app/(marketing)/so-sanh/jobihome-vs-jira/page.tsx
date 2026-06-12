@@ -1,0 +1,304 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "jobihome vs Jira — Quản lý nhân sự thay thế Jira cho team Việt",
+  description: "So sánh jobihome và Jira: HR + task management + lương trong 1 tool, không cần tích hợp thêm. Dùng thử miễn phí 14 ngày.",
+};
+
+const ROWS: { criterion: string; jira: string; jobi: string; jiraOk?: "no" | "partial" }[] = [
+  { criterion: "Quản lý task & sprint", jira: "Mạnh, nhưng cần cấu hình phức tạp", jobi: "Kanban + Sprint sẵn, cài xong dùng ngay", jiraOk: "partial" },
+  { criterion: "Chấm công & time tracking", jira: "Không có — cần plugin Tempo trả phí riêng", jobi: "Time log gắn trực tiếp vào task, built-in", jiraOk: "no" },
+  { criterion: "Tính lương tự động", jira: "Không có — hoàn toàn ngoài scope", jobi: "Tính lương từ time log, xuất phiếu 1 click", jiraOk: "no" },
+  { criterion: "Quản lý nhân sự (HR)", jira: "Không có hồ sơ nhân viên, leave, onboarding", jobi: "HR đầy đủ: profile, leave, onboarding flow", jiraOk: "no" },
+  { criterion: "Performance reviews", jira: "Không có — cần tool khác (Lattice, 15Five)", jobi: "Self-review + manager review tích hợp sẵn", jiraOk: "no" },
+  { criterion: "Chi phí cho team 10 người", jira: "~$85/tháng (Standard) + plugin", jobi: "499k/tháng (~$20) — all-in-one", jiraOk: "no" },
+  { criterion: "Thời gian onboard nhân viên mới", jira: "Trung bình 2–3 ngày, nhiều permission", jobi: "Dưới 30 phút, giao diện quen thuộc", jiraOk: "partial" },
+  { criterion: "Báo cáo năng suất team", jira: "Cần JQL phức tạp hoặc Confluence", jobi: "Dashboard realtime, không cần query", jiraOk: "partial" },
+];
+
+const TESTIMONIALS = [
+  {
+    quote: "Jira quá nặng cho team 15 người. Chúng tôi tốn 3 tiếng mỗi sprint chỉ để configure board. jobihome đơn giản hơn 10 lần và có thêm cả lương.",
+    name: "Nguyễn Văn Đức", role: "Engineering Lead", company: "Sky Mavis",
+    initials: "VĐ", color: "linear-gradient(135deg, #2F6BFF, #1a3fa8)",
+  },
+  {
+    quote: "Plugin Tempo cho Jira tốn thêm $8/người/tháng chỉ để track time. jobihome có sẵn tính năng này và còn thêm HR, lương — tổng chi phí giảm 60%.",
+    name: "Lê Thị Hoa", role: "CTO", company: "Timo",
+    initials: "TH", color: "linear-gradient(135deg, #7C3AED, #4F46E5)",
+  },
+  {
+    quote: "Team dev của tôi vẫn dùng Jira cho product, nhưng phần HR và lương đã chuyển sang jobihome hoàn toàn. Không cần sync thủ công nữa.",
+    name: "Phạm Minh Khoa", role: "Founder", company: "Loship",
+    initials: "MK", color: "linear-gradient(135deg, #0891B2, #0E7490)",
+  },
+];
+
+function MacDots() {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <div className="w-2 h-2 rounded-full bg-red-400" />
+      <div className="w-2 h-2 rounded-full bg-yellow-400" />
+      <div className="w-2 h-2 rounded-full bg-green-400" />
+    </div>
+  );
+}
+
+export default function CompareJiraPage() {
+  return (
+    <>
+      {/* Hero */}
+      <section className="lp-glow relative overflow-hidden" style={{ padding: "clamp(40px, 5vw, 64px) 0 0", textAlign: "center" }}>
+        <span className="lp-blob lp-blob-1" />
+        <span className="lp-blob lp-blob-2" />
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="inline-flex items-center gap-0 mb-8 rounded-2xl overflow-hidden" style={{ border: "1px solid var(--lp-border-strong)" }}>
+            <span className="flex items-center gap-2 px-5 py-2.5 lp-mono text-[0.78rem] font-bold" style={{ background: "var(--lp-surface)", color: "#0052CC" }}>🔵 Jira</span>
+            <span className="px-3 py-2.5 lp-mono text-[0.68rem] font-bold uppercase tracking-wider text-lp-text-3" style={{ background: "var(--lp-surface-2)" }}>vs</span>
+            <span className="flex items-center gap-2 px-5 py-2.5 lp-mono text-[0.78rem] font-bold" style={{ background: "var(--lp-surface)", color: "var(--lp-accent-ink)" }}>⚡ jobihome</span>
+          </div>
+          <h1 className="text-balance font-extrabold mx-auto" style={{ fontSize: "clamp(2.4rem, 5.5vw, 3.8rem)", lineHeight: 1.05, letterSpacing: "-0.035em", maxWidth: "22ch" }}>
+            Tại sao team Việt <span className="lp-grad-text">bỏ Jira</span> sang <span className="lp-grad-text">jobihome?</span>
+          </h1>
+          <p className="mt-6 mx-auto text-lp-text-2" style={{ fontSize: "clamp(1.05rem, 1.6vw, 1.28rem)", maxWidth: "62ch" }}>
+            Jira giỏi quản lý ticket. Nhưng khi bạn cần thêm chấm công, lương, HR — bạn phải mua thêm 3 tool nữa. jobihome làm tất cả trong một.
+          </p>
+          <div className="flex gap-3 justify-center mt-8 flex-wrap">
+            <Link href="/dat-lich-demo" className="lp-btn lp-btn-primary lp-btn-lg">Xem demo miễn phí</Link>
+            <Link href="/pricing" className="lp-btn lp-btn-ghost lp-btn-lg">Xem bảng giá</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Comparison table */}
+      <section style={{ padding: "clamp(48px, 6vw, 80px) 0" }}>
+        <div className="w-full max-w-[900px] mx-auto px-7">
+          <div className="lp-card overflow-x-auto" style={{ padding: 0 }}>
+            <table className="lp-cmp">
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left" }}>Tiêu chí</th>
+                  <th style={{ color: "#0052CC" }}>🔵 Jira</th>
+                  <th style={{ color: "var(--lp-accent-ink)" }}>✅ jobihome</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ROWS.map((r) => (
+                  <tr key={r.criterion}>
+                    <th>{r.criterion}</th>
+                    <td style={{ textAlign: "left", color: r.jiraOk === "partial" ? "var(--lp-warn)" : "var(--lp-text-3)" }}>{r.jira}</td>
+                    <td className="yes" style={{ textAlign: "left", fontWeight: 500 }}>{r.jobi}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            <div className="lp-card flex items-center gap-3" style={{ padding: 18 }}>
+              <div className="w-10 h-10 rounded-full grid place-items-center flex-shrink-0" style={{ background: "rgba(217,119,6,0.18)" }}>
+                <span className="text-xl" style={{ color: "var(--lp-warn)" }}>✕</span>
+              </div>
+              <div>
+                <p className="text-[1.5rem] font-extrabold leading-none" style={{ color: "var(--lp-warn)" }}>3/8</p>
+                <p className="text-[0.78rem] text-lp-text-3 mt-1">tiêu chí Jira đạt đủ</p>
+              </div>
+            </div>
+            <div className="lp-card flex items-center gap-3" style={{ padding: 18 }}>
+              <div className="w-10 h-10 rounded-full grid place-items-center flex-shrink-0" style={{ background: "var(--lp-accent)" }}>
+                <span className="text-xl text-white">✓</span>
+              </div>
+              <div>
+                <p className="text-[1.5rem] font-extrabold leading-none text-lp-accent-ink">8/8</p>
+                <p className="text-[0.78rem] text-lp-text-3 mt-1">tiêu chí jobihome đạt</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section style={{ padding: "0 0 clamp(48px, 6vw, 80px)" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {TESTIMONIALS.map((t) => (
+              <div key={t.name} className="flex flex-col gap-5 rounded-2xl p-7" style={{ background: "var(--lp-surface)", border: "1px solid var(--lp-border)" }}>
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill="var(--lp-warn)" stroke="none">
+                      <path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="flex-1 text-[0.95rem] leading-relaxed italic" style={{ color: "var(--lp-text-2)" }}>"{t.quote}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="grid place-items-center rounded-full font-bold flex-shrink-0 text-[13px] text-white" style={{ width: 40, height: 40, background: t.color }}>{t.initials}</div>
+                  <div>
+                    <p className="text-[0.92rem] font-semibold" style={{ color: "var(--lp-text)" }}>{t.name}</p>
+                    <p className="text-[0.78rem]" style={{ color: "var(--lp-text-3)" }}>{t.role} · {t.company}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Migration steps */}
+      <section style={{ padding: "0 0 clamp(48px, 6vw, 80px)" }}>
+        <div className="w-full max-w-[900px] mx-auto px-7">
+          <div className="text-center mb-10">
+            <span className="lp-eyebrow lp-center" style={{ justifyContent: "center" }}>Migration · Dễ hơn bạn nghĩ</span>
+            <h2 className="text-balance mt-4 font-extrabold" style={{ fontSize: "clamp(1.9rem, 3.6vw, 2.9rem)", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
+              Chuyển từ Jira sang jobihome
+            </h2>
+            <p className="text-lp-text-2 mt-3">Vẫn giữ Jira cho dev nếu muốn — jobihome lo phần HR và lương.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {/* Step 1 */}
+            <div className="lp-card flex flex-col gap-4">
+              <div className="rounded-xl overflow-hidden" style={{ background: "var(--lp-bg)", border: "1px solid var(--lp-border)" }}>
+                <div className="px-4 pt-4 pb-3">
+                  <MacDots />
+                  <div className="rounded-lg p-3 text-center" style={{ background: "var(--lp-surface)", border: "1px solid var(--lp-border)" }}>
+                    <div className="w-8 h-8 rounded-full mx-auto mb-2 grid place-items-center" style={{ background: "linear-gradient(135deg, var(--lp-accent-2), var(--lp-accent))" }}>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div className="h-2 rounded w-20 mx-auto mb-1.5" style={{ background: "var(--lp-border-strong)" }} />
+                    <div className="h-2 rounded w-16 mx-auto mb-3" style={{ background: "var(--lp-border)" }} />
+                    <div className="h-7 rounded-lg w-full" style={{ background: "var(--lp-accent)", opacity: 0.85 }} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="lp-mono text-[0.72rem] font-black" style={{ color: "var(--lp-accent-ink)" }}>01</span>
+                  <p className="font-bold text-[1rem]">Tạo workspace mới</p>
+                </div>
+                <p className="text-[0.88rem] text-lp-text-3 leading-snug">Đăng ký miễn phí, setup org trong 2 phút.</p>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="lp-card flex flex-col gap-4">
+              <div className="rounded-xl overflow-hidden" style={{ background: "var(--lp-bg)", border: "1px solid var(--lp-border)" }}>
+                <div className="px-4 pt-4 pb-3">
+                  <MacDots />
+                  <div className="space-y-1.5">
+                    {["Tasks & Sprint", "Time tracking", "HR & Lương"].map((item, i) => (
+                      <div key={item} className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg" style={{ background: "var(--lp-surface)", border: "1px solid var(--lp-border)" }}>
+                        <div className="w-4 h-4 rounded grid place-items-center flex-shrink-0" style={{ background: i === 0 ? "rgba(47,107,255,0.2)" : "rgba(74,222,128,0.12)" }}>
+                          <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke={i === 0 ? "var(--lp-accent-ink)" : "var(--lp-ok)"} strokeWidth="2.5"><path d="M5 12l5 5L20 6"/></svg>
+                        </div>
+                        <span className="text-[0.75rem] font-medium" style={{ color: "var(--lp-text-2)" }}>{item}</span>
+                        <span className="ml-auto text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: i === 0 ? "rgba(47,107,255,0.12)" : "rgba(74,222,128,0.12)", color: i === 0 ? "var(--lp-accent-ink)" : "var(--lp-ok)" }}>{i === 0 ? "từ Jira" : "built-in"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="lp-mono text-[0.72rem] font-black" style={{ color: "var(--lp-accent-ink)" }}>02</span>
+                  <p className="font-bold text-[1rem]">Bật các module cần thiết</p>
+                </div>
+                <p className="text-[0.88rem] text-lp-text-3 leading-snug">Chọn module nào cần dùng, tắt phần còn lại.</p>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="lp-card flex flex-col gap-4">
+              <div className="rounded-xl overflow-hidden" style={{ background: "var(--lp-bg)", border: "1px solid var(--lp-border)" }}>
+                <div className="px-4 pt-4 pb-3">
+                  <MacDots />
+                  <div className="space-y-1.5">
+                    {[{ name: "Minh Anh", role: "Dev", color: "#6366F1" }, { name: "Hoàng Bá", role: "Design", color: "#0891B2" }, { name: "Lan Phương", role: "PM", color: "#7C3AED" }].map((m) => (
+                      <div key={m.name} className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg" style={{ background: "var(--lp-surface)", border: "1px solid var(--lp-border)" }}>
+                        <div className="w-6 h-6 rounded-full grid place-items-center text-[0.6rem] font-bold text-white flex-shrink-0" style={{ background: m.color }}>{m.name[0]}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[0.75rem] font-semibold leading-none" style={{ color: "var(--lp-text)" }}>{m.name}</div>
+                          <div className="text-[0.65rem] text-lp-text-3">{m.role}</div>
+                        </div>
+                        <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(74,222,128,0.12)", color: "var(--lp-ok)" }}>Joined</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="lp-mono text-[0.72rem] font-black" style={{ color: "var(--lp-accent-ink)" }}>03</span>
+                  <p className="font-bold text-[1rem]">Mời team tham gia</p>
+                </div>
+                <p className="text-[0.88rem] text-lp-text-3 leading-snug">Email invite, nhân viên active trong vài phút.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section style={{ padding: "0 0 clamp(48px, 6vw, 80px)" }}>
+        <div className="w-full max-w-[760px] mx-auto px-7">
+          <h2 className="text-center font-extrabold mb-8" style={{ fontSize: "clamp(1.5rem, 2.5vw, 2rem)", letterSpacing: "-0.025em" }}>
+            Câu hỏi thường gặp
+          </h2>
+          <div className="flex flex-col" style={{ gap: 2 }}>
+            {[
+              {
+                q: "Tôi có phải bỏ Jira không?",
+                a: "Không bắt buộc. Nhiều team dùng Jira cho product backlog và jobihome cho HR, chấm công, lương. Hai tool phục vụ mục đích khác nhau — bạn có thể dùng song song.",
+              },
+              {
+                q: "jobihome có Scrum board và sprint không?",
+                a: "Có — Kanban và Sprint view đều có sẵn. Nếu team bạn chủ yếu cần task + time tracking + HR thay vì một Jira full-scale, jobihome đủ dùng và đơn giản hơn nhiều.",
+              },
+              {
+                q: "Plugin Tempo của Jira có thể thay bằng gì trong jobihome?",
+                a: "Time tracking trong jobihome là built-in, không cần plugin. Timer gắn trực tiếp vào từng task, tự động tổng hợp vào bảng lương — không cần sync hay export thủ công.",
+              },
+              {
+                q: "Dữ liệu Jira (issues, comments, attachments) có import được không?",
+                a: "jobihome tập trung vào HR và time management — không import Jira issues. Nếu bạn muốn chạy song song, jobihome đảm nhận phần con người còn Jira giữ product.",
+              },
+            ].map((item, i) => (
+              <details key={i} style={{ borderBottom: "1px solid var(--lp-border)" }}>
+                <summary className="flex items-center justify-between cursor-pointer select-none" style={{ padding: "18px 0", fontSize: "0.97rem", fontWeight: 600, color: "var(--lp-text)", listStyle: "none" }}>
+                  {item.q}
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="flex-shrink-0 ml-4" style={{ color: "var(--lp-text-3)" }}><path d="M6 9l6 6 6-6" /></svg>
+                </summary>
+                <p style={{ paddingBottom: 18, fontSize: "0.92rem", lineHeight: 1.7, color: "var(--lp-text-2)" }}>{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section style={{ padding: "80px 0" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+          <div className="relative overflow-hidden text-center" style={{ maxWidth: 900, margin: "0 auto", background: "linear-gradient(135deg, #0F1829 0%, #141E35 100%)", border: "1px solid #1E2D5A", borderRadius: 16, padding: "64px 80px" }}>
+            <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", bottom: -50, left: -50, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle, rgba(59,91,219,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
+            <div style={{ fontSize: 18, color: "#6366F1", marginBottom: 16 }} aria-hidden="true">✦</div>
+            <h2 style={{ fontSize: 36, fontWeight: 700, color: "#fff", lineHeight: 1.2, letterSpacing: "-0.025em", margin: 0 }}>
+              Sẵn sàng thay Jira<br />bằng một tool duy nhất?
+            </h2>
+            <p style={{ fontSize: 15, color: "#64748B", marginTop: 12, marginBottom: 32 }}>
+              HR + task + lương + audit — tất cả trong jobihome. Dùng thử 14 ngày miễn phí.
+            </p>
+            <div className="flex flex-wrap justify-center" style={{ gap: 8, marginBottom: 32 }}>
+              {["🔄 Giữ Jira nếu muốn", "✓ Không cần kỹ thuật", "⚡ Setup trong 5 phút"].map((b) => (
+                <span key={b} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #1E2D5A", borderRadius: 100, padding: "5px 14px", fontSize: 12, color: "#94A3B8" }}>{b}</span>
+              ))}
+            </div>
+            <div className="flex flex-wrap justify-center" style={{ gap: 12 }}>
+              <Link href="/sign-up" className="lp-cta-primary-indigo" style={{ height: 44, padding: "0 24px", borderRadius: 8, background: "#6366F1", color: "#fff", fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(99,102,241,0.3)" }}>Bắt đầu miễn phí →</Link>
+              <Link href="/dat-lich-demo" className="lp-cta-demo" style={{ height: 44, padding: "0 24px", borderRadius: 8, background: "transparent", color: "#94A3B8", border: "1px solid #2A3A6E", fontSize: 14, fontWeight: 500, display: "inline-flex", alignItems: "center", textDecoration: "none", whiteSpace: "nowrap" }}>Đặt lịch demo 15 phút</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}

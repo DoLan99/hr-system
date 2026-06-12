@@ -25,7 +25,7 @@ export default function DemoPage() {
   };
 
   return (
-    <section className="lp-glow relative overflow-hidden" style={{ padding: "clamp(48px, 7vw, 92px) 0 clamp(64px, 9vw, 130px)" }}>
+    <section className="lp-glow relative overflow-hidden" style={{ padding: "clamp(40px, 5vw, 64px) 0 clamp(48px, 6vw, 80px)" }}>
       <span className="lp-blob lp-blob-1" />
       <span className="lp-blob lp-blob-2" />
       <div className="w-full max-w-[1180px] mx-auto px-7">

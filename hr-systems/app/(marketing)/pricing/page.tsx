@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
-import { PLANS, formatVnd } from "@/lib/pricing";
+import { PLANS } from "@/lib/pricing";
+import { PricingCards } from "./_components/PricingCards";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -8,13 +9,6 @@ export const metadata: Metadata = {
   description: "Ba gói linh hoạt: Solo miễn phí, Starter và Team. Dùng thử 14 ngày, không cần thẻ.",
 };
 
-function CheckIco() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12l5 5L20 6" />
-    </svg>
-  );
-}
 
 const FAQ = [
   { q: "Dùng thử có cần thẻ tín dụng không?", a: "Không. Bạn dùng thử đầy đủ tính năng trong 14 ngày mà không cần nhập thẻ. Hết hạn, workspace tự chuyển về gói Solo miễn phí cho đến khi bạn chọn nâng cấp." },
@@ -22,6 +16,7 @@ const FAQ = [
   { q: "Tôi có thể đổi gói giữa chừng không?", a: "Có. Bạn nâng hoặc hạ cấp bất kỳ lúc nào; phần chênh lệch được tính theo tỷ lệ thời gian còn lại trong chu kỳ." },
   { q: "Dữ liệu của team có được tách biệt không?", a: "Mỗi tổ chức là một tenant riêng với dữ liệu hoàn toàn tách biệt (tenant isolation ở tầng database). Không tổ chức nào thấy dữ liệu của tổ chức khác." },
   { q: "Vượt quá số thành viên của gói thì sao?", a: "Hệ thống sẽ nhắc bạn nâng lên gói cao hơn. Gói Team hỗ trợ tới 25 người; nếu team lớn hơn, hãy liên hệ để được tư vấn gói riêng." },
+  { q: "Có hoàn tiền nếu không hài lòng không?", a: "Có. Nếu bạn không hài lòng trong vòng 7 ngày đầu sau khi thanh toán, chúng tôi hoàn tiền 100% — không hỏi lý do. Sau 7 ngày, phí đã thanh toán không hoàn lại nhưng bạn vẫn dùng được đến hết chu kỳ." },
 ];
 
 const CMP_ROWS: { label: string; values: [string, string, string] }[] = [
@@ -47,7 +42,7 @@ export default async function PricingPage() {
   return (
     <>
       {/* Page hero */}
-      <section className="lp-glow relative overflow-hidden" style={{ padding: "clamp(56px, 8vw, 96px) 0 0", textAlign: "center" }}>
+      <section className="lp-glow relative overflow-hidden" style={{ padding: "clamp(40px, 5vw, 64px) 0 0", textAlign: "center" }}>
         <span className="lp-blob lp-blob-1" />
         <span className="lp-blob lp-blob-2" />
         <div className="w-full max-w-[1180px] mx-auto px-7">
@@ -62,44 +57,81 @@ export default async function PricingPage() {
       </section>
 
       {/* Plans */}
-      <section style={{ padding: "56px 0 clamp(64px, 9vw, 130px)" }}>
+      <section style={{ padding: "56px 0 clamp(48px, 6vw, 80px)" }}>
         <div className="w-full max-w-[1180px] mx-auto px-7">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
-            {plans.map((plan) => (
-              <div key={plan.id} className={`lp-plan${plan.recommended ? " lp-plan-feature" : ""}`}>
-                <div className="pname">{plan.name}</div>
-                <div className="pprice">
-                  {plan.priceVnd === 0 ? "Miễn phí" : (
-                    <>{formatVnd(plan.priceVnd)}<small> /tháng</small></>
-                  )}
+          <PricingCards plans={plans} isSignedIn={isSignedIn} />
+        </div>
+      </section>
+
+      {/* Social proof */}
+      <section style={{ padding: "0 0 clamp(48px, 6vw, 80px)" }}>
+        <div className="w-full max-w-[1180px] mx-auto px-7">
+
+          {/* Logo strip */}
+          <p className="text-center lp-mono text-[0.76rem] uppercase tracking-[0.1em] text-lp-text-3 mb-6">
+            Đang được dùng bởi team tại
+          </p>
+          <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-3 mb-14">
+            {["KiotViet", "Timo", "Amanotes", "Loship", "Sky Mavis", "Teko"].map((name) => (
+              <span key={name} className="lp-mono font-extrabold tracking-tight select-none" style={{ fontSize: "1rem", color: "var(--lp-text-3)", opacity: 0.65 }}>
+                {name}
+              </span>
+            ))}
+          </div>
+
+          {/* 3 quote cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              {
+                quote: "Starter plan đủ cho team 8 người của tôi. Tính lương, chấm công, phân quyền — không cần thêm tool nào khác. ROI rõ ràng từ tháng đầu tiên.",
+                name: "Nguyễn Hoàng Nam", role: "Founder", company: "Teko Vietnam",
+                plan: "Starter", initials: "HN", color: "#2F6BFF",
+              },
+              {
+                quote: "Trước đây tốn $120/tháng cho 3 tool riêng lẻ. Chuyển sang Team plan 799k, có thêm audit log và anomaly detection mà không cần hire thêm ops.",
+                name: "Trần Minh Châu", role: "CTO", company: "Sky Mavis",
+                plan: "Team", initials: "MC", color: "#7C3AED",
+              },
+              {
+                quote: "Dùng thử 14 ngày rồi quyết định ngay — không cần pitch với ban giám đốc vì giá quá hợp lý so với giá trị. Team 15 người, upgrade lên Team plan sau 2 tuần.",
+                name: "Lê Thị Phương", role: "HR Manager", company: "Amanotes",
+                plan: "Team", initials: "TP", color: "#0891B2",
+              },
+            ].map((t) => (
+              <div key={t.name} className="flex flex-col gap-4 rounded-2xl p-6" style={{ background: "var(--lp-surface)", border: "1px solid var(--lp-border)" }}>
+                {/* Stars + plan badge */}
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <svg key={i} width="13" height="13" viewBox="0 0 24 24" fill="var(--lp-warn)" stroke="none">
+                        <path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="lp-mono text-[0.68rem] font-bold px-2 py-0.5 rounded-full" style={{ background: "var(--lp-accent-soft)", color: "var(--lp-accent-ink)", border: "1px solid rgba(47,107,255,0.2)" }}>
+                    {t.plan}
+                  </span>
                 </div>
-                <p className="pdesc">
-                  {plan.priceVnd === 0 ? "Cho freelancer & cá nhân mới bắt đầu quản lý công việc." :
-                    plan.id === "STARTER" ? "Cho team đang tăng tốc cần phân quyền và tính lương." :
-                      "Cho đội ngũ trưởng thành cần quan sát & bảo mật nâng cao."}
+                <p className="flex-1 text-[0.92rem] leading-relaxed" style={{ color: "var(--lp-text-2)" }}>
+                  "{t.quote}"
                 </p>
-                <ul>
-                  {plan.features.map((f) => (
-                    <li key={f}><CheckIco />{f}</li>
-                  ))}
-                </ul>
-                <Link
-                  href={isSignedIn ? "/billing" : "/sign-up"}
-                  className={`lp-btn ${plan.recommended ? "lp-btn-primary" : "lp-btn-ghost"} lp-btn-block`}
-                >
-                  {plan.priceVnd === 0 ? "Bắt đầu miễn phí" : isSignedIn ? "Upgrade ngay" : "Dùng thử 14 ngày"}
-                </Link>
+                <div className="flex items-center gap-3">
+                  <div className="grid place-items-center rounded-full font-bold flex-shrink-0 text-[12px] text-white" style={{ width: 36, height: 36, background: t.color }}>
+                    {t.initials}
+                  </div>
+                  <div>
+                    <p className="text-[0.88rem] font-semibold" style={{ color: "var(--lp-text)" }}>{t.name}</p>
+                    <p className="text-[0.75rem]" style={{ color: "var(--lp-text-3)" }}>{t.role} · {t.company}</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
-          <p className="text-center lp-mono text-[0.88rem] text-lp-text-3 mt-7">
-            Thanh toán qua chuyển khoản ngân hàng (Vietcombank) · Xuất hóa đơn VAT theo yêu cầu
-          </p>
         </div>
       </section>
 
       {/* Comparison */}
-      <section style={{ background: "var(--lp-bg-elev)", borderTop: "1px solid var(--lp-border)", padding: "clamp(64px, 9vw, 130px) 0" }}>
+      <section style={{ background: "var(--lp-bg-elev)", borderTop: "1px solid var(--lp-border)", padding: "clamp(48px, 6vw, 80px) 0" }}>
         <div className="w-full max-w-[1180px] mx-auto px-7">
           <div className="text-center max-w-[680px] mx-auto mb-11">
             <span className="lp-eyebrow lp-center">Compare · So sánh chi tiết</span>
@@ -107,10 +139,12 @@ export default async function PricingPage() {
           </div>
           <div className="lp-card overflow-x-auto" style={{ padding: 8 }}>
             <table className="lp-cmp">
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left" }}>Tính năng</th>
-                  <th>Solo</th><th>Starter</th><th>Team</th>
+              <thead style={{ position: "sticky", top: 66, zIndex: 10 }}>
+                <tr style={{ background: "var(--lp-surface)" }}>
+                  <th style={{ textAlign: "left", background: "var(--lp-surface)" }}>Tính năng</th>
+                  <th style={{ background: "var(--lp-surface)" }}>Solo</th>
+                  <th style={{ background: "var(--lp-bg-elev)", color: "var(--lp-accent-ink)", borderBottom: "2px solid var(--lp-accent)" }}>Starter ⭐</th>
+                  <th style={{ background: "var(--lp-surface)" }}>Team</th>
                 </tr>
               </thead>
               <tbody>
@@ -129,7 +163,7 @@ export default async function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section style={{ padding: "clamp(64px, 9vw, 130px) 0" }}>
+      <section style={{ padding: "clamp(48px, 6vw, 80px) 0" }}>
         <div className="w-full max-w-[1180px] mx-auto px-7">
           <div className="text-center max-w-[680px] mx-auto mb-10">
             <span className="lp-eyebrow lp-center">FAQ · Câu hỏi thường gặp</span>
@@ -147,14 +181,30 @@ export default async function PricingPage() {
       </section>
 
       {/* CTA */}
-      <section style={{ padding: "0 0 clamp(64px, 9vw, 130px)" }}>
+      <section style={{ padding: "80px 0" }}>
         <div className="w-full max-w-[1180px] mx-auto px-7">
-          <div className="lp-cta-band">
-            <h2 className="text-balance">Thử miễn phí trong 14 ngày</h2>
-            <p>Không cần thẻ. Tạo workspace và mời cả team trong vài phút.</p>
-            <div className="flex gap-3 justify-center flex-wrap relative">
-              <Link href="/sign-up" className="lp-btn lp-btn-primary lp-btn-lg">Bắt đầu ngay</Link>
-              <Link href="/tinh-nang" className="lp-btn lp-btn-ghost lp-btn-lg">Xem tính năng</Link>
+          <div className="relative overflow-hidden text-center" style={{ maxWidth: 900, margin: "0 auto", background: "linear-gradient(135deg, #0F1829 0%, #141E35 100%)", border: "1px solid #1E2D5A", borderRadius: 16, padding: "64px 80px" }}>
+            <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", bottom: -50, left: -50, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle, rgba(59,91,219,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
+            <div style={{ fontSize: 18, color: "#6366F1", marginBottom: 16 }} aria-hidden="true">✦</div>
+            <h2 style={{ fontSize: 36, fontWeight: 700, color: "#fff", lineHeight: 1.2, letterSpacing: "-0.025em", margin: 0 }}>
+              Thử miễn phí trong 14 ngày
+            </h2>
+            <p style={{ fontSize: 15, color: "#64748B", marginTop: 12, marginBottom: 32 }}>
+              Không cần thẻ tín dụng. Tạo workspace và mời cả team trong vài phút.
+            </p>
+            <div className="flex flex-wrap justify-center" style={{ gap: 8, marginBottom: 32 }}>
+              {["🔒 Bảo mật SSL", "✓ Hủy bất cứ lúc nào", "⚡ Setup trong 5 phút"].map((b) => (
+                <span key={b} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #1E2D5A", borderRadius: 100, padding: "5px 14px", fontSize: 12, color: "#94A3B8" }}>{b}</span>
+              ))}
+            </div>
+            <div className="flex flex-wrap justify-center" style={{ gap: 12 }}>
+              <Link href="/sign-up" className="lp-cta-primary-indigo" style={{ height: 44, padding: "0 24px", borderRadius: 8, background: "#6366F1", color: "#fff", fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(99,102,241,0.3)" }}>
+                Bắt đầu miễn phí →
+              </Link>
+              <Link href="/tinh-nang" className="lp-cta-demo" style={{ height: 44, padding: "0 24px", borderRadius: 8, background: "transparent", color: "#94A3B8", border: "1px solid #2A3A6E", fontSize: 14, fontWeight: 500, display: "inline-flex", alignItems: "center", textDecoration: "none", whiteSpace: "nowrap" }}>
+                Xem tính năng
+              </Link>
             </div>
           </div>
         </div>

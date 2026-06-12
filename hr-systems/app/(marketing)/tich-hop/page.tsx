@@ -60,7 +60,7 @@ export default function IntegrationsPage() {
   return (
     <>
       {/* Hero */}
-      <section className="lp-glow relative overflow-hidden" style={{ padding: "clamp(56px, 8vw, 96px) 0 0", textAlign: "center" }}>
+      <section className="lp-glow relative overflow-hidden" style={{ padding: "clamp(40px, 5vw, 64px) 0 0", textAlign: "center" }}>
         <span className="lp-blob lp-blob-1" />
         <span className="lp-blob lp-blob-2" />
         <div className="w-full max-w-[1180px] mx-auto px-7">
@@ -116,7 +116,7 @@ export default function IntegrationsPage() {
       </div>
 
       {/* Grid */}
-      <section style={{ padding: "56px 0 clamp(64px, 9vw, 130px)" }}>
+      <section style={{ padding: "clamp(48px, 6vw, 80px) 0" }}>
         <div className="w-full max-w-[1180px] mx-auto px-7">
           {filtered.length === 0 ? (
             <div className="text-center py-20">

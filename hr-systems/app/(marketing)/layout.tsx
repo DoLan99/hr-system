@@ -96,11 +96,36 @@ export default async function MarketingLayout({ children }: { children: React.Re
           </div>
 
           <div
-            className="mt-14 pt-7 border-t flex flex-col sm:flex-row sm:justify-between gap-3 text-[0.85rem] text-lp-text-3"
+            className="mt-14 pt-7 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-[0.85rem] text-lp-text-3"
             style={{ borderColor: "var(--lp-border)" }}
           >
-            <span>© {new Date().getFullYear()} jobihome.vn — Made in Vietnam 🇻🇳</span>
-            <span className="lp-mono">v2.4 · hr-system</span>
+            <span>© 2026 jobihome.vn · All rights reserved · Made in Vietnam 🇻🇳</span>
+            <div className="flex items-center gap-3">
+              {/* Facebook */}
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook"
+                className="lp-social-icon"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+              </a>
+              {/* LinkedIn */}
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"
+                className="lp-social-icon"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+              </a>
+              {/* YouTube */}
+              <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube"
+                className="lp-social-icon"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" style={{fill:"var(--lp-bg-elev)"}}/></svg>
+              </a>
+              {/* GitHub */}
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="GitHub"
+                className="lp-social-icon"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+              </a>
+            </div>
           </div>
         </div>
       </footer>
