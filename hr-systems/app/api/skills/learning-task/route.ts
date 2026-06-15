@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withContext } from "@/lib/with-context";
 import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
-import { SKILL_LEVELS } from "@/lib/skills";
+import { SKILL_LEVELS } from "@/lib/skills/constants";
 
 const schema = z.object({
   skillId: z.number().int(),

@@ -66,6 +66,11 @@ model Organization {
   drivePermissions      DrivePermission[]
   workflowTemplates     WorkflowTemplate[]
   workflowInstances     WorkflowInstance[]
+  inventoryCategories   InventoryCategory[]
+  inventoryItems        InventoryItem[]
+  inventoryTransactions InventoryTransaction[]
+  inventoryAssignments  InventoryAssignment[]
+  channelIntegrations   ChannelIntegration[]
 
   @@map("organizations")
 }
@@ -242,6 +247,10 @@ model Employee {
   // Workflow
   workflowsInitiated        WorkflowInstance[]   @relation("WorkflowInitiator")
   workflowApprovalsAssigned WorkflowApproval[]   @relation("WorkflowApprover")
+
+  // Inventory
+  inventoryTransactions     InventoryTransaction[]
+  inventoryAssignments      InventoryAssignment[]
 
   // Tracking layer
   userSessions         UserSession[]
@@ -795,6 +804,16 @@ model Message {
   supportTime    Int?
   benefitTime    Int?
   netTime        Int?
+  // Hub fields (Sprint 4A)
+  externalId     String?        // ID tin nhắn trên kênh gốc
+  externalThread String?        // Thread/conversation ID
+  senderName     String?        // Tên người gửi bên ngoài
+  senderContact  String?        // Email/phone/zaloId
+  rawPayload     Json?          // Payload gốc từ webhook
+  replyToId      Int?
+  replyTo        Message?       @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies        Message[]      @relation("MessageReplies")
+  attachments    MessageAttachment[]
   createdAt      DateTime       @default(now())
 
   auditLogs      MessageAuditLog[]
@@ -803,7 +822,36 @@ model Message {
   @@index([organizationId, assignedToId])
   @@index([organizationId, customerId])
   @@index([organizationId, dueDate])
+  @@index([organizationId, channel])
   @@map("messages")
+}
+
+model MessageAttachment {
+  id        String   @id @default(cuid())
+  messageId Int
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  name      String
+  url       String
+  size      Int?
+  mimeType  String?
+  createdAt DateTime @default(now())
+
+  @@map("message_attachments")
+}
+
+model ChannelIntegration {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  channel        MessageChannel
+  config         Json           // { webhookUrl?, botToken?, appId?, appSecret?, ... } — stored as-is
+  isActive       Boolean        @default(true)
+  lastSyncAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([organizationId, channel])
+  @@map("channel_integrations")
 }
 
 model MessageAuditLog {
@@ -1363,6 +1411,95 @@ enum ApprovalAction {
   APPROVED
   REJECTED
   DELEGATED
+}
+
+// ─────────────────────────────────────────────────────────────
+// INVENTORY MANAGEMENT (Sprint 3)
+// ─────────────────────────────────────────────────────────────
+
+model InventoryCategory {
+  id             Int             @id @default(autoincrement())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  code           String?
+  description    String?
+  items          InventoryItem[]
+  createdAt      DateTime        @default(now())
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("inventory_categories")
+}
+
+model InventoryItem {
+  id             String               @id @default(cuid())
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  categoryId     Int
+  category       InventoryCategory    @relation(fields: [categoryId], references: [id])
+  name           String
+  sku            String?
+  unit           String               @default("cái")
+  quantity       Int                  @default(0)
+  minQuantity    Int                  @default(0)
+  costPrice      Decimal?             @db.Decimal(15, 2)
+  location       String?
+  description    String?
+  imageUrl       String?
+  transactions   InventoryTransaction[]
+  assignments    InventoryAssignment[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@unique([organizationId, sku])
+  @@index([organizationId])
+  @@index([organizationId, categoryId])
+  @@map("inventory_items")
+}
+
+model InventoryTransaction {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           InventoryItem    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  type           InventoryTxType
+  quantity       Int
+  note           String?
+  referenceNo    String?
+  actorId        Int
+  actor          Employee         @relation(fields: [actorId], references: [id])
+  createdAt      DateTime         @default(now())
+
+  @@index([organizationId])
+  @@index([itemId])
+  @@map("inventory_transactions")
+}
+
+model InventoryAssignment {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  employeeId     Int
+  employee       Employee      @relation(fields: [employeeId], references: [id])
+  quantity       Int           @default(1)
+  assignedAt     DateTime      @default(now())
+  returnedAt     DateTime?
+  note           String?
+
+  @@index([organizationId])
+  @@index([employeeId])
+  @@map("inventory_assignments")
+}
+
+enum InventoryTxType {
+  IN
+  OUT
+  ADJUST
+  RETURN
 }
 
 // ─────────────────────────────────────────────────────────────

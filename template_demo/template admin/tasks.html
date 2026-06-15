@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Công việc — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="side">
+    <div class="side-brand">
+      <span class="lm">j</span>
+      <div>
+        <div class="bt">jobihome</div>
+        <div class="bs">Workspace · Do thi Lan</div>
+      </div>
+    </div>
+    <nav class="side-nav scroll" id="sideNav"></nav>
+    <div class="side-foot">
+      <div class="side-user">
+        <span class="av">DL</span>
+        <div>
+          <div class="un">Do thi Lan</div>
+          <div class="ur">Super Admin</div>
+        </div>
+        <span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <button class="tb-icon menu-btn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div>
+        <div class="tb-title">Công việc</div>
+      </div>
+      <div class="tb-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input type="text" placeholder="Tìm task, người phụ trách…" />
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="tb-right">
+        <button class="tb-icon" id="themeToggle" aria-label="Chế độ sáng/tối" title="Sáng / Tối">
+          <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+          <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+        </button>
+        <button class="tb-icon" aria-label="Trợ giúp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3"/><path d="M12 17h.01"/></svg></button>
+        <button class="tb-icon" aria-label="Thông báo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+      </div>
+    </header>
+
+    <main class="content scroll">
+      <div class="content-inner">
+        <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+          <div>
+            <h1>Sprint 14 · Công việc</h1>
+            <p>14 task đang hoạt động · <b>3</b> đến hạn hôm nay · cập nhật <b>2 phút trước</b></p>
+          </div>
+          <button class="abtn primary" id="newTaskBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Tạo task</button>
+        </div>
+
+        <!-- toolbar -->
+        <div class="tools">
+          <div class="seg" id="viewSeg">
+            <button class="on" data-view="board"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="11" rx="1"/><rect x="17" y="4" width="4" height="14" rx="1"/></svg>Board</button>
+            <button data-view="list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>List</button>
+          </div>
+          <button class="fchip" id="sprintChip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg><span id="sprintLabel">Sprint 14</span> <span class="ct">▾</span></button>
+          <button class="fchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke-linecap="round"/></svg>Người phụ trách</button>
+          <button class="fchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z"/></svg>Ưu tiên</button>
+          <div class="spacer"></div>
+          <div class="tsearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input type="text" placeholder="Lọc nhanh…" /></div>
+        </div>
+
+        <!-- board -->
+        <div class="board" id="board"></div>
+        <div class="hidden" id="listWrap"><table class="tlist"><thead><tr><th>Task</th><th>Trạng thái</th><th>Ư u tiên</th><th>Người phụ trách</th><th>Hạn</th></tr></thead><tbody id="listBody"></tbody></table></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  var COLS = [
+    ["Backlog","backlogc","backlog"],["In Progress","progressc","doing"],
+    ["Pending Review","reviewc","review"],["Done","donec","done"],["Blocked","blockedc","blocked"]
+  ];
+  var DATA = {
+    "Backlog": [
+      {id:"JH-245",title:"Viết tài liệu API webhook Git",prio:"lo",tags:[["Docs",1]],who:"TU",meta:[["est","2h"]],_col:"Backlog"},
+      {id:"JH-250",title:"Audit log UI — bộ lọc theo hành động",prio:"md",tags:[["Frontend"]],who:"MA",meta:[["est","4h"]],_col:"Backlog"},
+      {id:"JH-253",title:"Tích hợp Slack notification cho task",prio:"lo",tags:[["Integration",1]],who:"HG",meta:[["est","3h"]],_col:"Backlog"},
+      {id:"JH-255",title:"Trang cài đặt Work Rules cho org",prio:"md",tags:[["Frontend"],["Settings",1]],who:"LN",meta:[["est","5h"]],_col:"Backlog"}
+    ],
+    "In Progress": [
+      {id:"JH-233",title:"API endpoint chấm công (Office Time)",prio:"hi",tags:[["Backend"],["API",1]],who:"HG",meta:[["live","01:24:08"],["due","Hôm nay",1]],progress:65,_col:"In Progress"},
+      {id:"JH-238",title:"Migrate Prisma schema sang multi-tenant",prio:"hi",tags:[["Backend"],["DB",1]],who:"TU",meta:[["est","5h"]],progress:40,_col:"In Progress"},
+      {id:"JH-241",title:"Thiết kế lại onboarding flow cho user mới",prio:"md",tags:[["Design"],["UX",1]],who:"LN",meta:[["est","3h"],["due","Mai"]],progress:25,_col:"In Progress"}
+    ],
+    "Pending Review": [
+      {id:"JH-242",title:"Dashboard KPI cards + biểu đồ năng suất",prio:"md",tags:[["Frontend"],["Chart",1]],who:"MA",meta:[["rev","Chờ Minh Anh"]],_col:"Pending Review"},
+      {id:"JH-236",title:"Tích hợp Clerk auth + tenant context",prio:"hi",tags:[["Backend"]],who:"TU",meta:[["rev","Chờ review"]],_col:"Pending Review"},
+      {id:"JH-228",title:"Salary module — tính lương theo time log",prio:"hi",tags:[["Backend"]],who:"HG",meta:[["rev","Chờ Minh Anh"]],_col:"Pending Review"}
+    ],
+    "Done": [
+      {id:"JH-224",title:"Setup CI/CD pipeline trên Vercel",prio:"md",tags:[["DevOps",1]],who:"TU",meta:[["done","Hôm qua"]],_col:"Done"},
+      {id:"JH-226",title:"Viết test cho salary module",prio:"lo",tags:[["Backend"]],who:"HG",meta:[["done","2 ngày trước"]],_col:"Done"},
+      {id:"JH-219",title:"Review PR #284 — refactor auth",prio:"md",tags:[["Backend"]],who:"MA",meta:[["done","2 ngày trước"]],_col:"Done"},
+      {id:"JH-231",title:"Trang Pricing + bảng so sánh gói",prio:"lo",tags:[["Frontend"],["Web",1]],who:"LN",meta:[["done","3 ngày trước"]],_col:"Done"}
+    ],
+    "Blocked": [
+      {id:"JH-247",title:"Sync dữ liệu từ Google Drive — chờ API key",prio:"hi",tags:[["Integration",1]],who:"HG",meta:[["due","Hôm nay",1]],_col:"Blocked"},
+      {id:"JH-249",title:"Anomaly detection — cần thêm data training",prio:"md",tags:[["Backend"],["AI",1]],who:"TU",meta:[["est","8h"]],_col:"Blocked"}
+    ]
+  };
+  var MI = {
+    est:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg>',
+    live:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2" stroke-linecap="round"/></svg>',
+    due:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/></svg>',
+    rev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>',
+    done:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>'
+  };
+  var PRIO = {hi:"Cao",md:"Vừa",lo:"Thấp"};
+  var PNAMES = {"hi":"Cao","md":"Vừa","lo":"Thấp"};
+  var MEMBERS = [{v:"MA",l:"Minh Anh"},{v:"HG",l:"Hoàng"},{v:"LN",l:"Lan"},{v:"TU",l:"Tú"}];
+  var SPRINTS = ["Sprint 14","Sprint 13","Sprint 12","Backlog"];
+  var currentSprint = "Sprint 14";
+  var nextId = 251;
+
+  function meta(m){ var type=m[0],text=m[1],flag=m[2]; var cls="meta-i"+(type==="live"?" live":"")+(flag&&type==="due"?" due-soon":""); return '<span class="'+cls+'">'+MI[type]+text+'</span>'; }
+  function card(t){
+    var tags=(t.tags||[]).map(function(tg){return '<span class="ttag'+(tg[1]?" alt":"")+'">' +tg[0]+'</span>';}).join("");
+    var metas=(t.meta||[]).map(meta).join("");
+    var prog=t.progress?'<div class="progress"><i style="width:'+t.progress+'%"></i></div>':"";
+    return '<div class="tcard" draggable="true">'+
+      '<span class="tc-more" title="Mở trang chi tiết"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></span>'+
+      '<div class="tc-top"><span class="prio '+t.prio+'">'+PRIO[t.prio]+'</span><span class="tid">'+t.id+'</span></div>'+
+      '<div class="tc-title">'+t.title+'</div>'+
+      (tags?'<div class="tc-tags">'+tags+'</div>':"")+
+      prog+
+      '<div class="tc-foot"><span class="av-sm">'+t.who+'</span><div class="right">'+metas+'</div></div>'+
+      '</div>';
+  }
+  var boardEl=document.getElementById("board");
+  function renderBoard(){
+    boardEl.innerHTML=COLS.map(function(c){
+      var list=DATA[c[0]]||[];
+      return '<section class="col '+c[1]+'">'+
+        '<div class="col-head"><span class="cdot"></span><span class="cname">'+c[0]+'</span>'+
+        '<span class="ccount">'+list.length+'</span>'+
+        '<button class="cadd" data-col="'+c[0]+'" aria-label="Thêm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>'+
+        '<div class="col-body">'+list.map(card).join("")+
+        '<button class="col-add-task" data-col="'+c[0]+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Thêm task</button>'+
+        '</div></section>';
+    }).join("");
+  }
+
+  var listBody=document.getElementById("listBody");
+  var STATUS_CHIP={"Backlog":'<span class="status todo">Backlog</span>',"In Progress":'<span class="status doing">In Progress</span>',"Pending Review":'<span class="status pending">Pending Review</span>',"Done":'<span class="status done">Done</span>',"Blocked":'<span class="status" style="background:rgba(239,68,68,0.12);color:#ef4444">Blocked</span>'};
+  function renderList(){
+    var rows="";
+    COLS.forEach(function(c){(DATA[c[0]]||[]).forEach(function(t){
+      var due=(t.meta||[]).find(function(m){return m[0]==="due";});
+      rows+='<tr>'+
+        '<td><div class="lt-id">'+t.id+'</div><div class="lt-title">'+t.title+'</div></td>'+
+        '<td>'+(STATUS_CHIP[c[0]]||"")+' </td>'+
+        '<td><span class="lt-prio '+t.prio+'"><i></i>'+PRIO[t.prio]+'</span></td>'+
+        '<td><span class="lt-who"><span class="av-sm">'+t.who+'</span>'+((MEMBERS.find(function(m){return m.v===t.who;})||{l:t.who}).l)+'</span></td>'+
+        '<td>'+(due?due[1]:"—")+'</td>'+
+        '</tr>';
+    });});
+    listBody.innerHTML=rows;
+  }
+
+  /* view toggle */
+  var viewSeg=document.getElementById("viewSeg"), listWrap=document.getElementById("listWrap");
+  viewSeg.addEventListener("click",function(e){
+    var btn=e.target.closest("button[data-view]"); if(!btn) return;
+    viewSeg.querySelectorAll("button").forEach(function(b){b.classList.remove("on");});
+    btn.classList.add("on");
+    var v=btn.getAttribute("data-view");
+    if(v==="board"){boardEl.classList.remove("hidden"); listWrap.classList.add("hidden");}
+    else {boardEl.classList.add("hidden"); listWrap.classList.remove("hidden"); renderList();}
+  });
+
+  /* sprint dropdown */
+  var sprintChip=document.getElementById("sprintChip"), sprintLabel=document.getElementById("sprintLabel");
+  var menuPop=null;
+  function closeMenu(){ if(menuPop){menuPop.remove(); menuPop=null;} }
+  sprintChip.addEventListener("click",function(e){
+    e.stopPropagation();
+    if(menuPop){closeMenu(); return;}
+    var r=sprintChip.getBoundingClientRect();
+    menuPop=document.createElement("div");
+    menuPop.className="menu-pop";
+    menuPop.style.top=(r.bottom+6)+"px";
+    menuPop.style.left=r.left+"px";
+    menuPop.innerHTML=SPRINTS.map(function(s){
+      return '<button'+(s===currentSprint?' class="on"':'')+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ck">'+(s===currentSprint?'<path d="M5 12l5 5L20 6"/></svg>':'<circle cx="12" cy="12" r="1"/></svg>')+s+'</button>';
+    }).join("");
+    document.body.appendChild(menuPop);
+    menuPop.addEventListener("click",function(ev){
+      var b=ev.target.closest("button"); if(!b) return;
+      currentSprint=b.textContent.trim();
+      sprintLabel.textContent=currentSprint;
+      closeMenu();
+    });
+  });
+  document.addEventListener("click",function(){ closeMenu(); });
+
+  /* modal */
+  var currentIssueType = "Task";
+  var selectedSP = "3";
+  var labelTags = [];
+  function renderLabels(){
+    var wrap = document.getElementById("flabelWrap");
+    if (!wrap) return;
+    wrap.querySelectorAll(".ltag").forEach(function(el){el.remove();});
+    var inp = wrap.querySelector("input");
+    labelTags.forEach(function(tag, i){
+      var span = document.createElement("span"); span.className="ltag";
+      span.innerHTML = tag + '<span class="rm" data-i="'+i+'">×</span>';
+      wrap.insertBefore(span, inp);
+    });
+    wrap.querySelectorAll(".rm").forEach(function(rm){
+      rm.addEventListener("click", function(ev){ev.stopPropagation(); labelTags.splice(+rm.getAttribute("data-i"),1); renderLabels();});
+    });
+  }
+
+  function openModal(defaultCol){
+    labelTags = []; selectedSP = "3"; currentIssueType = "Task";
+    var issueTypes = [
+      {k:"Task",  color:"#3B5BDB", svg:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke-linecap="round" stroke-linejoin="round"/>'},
+      {k:"Bug",   color:"#ef4444", svg:'<path d="M12 8v4M12 16h.01" stroke-linecap="round"/><circle cx="12" cy="12" r="9"/>'},
+      {k:"Story", color:"#22c55e", svg:'<path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M9 9h6M9 13h4" stroke-linecap="round"/>'},
+      {k:"Subtask",color:"#f59e0b",svg:'<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/>'}
+    ];
+    var spOpts = ["1","2","3","5","8","13"];
+    var curIT = issueTypes[0];
+    var newId = "JH-"+nextId;
+
+    function itBtns(active){
+      return issueTypes.map(function(it){
+        return '<button class="itype'+(it.k===active?" on":"")+'" data-it="'+it.k+'" style="'+(it.k===active?'border-color:'+it.color+';background:'+it.color+'18':'')+'">'+
+          '<span class="it-dot" style="background:'+it.color+'"></span>'+it.k+'</button>';
+      }).join("");
+    }
+    function spBtns(active){
+      return spOpts.map(function(s){return '<button class="sp-btn'+(s===active?" on":"")+'" data-sp="'+s+'">'+s+'</button>';}).join("");
+    }
+    function buildPrioRow(){
+      return ['<option value="hi">Cao</option>','<option value="md" selected>Vừa</option>','<option value="lo">Thấp</option>'].join("");
+    }
+    var back=document.createElement("div"); back.className="modal-back"; back.id="taskModal";
+    back.innerHTML = '<div class="jira-modal">'+
+      '<div class="jm-head">'+
+        '<span class="jm-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+issueTypes[0].svg+'</svg></span>'+
+        '<h3>Tạo task mới</h3>'+
+        '<span class="jm-proj">jobihome · Sprint 14</span>'+
+        '<span class="jm-id">'+newId+'</span>'+
+        '<button class="x" id="modalClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'+
+      '</div>'+
+      '<div class="jm-body">'+
+        // LEFT
+        '<div class="jm-left">'+
+          '<div>'+
+            '<div style="font-size:0.74rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Loại issue</div>'+
+            '<div class="itype-row" id="itypeRow">'+itBtns("Task")+'</div>'+
+          '</div>'+
+          '<div>'+
+            '<div style="font-size:0.74rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Tiêu đề <span style="color:var(--danger)">*</span></div>'+
+            '<input class="jm-summary" id="ftitle" type="text" placeholder="Tóm tắt ngắn gọn nhiệm vụ…" />'+
+          '</div>'+
+          '<div>'+
+            '<div style="font-size:0.74rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Mô tả</div>'+
+            '<div class="rte-wrap" id="rteWrap">'+
+              '<div class="rte-bar" id="rteBar">'+
+                '<button class="rte-btn" data-cmd="bold" title="Bold"><b>B</b></button>'+
+                '<button class="rte-btn" data-cmd="italic" title="Italic"><i>I</i></button>'+
+                '<button class="rte-btn" data-cmd="underline" title="Underline"><u>U</u></button>'+
+                '<button class="rte-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>'+
+                '<span class="rte-sep"></span>'+
+                '<button class="rte-btn" data-cmd="h2" title="Heading 2" style="font-size:0.76rem;font-weight:800">H2</button>'+
+                '<button class="rte-btn" data-cmd="h3" title="Heading 3" style="font-size:0.72rem;font-weight:700">H3</button>'+
+                '<span class="rte-sep"></span>'+
+                '<button class="rte-btn" data-cmd="insertUnorderedList" title="Bullet list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>'+
+                '<button class="rte-btn" data-cmd="insertOrderedList" title="Numbered list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6h11M10 12h11M10 18h11M4 6h1M4 9v-3.5a.5.5 0 0 1 1 0M4 12h2l-2 3h2M4 18.5a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0"/></svg></button>'+
+                '<span class="rte-sep"></span>'+
+                '<button class="rte-btn" data-cmd="code" title="Inline code" style="font-family:var(--font-mono);font-size:0.78rem">&lt;/&gt;</button>'+
+                '<button class="rte-btn" data-cmd="blockquote" title="Blockquote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg></button>'+
+                '<button class="rte-btn" data-cmd="link" title="Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg></button>'+
+                '<span class="rte-sep"></span>'+
+                '<button class="rte-btn" data-cmd="removeFormat" title="Xóa định dạng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12l-8 10M4 20h8M20 4l-4 16"/></svg></button>'+
+              '</div>'+
+              '<div class="rte-area" id="fdesc" contenteditable="true" data-placeholder="Mô tả chi tiết, acceptance criteria, ghi chú…"></div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+        // RIGHT
+        '<div class="jm-right">'+
+          '<div class="jm-sec">Chi tiết</div>'+
+          '<div class="jm-field"><span class="jf-label">Trạng thái</span>'+
+            '<select id="fcol">'+COLS.map(function(c){return '<option'+(c[0]===defaultCol?' selected':'')+'>'+c[0]+'</option>';}).join("")+'</select>'+
+          '</div>'+
+          '<div class="jm-field"><span class="jf-label">Ưu tiên</span>'+
+            '<div class="prio-sel md" id="fprioSel">'+
+              '<i></i><span id="fprioTxt">Vừa</span>'+
+              '<select id="fprio" style="position:absolute;opacity:0;width:70px;pointer-events:auto">'+buildPrioRow()+'</select>'+
+            '</div>'+
+          '</div>'+
+          '<div class="jm-field"><span class="jf-label">Người phụ trách</span>'+
+            '<select id="fwho" style="background:transparent;border:none;font-family:inherit;font-size:0.84rem;color:var(--text);padding:4px 6px;border-radius:6px;outline:none;width:100%">'+
+              MEMBERS.map(function(m){return '<option value="'+m.v+'">'+m.l+'</option>';}).join("")+
+            '</select>'+
+          '</div>'+
+          '<div class="jm-field"><span class="jf-label">Sprint</span>'+
+            '<select id="fsprint" style="background:transparent;border:none;font-family:inherit;font-size:0.84rem;color:var(--text);padding:4px 6px;border-radius:6px;outline:none;width:100%">'+
+              SPRINTS.map(function(s){return '<option'+(s===currentSprint?' selected':'')+'>'+s+'</option>';}).join("")+
+            '</select>'+
+          '</div>'+
+          '<div class="jm-field"><span class="jf-label">Ước tính</span>'+
+            '<input id="fest" type="text" placeholder="vd. 3h" />'+
+          '</div>'+
+          '<div style="padding:4px 0">'+
+            '<div style="font-size:0.74rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Story Points</div>'+
+            '<div class="sp-row" id="spRow">'+spBtns(selectedSP)+'</div>'+
+          '</div>'+
+          '<div style="padding:4px 0">'+
+            '<div style="font-size:0.74rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Hạn</div>'+
+            '<input id="fdue" type="date" style="background:var(--elev);border:1.5px solid var(--border-2);border-radius:8px;padding:6px 10px;font-family:inherit;font-size:0.83rem;color:var(--text);width:100%;outline:none" />'+
+          '</div>'+
+          '<div style="padding:4px 0">'+
+            '<div style="font-size:0.74rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Labels</div>'+
+            '<div class="tags-input" id="flabelWrap"><input id="flabelInput" type="text" placeholder="Thêm label…" /></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="jm-foot">'+
+        '<label class="jm-check"><input type="checkbox" id="fmore" /> Tạo thêm</label>'+
+        '<div style="margin-left:auto;display:flex;gap:10px">'+
+          '<button class="abtn ghost" id="modalCancel">Hủy</button>'+
+          '<button class="abtn primary" id="modalSave">Tạo task</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+    document.body.appendChild(back);
+
+    /* issue type switcher */
+    document.getElementById("itypeRow").addEventListener("click", function(e){
+      var btn=e.target.closest(".itype"); if(!btn) return;
+      currentIssueType=btn.getAttribute("data-it");
+      var it=issueTypes.find(function(x){return x.k===currentIssueType;});
+      document.getElementById("itypeRow").querySelectorAll(".itype").forEach(function(b){
+        b.classList.remove("on"); b.style.borderColor=""; b.style.background="";
+      });
+      btn.classList.add("on"); btn.style.borderColor=it.color; btn.style.background=it.color+"18";
+      var icon=document.querySelector(".jm-head .jm-icon");
+      icon.style.background=it.color;
+      icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+it.svg+'</svg>';
+    });
+
+    /* story points */
+    document.getElementById("spRow").addEventListener("click", function(e){
+      var btn=e.target.closest(".sp-btn"); if(!btn) return;
+      selectedSP=btn.getAttribute("data-sp");
+      document.getElementById("spRow").querySelectorAll(".sp-btn").forEach(function(b){b.classList.remove("on");});
+      btn.classList.add("on");
+    });
+
+    /* priority sync */
+    var prioSel=document.getElementById("fprio");
+    var prioDiv=document.getElementById("fprioSel");
+    var PRIO_COLORS={hi:"var(--danger)",md:"var(--warn)",lo:"var(--ok)"};
+    var PRIO_TEXT={hi:"Cao",md:"Vừa",lo:"Thấp"};
+    prioSel.addEventListener("change",function(){
+      var v=prioSel.value;
+      prioDiv.className="prio-sel "+v;
+      document.getElementById("fprioTxt").textContent=PRIO_TEXT[v];
+    });
+
+    /* labels input */
+    renderLabels();
+
+    /* ---- RTE init ---- */
+    var rteBar = document.getElementById("rteBar");
+    var rteArea = document.getElementById("fdesc");
+    if (rteBar && rteArea) {
+      rteArea.addEventListener("keydown", function(e){
+        if (e.key === "Tab") { e.preventDefault(); document.execCommand("insertHTML", false, "  "); }
+      });
+      rteBar.addEventListener("mousedown", function(e){ e.preventDefault(); }); // keep selection
+      rteBar.addEventListener("click", function(e){
+        var btn = e.target.closest(".rte-btn"); if (!btn) return;
+        var cmd = btn.getAttribute("data-cmd");
+        rteArea.focus();
+        if (cmd === "h2" || cmd === "h3") { document.execCommand("formatBlock", false, "<" + cmd + ">"); }
+        else if (cmd === "code") {
+          var sel = window.getSelection();
+          if (sel && !sel.isCollapsed) {
+            var text = sel.toString();
+            document.execCommand("insertHTML", false, "<code>" + text + "</code>");
+          } else {
+            document.execCommand("insertHTML", false, "<code>code</code>");
+          }
+        }
+        else if (cmd === "blockquote") { document.execCommand("formatBlock", false, "<blockquote>"); }
+        else if (cmd === "link") {
+          var url = prompt("Nhập URL:", "https://");
+          if (url) {
+            var sel = window.getSelection();
+            var linkText = (sel && !sel.isCollapsed) ? sel.toString() : url;
+            document.execCommand("insertHTML", false, '<a href="' + url + '" target="_blank">' + linkText + "</a>");
+          }
+        }
+        else { document.execCommand(cmd, false, null); }
+        updateToolbar();
+      });
+      rteArea.addEventListener("keyup", updateToolbar);
+      rteArea.addEventListener("mouseup", updateToolbar);
+      function updateToolbar(){
+        var cmds = ["bold","italic","underline","strikeThrough","insertUnorderedList","insertOrderedList"];
+        rteBar.querySelectorAll(".rte-btn[data-cmd]").forEach(function(btn){
+          var c = btn.getAttribute("data-cmd");
+          if (cmds.indexOf(c) !== -1) {
+            btn.classList.toggle("on", document.queryCommandState(c));
+          }
+        });
+      }
+    }
+    var labelInput=document.getElementById("flabelInput");
+    labelInput.addEventListener("keydown",function(e){
+      if((e.key==="Enter"||e.key===",")&&labelInput.value.trim()){
+        e.preventDefault(); var v=labelInput.value.trim().replace(",","");
+        if(v && labelTags.indexOf(v)===-1){ labelTags.push(v); renderLabels(); labelInput.value=""; }
+      }
+      if(e.key==="Backspace"&&!labelInput.value&&labelTags.length){ labelTags.pop(); renderLabels(); }
+    });
+    document.getElementById("flabelWrap").addEventListener("click",function(){ labelInput.focus(); });
+
+    /* focus on summary */
+    requestAnimationFrame(function(){ var el=document.getElementById("ftitle"); if(el) el.focus(); });
+
+    back.addEventListener("click",function(e){ if(e.target===back) closeModal(); });
+    document.getElementById("modalClose").addEventListener("click", closeModal);
+    document.getElementById("modalCancel").addEventListener("click", closeModal);
+    document.getElementById("modalSave").addEventListener("click", function(){
+      var title=document.getElementById("ftitle").value.trim();
+      if(!title){ document.getElementById("ftitle").style.borderBottomColor="var(--danger)"; document.getElementById("ftitle").focus(); return; }
+      var col=document.getElementById("fcol").value;
+      var prioEl=document.getElementById("fprio"); var prio=prioEl?prioEl.value:"md";
+      var who=document.getElementById("fwho").value;
+      var est=document.getElementById("fest").value.trim();
+      var due=document.getElementById("fdue").value;
+      var sp=selectedSP;
+      var t={id:"JH-"+nextId++,title:"["+currentIssueType+"] "+title,prio:prio,
+        tags:labelTags.length?labelTags.map(function(x){return [x];}):[],
+        who:who,
+        meta:(function(){ var m=[]; if(est) m.push(["est",est]); if(due) m.push(["due",due]); return m; })(),
+        _col:col};
+      if(!DATA[col]) DATA[col]=[];
+      DATA[col].unshift(t);
+      var active=viewSeg.querySelector("button.on");
+      if(active && active.getAttribute("data-view")==="list") renderList();
+      else renderBoard();
+      var more=document.getElementById("fmore");
+      if(more && more.checked){ openModal(col); } else { closeModal(); }
+    });
+    requestAnimationFrame(function(){document.getElementById("ftitle").focus();});
+  }
+  function closeModal(){ var m=document.getElementById("taskModal"); if(m) m.remove(); }
+
+  document.getElementById("newTaskBtn").addEventListener("click", function(){ openModal("Cần làm"); });
+  boardEl.addEventListener("click", function(e){
+    var b=e.target.closest(".cadd, .col-add-task"); if(!b) return;
+    openModal(b.getAttribute("data-col")||"Cần làm");
+  });
+
+  /* ============ TASK DETAIL DRAWER ============ */
+  var IT_MAP = {
+    "Task":    {color:"#3B5BDB", svg:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke-linecap="round" stroke-linejoin="round"/>'},
+    "Bug":     {color:"#ef4444", svg:'<path d="M12 8v4M12 16h.01" stroke-linecap="round"/><circle cx="12" cy="12" r="9"/>'},
+    "Story":   {color:"#22c55e", svg:'<path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M9 9h6M9 13h4" stroke-linecap="round"/>'},
+    "Subtask": {color:"#f59e0b", svg:'<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/>'}
+  };
+  var COL_CLASSES = {"Backlog":"backlogc","In Progress":"progressc","Pending Review":"reviewc","Done":"donec","Blocked":"blockedc"};
+  var MOCK_COMMENTS = [
+    {who:"MA",name:"Minh Anh",time:"2 giờ trước",text:"Đã review sơ bộ, cần bổ sung error handling cho trường hợp timeout.",replies:[{who:"DL",name:"Do thi Lan",time:"1 giờ trước",text:"Đã noted, mình sẽ thêm try/catch cho toàn bộ async calls."}]},
+    {who:"HG",name:"Hoàng",time:"3 giờ trước",text:"Đang test trên staging, sẽ update tiến độ sau.",replies:[]}
+  ];
+  var MOCK_ACTIVITY = [
+    {who:"HG",name:"Hoàng",time:"01:24 hôm nay",text:'đã bắt đầu <b>timer</b> cho task này'},
+    {who:"MA",name:"Minh Anh",time:"Hôm qua 17:30",text:'chuyển trạng thái từ <b>Backlog</b> → <b>In Progress</b>'},
+    {who:"LN",name:"Lan",time:"Hôm qua 10:12",text:'giao task cho <b>Hoàng</b>'},
+    {who:"TU",name:"Tú",time:"2 ngày trước",text:'tạo task này trong <b>Sprint 14</b>'}
+  ];
+
+  function detailIssueType(title){
+    var t=Object.keys(IT_MAP).find(function(k){return title.startsWith("["+k+"]");})||"Task";
+    return {type:t,it:IT_MAP[t]};
+  }
+  function detailCol(t){
+    var col="Backlog"; COLS.forEach(function(c){if((DATA[c[0]]||[]).find(function(x){return x.id===t.id;})) col=c[0];});
+    return col;
+  }
+
+  var drawerBack=null, drawerEl=null;
+  function openDetail(task){
+    if(document.getElementById("taskDrawer")) return;
+    var col=detailCol(task);
+    var {type,it}=detailIssueType(task.title);
+    var cleanTitle=task.title.replace(/^[[A-Za-z]+]s*/,"");
+    var dueM=(task.meta||[]).find(function(m){return m[0]==="due";});
+    var estM=(task.meta||[]).find(function(m){return m[0]==="est"||m[0]==="live";});
+    var prioColors={hi:"var(--danger)",md:"var(--warn)",lo:"var(--ok)"};
+
+    var back=document.createElement("div"); back.className="td-back"; back.id="taskDrawerBack";
+    var drawer=document.createElement("div"); drawer.className="td-drawer"; drawer.id="taskDrawer";
+
+    drawer.innerHTML=
+      '<div class="td-head">'+
+        '<span class="td-type" style="background:'+it.color+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+it.svg+'</svg></span>'+
+        '<span class="td-key">'+task.id+' · '+type+'</span>'+
+        '<div class="td-actions">'+
+          '<button class="abtn ghost" style="height:32px;font-size:0.8rem" onclick="navigator.clipboard&&navigator.clipboard.writeText(window.location.href)">🔗 Sao chép link</button>'+
+        '</div>'+
+        '<button class="td-close" id="drawerClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'+
+      '</div>'+
+      '<div class="td-body">'+
+        '<div class="td-left">'+
+          '<div class="td-desc-section">'+
+          '<input class="td-title-edit" id="tdTitle" type="text" value="'+cleanTitle.replace(/"/g,'&quot;')+'" />'+
+          '<div class="td-action-bar">'+
+            '<button class="abtn primary td-start-btn" id="tdStartBtn" style="gap:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Bắt đầu</button>'+
+            '<button class="abtn ghost" id="tdLogBtn" style="gap:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Log Time</button>'+
+            '<span class="td-timer-live" id="tdTimerLive">00:00:00</span>'+
+          '</div>'+
+            '<div class="td-tabs">'+
+              '<button class="td-tab on" data-tab="desc">Mô tả</button>'+
+              '<button class="td-tab" data-tab="comments">Bình luận <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-3)">('+MOCK_COMMENTS.length+')</span></button>'+
+              '<button class="td-tab" data-tab="activity">Hoạt động</button>'+
+            '</div>'+
+            '<div class="td-pane-wrap">'+
+            '<div class="td-pane on" id="pane-desc" style="padding-top:12px">'+
+              '<div class="rte-wrap" id="tdRteWrap">'+
+                '<div class="rte-bar" id="tdRteBar">'+
+                  '<button class="rte-btn" data-cmd="bold" title="Bold"><b>B</b></button>'+
+                  '<button class="rte-btn" data-cmd="italic" title="Italic"><i>I</i></button>'+
+                  '<button class="rte-btn" data-cmd="underline" title="Underline"><u>U</u></button>'+
+                  '<button class="rte-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>'+
+                  '<span class="rte-sep"></span>'+
+                  '<button class="rte-btn" data-cmd="h2" style="font-size:0.76rem;font-weight:800">H2</button>'+
+                  '<button class="rte-btn" data-cmd="h3" style="font-size:0.72rem;font-weight:700">H3</button>'+
+                  '<span class="rte-sep"></span>'+
+                  '<button class="rte-btn" data-cmd="insertUnorderedList" title="Bullet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>'+
+                  '<button class="rte-btn" data-cmd="insertOrderedList" title="Numbered"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6h11M10 12h11M10 18h11M4 9V6h1M4 13h2l-2 3h2"/></svg></button>'+
+                  '<span class="rte-sep"></span>'+
+                  '<button class="rte-btn" data-cmd="code" style="font-family:var(--font-mono);font-size:0.76rem">&lt;/&gt;</button>'+
+                  '<button class="rte-btn" data-cmd="blockquote" title="Blockquote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1zM15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg></button>'+
+                  '<button class="rte-btn" data-cmd="link" title="Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg></button>'+
+                  '<span class="rte-sep"></span>'+
+                  '<button class="rte-btn" data-cmd="removeFormat" title="Xóa định dạng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12l-8 10M4 20h8M20 4l-4 16"/></svg></button>'+
+                '</div>'+
+                '<div class="rte-area" id="tdDesc" contenteditable="true" data-placeholder="Thêm mô tả chi tiết, acceptance criteria, ghi chú…" style="min-height:130px"></div>'+
+              '</div>'+
+            '</div>'+
+            '<div class="td-pane" id="pane-comments" style="padding-top:14px">'+
+              '<div class="td-comments" id="tdCommentsList"></div>'+
+              '<div class="td-comment-wide">'+
+                '<textarea placeholder="Thêm bình luận… (nhấn Ctrl+Enter để gửi)" id="tdCommentInput" rows="3"></textarea>'+
+                '<div class="cw-foot">'+
+                  '<button class="abtn ghost" style="height:32px;font-size:0.82rem" id="tdCommentCancel">Hủy</button>'+
+                  '<button class="abtn primary" style="height:32px;font-size:0.82rem" id="tdCommentSave">Gửi bình luận</button>'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+            '<div class="td-pane" id="pane-activity" style="padding-top:14px">'+
+              '<div class="td-activity">'+
+                MOCK_ACTIVITY.map(function(a){return '<div class="td-act"><span class="cav">'+a.who+'</span><div class="atxt"><b>'+a.name+'</b> '+a.text+'<span class="at">'+a.time+'</span></div></div>';}).join("")+
+              '</div>'+
+            '</div>'+
+            '</div>'+
+            '<div class="td-desc-foot">'+
+              '<button class="abtn ghost" style="height:34px;font-size:0.83rem" id="tdDescCancel">Hủy</button>'+
+              '<button class="abtn primary" style="height:34px;font-size:0.83rem" id="tdDescSave">Lưu mô tả</button>'+
+            '</div>'+
+          '</div>'+
+          '<div class="td-sub-section">'+
+          '<div class="td-st-wrap">'+
+            '<div class="td-st-head">SUB TASKS <button class="st-add-btn" id="tdAddStBtn">+ Add Subtask</button></div>'+
+            '<div class="td-st-list" id="tdStList">'+
+              '<button class="td-st-empty" id="tdStEmpty">+ Add Subtask</button>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+        '</div>'+
+        '<div class="td-right">'+
+          '<div class="td-meta-sec">Chi tiết</div>'+
+          '<div class="td-meta-row"><span class="mrl">Trạng thái</span><span class="mrv">'+
+            '<select id="tdStatus">'+COLS.map(function(c){return '<option'+(c[0]===col?' selected':'')+'>'+c[0]+'</option>';}).join("")+'</select></span></div>'+
+          '<div class="td-meta-row"><span class="mrl">Ưu tiên</span><span class="mrv"><span class="prio-dot" style="background:'+prioColors[task.prio]+'"></span>'+PRIO[task.prio]+'</span></div>'+
+          '<div class="td-meta-row"><span class="mrl">Phụ trách</span><span class="mrv"><span class="av-sm" style="width:22px;height:22px;font-size:0.62rem">'+task.who+'</span>'+((MEMBERS.find(function(m){return m.v===task.who;})||{l:task.who}).l)+'</span></div>'+
+          '<div class="td-meta-row"><span class="mrl">Hỗ trợ</span><span class="mrv"><select id="tdSupport" style="background:transparent;border:none;font-family:inherit;font-size:0.84rem;color:var(--text);padding:4px 6px;border-radius:6px;outline:none;width:100%"><option value="">— Chưa chọn —</option>'+MEMBERS.map(function(m){return '<option value="'+m.v+'">'+m.l+'</option>';}).join("")+'</select></span></div>'+
+          '<div class="td-meta-row"><span class="mrl">Sprint</span><span class="mrv"><select id="tdSprint">'+SPRINTS.map(function(s){return '<option>'+s+'</option>';}).join("")+'</select></span></div>'+
+          (task.progress!==undefined?'<div class="td-meta-row"><span class="mrl">Tiến độ</span><span class="mrv"><div style="flex:1;height:6px;background:var(--border);border-radius:99px;overflow:hidden"><div style="width:'+task.progress+'%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:99px"></div></div><span style="font-family:var(--font-mono);font-size:0.72rem">'+task.progress+'%</span></span></div>':"")+
+          (estM?'<div class="td-meta-row"><span class="mrl">Ước tính</span><span class="mrv">'+estM[1]+'</span></div>':"")+
+          (dueM?'<div class="td-meta-row"><span class="mrl">Hạn</span><span class="mrv" style="'+(dueM[2]?'color:var(--warn);font-weight:600':'')+'">'+dueM[1]+'</span></div>':"")+
+          '<div class="td-meta-sec" style="margin-top:8px">Labels</div>'+
+          '<div style="padding:8px 0;display:flex;flex-wrap:wrap;gap:5px">'+
+            (task.tags||[]).map(function(tg){return '<span class="ttag'+(tg[1]?" alt":"")+'">'+tg[0]+'</span>';}).join("")+
+            '<button class="abtn ghost" style="height:24px;font-size:0.74rem;padding:0 8px">+ Thêm</button>'+
+          '</div>'+
+          '<div class="td-meta-sec" style="margin-top:4px">Người tạo</div>'+
+          '<div class="td-meta-row"><span class="mrl">Reporter</span><span class="mrv"><span class="av-sm" style="width:22px;height:22px;font-size:0.62rem">DL</span>Do thi Lan</span></div>'+
+          '<div class="td-meta-row"><span class="mrl">Tạo lúc</span><span class="mrv" style="font-size:0.78rem;color:var(--text-3)">15/06/2026 09:30</span></div>'+
+          '<div class="td-meta-row"><span class="mrl">Cập nhật</span><span class="mrv" style="font-size:0.78rem;color:var(--text-3)">Hôm nay 10:24</span></div>'+
+          '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">'+
+            '<button class="abtn ghost" style="width:100%;color:var(--danger);border-color:rgba(239,68,68,0.3)" id="tdDelete">🗑 Xóa task</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+
+    document.body.appendChild(back);
+    document.body.appendChild(drawer);
+
+    /* force synchronous — rAF may not fire in background tabs */
+    back.classList.add("open");
+    drawer.classList.add("open");
+
+    /* === Description Save/Cancel === */
+    var descSave=document.getElementById("tdDescSave"), descCancel=document.getElementById("tdDescCancel");
+    if(descSave) descSave.addEventListener("click",function(){
+      if(tdDescEl) tdDescEl.blur();
+      descSave.textContent="Đã lưu ✓"; descSave.style.opacity="0.7";
+      setTimeout(function(){ descSave.textContent="Lưu mô tả"; descSave.style.opacity=""; },1800);
+    });
+    if(descCancel) descCancel.addEventListener("click",function(){
+      if(tdDescEl){ tdDescEl.innerHTML=""; }
+    });
+
+    /* === Drawer RTE init === */
+    var tdRteBar = document.getElementById("tdRteBar");
+    var tdDescEl = document.getElementById("tdDesc");
+    if (tdRteBar && tdDescEl) {
+      var D_CMDS = ["bold","italic","underline","strikeThrough","insertUnorderedList","insertOrderedList"];
+      tdRteBar.addEventListener("mousedown", function(e){ e.preventDefault(); });
+      tdRteBar.addEventListener("click", function(e){
+        var btn = e.target.closest(".rte-btn"); if(!btn) return;
+        tdDescEl.focus();
+        var cmd = btn.getAttribute("data-cmd");
+        if(cmd==="h2"||cmd==="h3") document.execCommand("formatBlock",false,"<"+cmd+">");
+        else if(cmd==="code"){ var sel=window.getSelection(); document.execCommand("insertHTML",false,"<code>"+(sel&&!sel.isCollapsed?sel.toString():"code")+"</code>"); }
+        else if(cmd==="blockquote") document.execCommand("formatBlock",false,"<blockquote>");
+        else if(cmd==="link"){ var u=prompt("URL:","https://"); if(u){ var sel=window.getSelection(); document.execCommand("insertHTML",false,'<a href="'+u+'" target="_blank">'+(sel&&!sel.isCollapsed?sel.toString():u)+'</a>'); } }
+        else document.execCommand(cmd,false,null);
+        D_CMDS.forEach(function(c){ var b=tdRteBar.querySelector('[data-cmd="'+c+'"]'); if(b) b.classList.toggle("on",document.queryCommandState(c)); });
+      });
+      tdDescEl.addEventListener("keyup", function(){ D_CMDS.forEach(function(c){ var b=tdRteBar.querySelector('[data-cmd="'+c+'"]'); if(b) b.classList.toggle("on",document.queryCommandState(c)); }); });
+    }
+
+    /* === Timer: Bắt đầu / Tạm dừng === */
+    var timerSec=0, timerRun=false, timerIntvl=null;
+    var startBtn=document.getElementById("tdStartBtn"), timerLive=document.getElementById("tdTimerLive");
+    function fmtTime(s){ var hh=Math.floor(s/3600),mm=Math.floor((s%3600)/60),ss=s%60; return [hh,mm,ss].map(function(v){return String(v).padStart(2,"0");}).join(":"); }
+    if(startBtn) startBtn.addEventListener("click",function(){
+      timerRun=!timerRun;
+      if(timerRun){
+        startBtn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Tạm dừng';
+        startBtn.classList.add("running"); timerLive.classList.add("on");
+        timerIntvl=setInterval(function(){ timerSec++; timerLive.textContent=fmtTime(timerSec); },1000);
+      } else {
+        startBtn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Tiếp tục';
+        startBtn.classList.remove("running"); clearInterval(timerIntvl);
+      }
+    });
+
+    /* === Log Time modal === */
+    var logBtn=document.getElementById("tdLogBtn");
+    if(logBtn) logBtn.addEventListener("click",function(){
+      if(document.getElementById("logTimeModal")) return;
+      var mb=document.createElement("div"); mb.className="modal-back"; mb.id="logTimeModal";
+      mb.innerHTML='<div style="background:var(--elev);border:1px solid var(--border-2);border-radius:14px;padding:24px;width:360px;max-width:95vw;box-shadow:var(--shadow-lg)">'+
+        '<h3 style="font-size:1.02rem;font-weight:700;margin-bottom:18px">⏱ Ghi nhận thời gian</h3>'+
+        '<div class="afield" style="margin-bottom:14px"><label>Thời gian đã làm</label><input id="ltHrs" type="text" placeholder="vd. 1h 30m" /></div>'+
+        '<div class="afield" style="margin-bottom:14px"><label>Ngày</label><input id="ltDate" type="date" /></div>'+
+        '<div class="afield" style="margin-bottom:18px"><label>Ghi chú <span style="font-weight:400;text-transform:none">(tuỳ chọn)</span></label><input id="ltNote" type="text" placeholder="Đã làm gì trong khoảng thời gian này…" /></div>'+
+        '<div style="display:flex;justify-content:flex-end;gap:10px">'+
+          '<button class="abtn ghost" id="ltCancel" style="height:38px">Hủy</button>'+
+          '<button class="abtn primary" id="ltSave" style="height:38px">Lưu log</button>'+
+        '</div></div>';
+      document.body.appendChild(mb);
+      var d=document.getElementById("ltDate"); if(d) d.valueAsDate=new Date();
+      if(timerSec>0) document.getElementById("ltHrs").value=fmtTime(timerSec);
+      document.getElementById("ltCancel").addEventListener("click",function(){ mb.remove(); });
+      document.getElementById("ltSave").addEventListener("click",function(){
+        var hrs=document.getElementById("ltHrs").value.trim(), note=document.getElementById("ltNote").value.trim();
+        if(hrs){ MOCK_ACTIVITY.unshift({who:"DL",name:"Do thi Lan",time:"Vừa xong",text:'đã ghi nhận <b>'+hrs+'</b>'+(note?' — '+note:'')}); }
+        mb.remove();
+      });
+      mb.addEventListener("click",function(e){ if(e.target===mb) mb.remove(); });
+    });
+
+    /* === Subtasks (placeholder → sticky form on click) === */
+    var subtasks=[], stListEl=document.getElementById("tdStList"), stFormVisible=false;
+    function buildStForm(){
+      return '<div class="td-st-form" id="stForm">'+
+        '<input class="stf-title" id="stTitleInput" type="text" placeholder="Subtask title..." />'+
+        '<div class="stf-desc" id="stDescToggle">+ Description</div>'+
+        '<div id="stDescArea" style="display:none;margin-bottom:4px"><input style="width:100%;background:none;border:1.5px solid var(--border-2);border-radius:7px;padding:7px 10px;font-family:inherit;font-size:0.83rem;color:var(--text);outline:none;margin-bottom:6px" type="text" placeholder="Mô tả ngắn..." id="stDescInput" /></div>'+
+        '<div class="stf-foot">'+
+          '<select id="stColSel">'+COLS.map(function(c){return '<option'+(c[0]==="In Progress"?" selected":"")+'>'+c[0]+'</option>';}).join("")+'</select>'+
+          '<button class="abtn primary" id="stCreateBtn" style="height:36px;gap:6px;padding:0 16px;font-size:0.84rem"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg> Create</button>'+
+          '<button class="abtn ghost" id="stCancelBtn" style="height:36px;font-size:0.84rem;padding:0 12px">Cancel</button>'+
+        '</div>'+
+      '</div>';
+    }
+    function renderSubtasks(){
+      if(!stListEl) return;
+      var items=subtasks.map(function(s,i){
+        return '<div class="td-st-item"><span class="st-cb'+(s.done?" done":"")+'" data-i="'+i+'"></span><span class="st-name'+(s.done?" done":"")+'">'+s.title+'</span>'+
+          (s.col?'<span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-3);padding:2px 8px;border-radius:99px;background:var(--content)">'+s.col+'</span>':'')+
+          '<button class="st-del" data-i="'+i+'" title="Xóa">×</button></div>';
+      }).join("");
+      var placeholder='<button class="td-st-empty" id="tdStPlaceholder">+ Add Subtask</button>';
+      stListEl.innerHTML = items + (stFormVisible ? buildStForm() : placeholder);
+      stListEl.querySelectorAll(".st-cb").forEach(function(cb){
+        cb.addEventListener("click",function(){ subtasks[+cb.getAttribute("data-i")].done=!subtasks[+cb.getAttribute("data-i")].done; renderSubtasks(); });
+      });
+      stListEl.querySelectorAll(".st-del").forEach(function(d){
+        d.addEventListener("click",function(){ subtasks.splice(+d.getAttribute("data-i"),1); renderSubtasks(); });
+      });
+      var inp=document.getElementById("stTitleInput");
+      if(stFormVisible && inp){
+        document.getElementById("stDescToggle").addEventListener("click",function(){
+          var da=document.getElementById("stDescArea"); da.style.display=da.style.display==="none"?"block":"none";
+        });
+        function doCreate(){
+          var t=inp.value.trim(), col=document.getElementById("stColSel").value;
+          if(!t) return;
+          subtasks.push({title:t,done:false,col:col});
+          stFormVisible=true; renderSubtasks();
+          var ni=document.getElementById("stTitleInput"); if(ni) ni.focus();
+        }
+        document.getElementById("stCreateBtn").addEventListener("click",doCreate);
+        document.getElementById("stCancelBtn").addEventListener("click",function(){ stFormVisible=false; renderSubtasks(); });
+        inp.addEventListener("keydown",function(e){ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); doCreate(); } });
+      }
+    }
+    var addStBtn=document.getElementById("tdAddStBtn");
+    function showStForm(){
+      stFormVisible=true; renderSubtasks();
+      var inp=document.getElementById("stTitleInput"); if(inp){ inp.focus(); }
+    }
+    if(addStBtn) addStBtn.addEventListener("click",showStForm);
+    renderSubtasks();
+    // placeholder click
+    stListEl.addEventListener("click",function(e){ if(e.target.closest("#tdStPlaceholder")) showStForm(); });
+
+    /* tabs */
+    function syncTabExtras(activeTab){
+      var isDesc = activeTab==="desc";
+      var foot=drawer.querySelector(".td-desc-foot");
+      var sub=drawer.querySelector(".td-sub-section");
+      if(foot) foot.style.display = isDesc ? "" : "none";
+      if(sub) sub.style.display = isDesc ? "" : "none";
+    }
+    drawer.querySelectorAll(".td-tab").forEach(function(tab){
+      tab.addEventListener("click",function(){
+        drawer.querySelectorAll(".td-tab").forEach(function(t){t.classList.remove("on");});
+        tab.classList.add("on");
+        var key=tab.getAttribute("data-tab");
+        drawer.querySelectorAll(".td-pane").forEach(function(p){p.classList.remove("on");});
+        document.getElementById("pane-"+key).classList.add("on");
+        syncTabExtras(key);
+      });
+    });
+
+    /* status change → move task between columns */
+    document.getElementById("tdStatus").addEventListener("change",function(sel){
+      var newCol=sel.target.value;
+      COLS.forEach(function(c){ DATA[c[0]]=(DATA[c[0]]||[]).filter(function(t){return t.id!==task.id;}); });
+      task._col=newCol; if(!DATA[newCol]) DATA[newCol]=[]; DATA[newCol].unshift(task);
+      renderBoard();
+    });
+
+    /* comment send */
+    var ci=document.getElementById("tdCommentInput");
+    /* === renderComments: 2-level comments === */
+    function renderComments(){
+      var list=drawer.querySelector("#tdCommentsList"); if(!list) return;
+      var html=MOCK_COMMENTS.map(function(c,ci){
+        var replies=(c.replies||[]).map(function(r){
+          return '<div class="td-reply"><span class="cav">'+r.who+'</span><div class="cbody"><div class="cmeta"><b>'+r.name+'</b> <span style="color:var(--text-3)">· '+r.time+'</span></div><div class="ctext">'+r.text+'</div></div></div>';
+        }).join("");
+        return '<div class="td-comment" data-ci="'+ci+'">'+
+          '<span class="cav">'+c.who+'</span>'+
+          '<div class="cbody">'+
+            '<div class="cmeta"><b>'+c.name+'</b> <span style="color:var(--text-3)">· '+c.time+'</span></div>'+
+            '<div class="ctext">'+c.text+'</div>'+
+            '<div class="c-actions">'+
+              '<button class="c-reply-btn" data-ci="'+ci+'">↩ Phản hồi</button>'+
+              '<button style="font-size:0.76rem;color:var(--text-3);font-weight:600">👍 Thích</button>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+        replies+
+        '<div class="td-reply-input" id="replyInput-'+ci+'" style="display:none">'+
+          '<textarea rows="2" placeholder="Phản hồi '+c.name+'…" id="replyTA-'+ci+'"></textarea>'+
+          '<div class="ri-foot">'+
+            '<button class="abtn ghost" style="height:28px;font-size:0.78rem" data-cancel="'+ci+'">Hủy</button>'+
+            '<button class="abtn primary" style="height:28px;font-size:0.78rem" data-save="'+ci+'">Gửi</button>'+
+          '</div>'+
+        '</div>';
+      }).join("");
+      list.innerHTML=html;
+      /* wire reply buttons */
+      list.querySelectorAll(".c-reply-btn").forEach(function(btn){
+        btn.addEventListener("click",function(){
+          var i=btn.getAttribute("data-ci");
+          list.querySelectorAll(".td-reply-input").forEach(function(el){ el.style.display="none"; });
+          var ri=document.getElementById("replyInput-"+i);
+          if(ri){ ri.style.display="block"; var ta=document.getElementById("replyTA-"+i); if(ta) ta.focus(); }
+        });
+      });
+      list.querySelectorAll("[data-cancel]").forEach(function(btn){
+        btn.addEventListener("click",function(){ var ri=document.getElementById("replyInput-"+btn.getAttribute("data-cancel")); if(ri) ri.style.display="none"; });
+      });
+      list.querySelectorAll("[data-save]").forEach(function(btn){
+        btn.addEventListener("click",function(){
+          var i=+btn.getAttribute("data-save");
+          var ta=document.getElementById("replyTA-"+i);
+          if(ta&&ta.value.trim()){
+            if(!MOCK_COMMENTS[i].replies) MOCK_COMMENTS[i].replies=[];
+            MOCK_COMMENTS[i].replies.push({who:"DL",name:"Do thi Lan",time:"Vừa xong",text:ta.value.trim()});
+            renderComments();
+          }
+        });
+      });
+    }
+
+    document.getElementById("tdCommentSave").addEventListener("click",function(){
+      if(ci&&ci.value.trim()){
+        MOCK_COMMENTS.unshift({who:"DL",name:"Do thi Lan",time:"Vừa xong",text:ci.value.trim(),replies:[]});
+        ci.value=""; renderComments();
+      }
+    });
+    document.getElementById("tdCommentCancel").addEventListener("click",function(){ if(ci) ci.value=""; });
+    renderComments();
+
+    /* delete */
+    document.getElementById("tdDelete").addEventListener("click",function(){
+      if(confirm("Xóa task "+task.id+"?")){
+        COLS.forEach(function(c){ DATA[c[0]]=(DATA[c[0]]||[]).filter(function(t){return t.id!==task.id;}); });
+        renderBoard(); closeDetail();
+      }
+    });
+
+    /* close */
+    function doClose(){ back.classList.remove("open"); drawer.classList.remove("open"); setTimeout(function(){back.remove();drawer.remove();},320); }
+    document.getElementById("drawerClose").addEventListener("click",doClose);
+    back.addEventListener("click",doClose);
+    drawerBack=back; drawerEl=drawer;
+  }
+  function closeDetail(){ if(drawerBack) drawerBack.click(); }
+
+  /* card interactions:
+     - click .tc-title → drawer (quick view)
+     - click .tc-more  → full task-detail page */
+  boardEl.addEventListener("click",function(e){
+    if(e.target.closest(".cadd,.col-add-task")) return;
+    var c=e.target.closest(".tcard"); if(!c) return;
+    var id=c.querySelector(".tid").textContent.trim();
+    var task=null;
+    COLS.forEach(function(col){ (DATA[col[0]]||[]).forEach(function(t){ if(t.id===id) task=t; }); });
+    if(!task) return;
+
+    if(e.target.closest(".tc-more")){
+      /* ⋮ → full page */
+      try{ localStorage.setItem("jh-task-detail", JSON.stringify(task)); }catch(ex){}
+      window.location.href="task-detail.html";
+    } else if(e.target.closest(".tc-title")){
+      /* title → drawer */
+      openDetail(task);
+    }
+  });
+
+  renderBoard();
+  window._openDetail = openDetail;
+})();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

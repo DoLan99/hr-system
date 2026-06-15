@@ -6,14 +6,55 @@ Mã quản lý nhân sự cho công ty công nghệ với mixed workforce (freel
 ## Quick start
 
 ```bash
-# 1. DB chạy Docker (xem docker ps có laradock-postgres-1)
-#    DATABASE_URL trong .env trỏ về localhost:5432 (từ host) hoặc host.docker.internal:5432 (từ trong container)
-# 2. Sync schema
-npx prisma db push    # project dùng db push, không phải migrate dev
-# 3. Seed (tuỳ chọn — chỉ chạy nếu DB trống)
-npm run db:seed
-# 4. Dev server
-npm run dev           # http://localhost:3000
+# 1. Đảm bảo PostgreSQL chạy (macOS local, port 5432 — KHÔNG phải laradock)
+pg_isready -h localhost -p 5432   # phải trả về "accepting connections"
+
+# 2. Sync schema từ macOS terminal (KHÔNG chạy trong Docker container)
+cd hr-systems
+DATABASE_URL="postgresql://lan.dt1@localhost:5432/hr_system" npx prisma db push
+
+# 3. Seed nếu DB trống
+DATABASE_URL="postgresql://lan.dt1@localhost:5432/hr_system" npm run db:seed
+
+# 4. Dev server (chạy trong laradock-workspace-1 hoặc local đều được)
+npm run dev           # http://localhost:3003
+```
+
+> **Lưu ý DB connection:**
+> - App trong container dùng `host.docker.internal:5432` (đã set trong `.env`)
+> - Prisma CLI từ macOS shell phải override: `DATABASE_URL="postgresql://lan.dt1@localhost:5432/hr_system" npx prisma ...`
+> - Không có password trong chuỗi kết nối (PostgreSQL dùng peer auth cho user `lan.dt1`)
+
+## App URLs (local)
+
+| Trang | URL |
+|---|---|
+| App chính | http://localhost:3003 |
+| Đăng nhập | http://localhost:3003/sign-in |
+| Dashboard | http://localhost:3003/dashboard |
+| Quản lý nhân viên | http://localhost:3003/employees |
+| Tài liệu (OneDrive) | http://localhost:3003/documents |
+| Kho vật tư | http://localhost:3003/inventory |
+| Phê duyệt | http://localhost:3003/approvals |
+| Workflow (manager+) | http://localhost:3003/workflows |
+| Hộp thư | http://localhost:3003/messages |
+| Cài đặt kênh | http://localhost:3003/settings |
+| Admin — Audit log | http://localhost:3003/admin/audit |
+| Admin — Audit timeline | http://localhost:3003/admin/audit/timeline |
+| Admin — Anomalies | http://localhost:3003/admin/anomalies |
+| Admin — Activity | http://localhost:3003/admin/activity |
+| Prisma Studio | http://localhost:5555 (chạy riêng, xem bên dưới) |
+
+> **Đăng nhập:** Dùng Clerk. Tài khoản SUPER_ADMIN được set qua biến `SUPER_ADMIN_CLERK_USER_IDS` trong `.env`.
+> Trang admin (`/admin/*`) chỉ accessible khi role = `SUPER_ADMIN` hoặc `ADMIN`.
+
+## Prisma Studio (xem/sửa DB trực tiếp)
+
+```bash
+# Chạy từ macOS terminal
+cd hr-systems
+DATABASE_URL="postgresql://lan.dt1@localhost:5432/hr_system" npx prisma studio
+# Mở http://localhost:5555
 ```
 
 ## Kiến trúc — Tasks + Time Logs
@@ -168,6 +209,78 @@ Repo → Settings → Webhooks → URL `https://<domain>/api/webhooks/git`, secr
 | Cron jobs | [app/api/cron/](app/api/cron/), [vercel.json](vercel.json) |
 | Git webhook | [app/api/webhooks/git/route.ts](app/api/webhooks/git/route.ts) |
 | Admin pages | [app/(dashboard)/admin/audit/](app/(dashboard)/admin/audit/), [admin/anomalies/](app/(dashboard)/admin/anomalies/), [admin/activity/](app/(dashboard)/admin/activity/) |
+| Microsoft Graph (OneDrive) | [lib/microsoft-graph.ts](lib/microsoft-graph.ts) |
+| Channel adapters | [lib/channels/](lib/channels/) — types, teams, zalo, email, dispatcher |
+| Workflow engine | [lib/workflow-engine.ts](lib/workflow-engine.ts) |
+| Webhook receivers | [app/api/webhooks/](app/api/webhooks/) — teams, zalo, email, git |
+
+## Tính năng mới (Sprint 1–4) — Câu lệnh liên quan
+
+### Sprint 1 — Microsoft OneDrive (đã xong)
+```bash
+# Sau khi set AZURE_CLIENT_ID / AZURE_CLIENT_SECRET / AZURE_TENANT_ID trong .env:
+# Kết nối tại: http://localhost:3003/settings → "Kết nối Microsoft 365"
+# Callback URL phải khớp Azure App Registration:
+#   http://localhost:3003/api/auth/microsoft/callback
+```
+
+### Sprint 2 — Workflow Approval (đã xong)
+```bash
+# Không cần setup thêm — workflow tự trigger khi tạo Leave request
+# Xem pending approvals: http://localhost:3003/approvals
+# Quản lý template (manager): http://localhost:3003/workflows
+```
+
+### Sprint 3 — Inventory (đã xong)
+```bash
+# Xem kho: http://localhost:3003/inventory
+# Dashboard hiển thị low-stock widget tự động
+```
+
+### Sprint 4A — Message Hub (đã xong)
+
+**Cài đặt kênh tại** http://localhost:3003/settings → "Tích hợp kênh nhắn tin"
+
+```bash
+# Webhook URLs cần đăng ký với từng nền tảng:
+# Teams:  POST http://localhost:3003/api/webhooks/teams
+# Zalo:   POST http://localhost:3003/api/webhooks/zalo
+#         GET  http://localhost:3003/api/webhooks/zalo  (URL verification)
+# Email:  POST http://localhost:3003/api/webhooks/email (Graph change notification)
+#         GET  http://localhost:3003/api/webhooks/email?validationToken=... (subscription handshake)
+
+# Sau khi webhook nhận tin → xem tại: http://localhost:3003/messages
+# Nút Reply (↩) hiện khi message đến từ Teams/Zalo/Email
+```
+
+### Sync schema sau khi kéo code mới (bắt buộc mỗi khi schema thay đổi)
+```bash
+# Từ macOS terminal — không chạy trong Docker
+cd /Users/lan.dt1/Desktop/LanIT/workspace/hr-system/hr-systems
+DATABASE_URL="postgresql://lan.dt1@localhost:5432/hr_system" npx prisma db push
+
+# Nếu gặp "already in sync" nhưng thực ra schema đã đổi → force reset (XOÁ DATA):
+DATABASE_URL="postgresql://lan.dt1@localhost:5432/hr_system" npx prisma db push --force-reset
+# Sau đó seed lại:
+DATABASE_URL="postgresql://lan.dt1@localhost:5432/hr_system" npm run db:seed
+```
+
+### Kiểm tra DB trực tiếp
+```bash
+# Inspect bảng từ macOS terminal
+psql -U lan.dt1 -d hr_system -h localhost -c "\dt"
+
+# Hoặc dùng Prisma Studio
+DATABASE_URL="postgresql://lan.dt1@localhost:5432/hr_system" npx prisma studio
+# → http://localhost:5555
+```
+
+### Khởi động lại dev server nếu bị lỗi webpack
+```bash
+cd /Users/lan.dt1/Desktop/LanIT/workspace/hr-system/hr-systems
+rm -rf .next
+npm run dev
+```
 
 
 

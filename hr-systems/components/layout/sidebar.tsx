@@ -38,6 +38,7 @@ import {
   FolderOpen,
   ClipboardCheck,
   GitBranch as WorkflowIcon,
+  Warehouse,
 } from "lucide-react";
 
 interface NavItem {
@@ -117,6 +118,12 @@ function useNavSections(): NavSection[] {
       title: "Tài liệu",
       items: [
         { label: "Tài liệu", href: "/documents", icon: FolderOpen },
+      ],
+    },
+    {
+      title: "Kho",
+      items: [
+        { label: "Quản lý Kho", href: "/inventory", icon: Warehouse },
       ],
     },
     {

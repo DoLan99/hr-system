@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Search, Pencil, Trash2, ExternalLink, Clock, CheckCircle2, Circle } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, ExternalLink, Clock, CheckCircle2, Circle, Reply } from "lucide-react";
 import { format } from "date-fns";
 import { vi as viLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n/context";
 import { MessageFormModal } from "./message-form-modal";
+import { ReplyModal } from "./reply-modal";
 
 interface Employee { id: number; fullName: string }
 interface CustomerOption { id: number; customerName?: string | null; businessName?: string | null }
@@ -31,6 +32,8 @@ interface MessageItem {
   companyAnswer?: string | null;
   closedDate?: string | null;
   isOverdue?: boolean;
+  senderName?: string | null;
+  senderContact?: string | null;
   customer?: { id: number; customerName?: string | null; businessName?: string | null } | null;
   assignedTo?: { id: number; fullName: string } | null;
 }
@@ -78,6 +81,7 @@ export function MessagesClient({ initialMessages, initialTotal, pageSize, employ
   const [filterChannel, setFilterChannel] = useState("ALL");
   const [creating, setCreating] = useState(false);
   const [editingMessage, setEditingMessage] = useState<MessageItem | null>(null);
+  const [replyingMessage, setReplyingMessage] = useState<MessageItem | null>(null);
 
   async function loadMore() {
     setLoadingMore(true);
@@ -248,7 +252,8 @@ export function MessagesClient({ initialMessages, initialTotal, pageSize, employ
                     <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">{m.messageSummary}</p>
                   )}
                   <div className="flex items-center gap-3 mt-1.5 flex-wrap text-xs text-slate-400">
-                    {m.assignedTo && <span>{m.assignedTo.fullName}</span>}
+                    {m.senderName && <span className="text-slate-500">Từ: {m.senderName}</span>}
+                  {m.assignedTo && <span>{m.assignedTo.fullName}</span>}
                     {m.dueDate && (
                       <span className={isOverdue ? "text-red-500 font-medium" : ""}>
                         {t("messages.due")} {format(new Date(m.dueDate), "dd/MM/yyyy", { locale: dateFnsLocale })}
@@ -268,6 +273,13 @@ export function MessagesClient({ initialMessages, initialTotal, pageSize, employ
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
+                  {m.channel && ["EMAIL", "ZALO", "OTHER"].includes(m.channel) && (
+                    <button onClick={() => setReplyingMessage(m)}
+                      className="p-1.5 text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg"
+                      title="Trả lời">
+                      <Reply className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <button onClick={() => setEditingMessage(m)}
                     className="p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                     <Pencil className="w-3.5 h-3.5" />
@@ -306,6 +318,13 @@ export function MessagesClient({ initialMessages, initialTotal, pageSize, employ
           currentUserId={currentUserId}
           onClose={() => { setCreating(false); setEditingMessage(null); }}
           onSaved={m => { upsert(m); setCreating(false); setEditingMessage(null); }}
+        />
+      )}
+
+      {replyingMessage && (
+        <ReplyModal
+          message={replyingMessage}
+          onClose={() => setReplyingMessage(null)}
         />
       )}
     </div>

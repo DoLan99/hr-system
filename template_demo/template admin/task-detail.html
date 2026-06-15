@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chi tiết Task — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="app">
+  <aside class="side">
+    <div class="side-brand"><span class="lm">j</span><div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div></div>
+    <nav class="side-nav scroll" id="sideNav"></nav>
+    <div class="side-foot"><div class="side-user"><span class="av">DL</span><div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span></div></div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <button class="tb-icon menu-btn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div id="topbarCrumb" style="display:flex;align-items:center;gap:8px">
+        <a class="tdp-back" href="tasks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Công việc</a>
+        <span style="color:var(--border-2)">/</span>
+        <span id="crumbKey" class="tdp-key">—</span>
+      </div>
+      <div class="tb-right">
+        <button class="tb-icon" id="themeToggle" aria-label="Sáng/Tối" title="Sáng/Tối">
+          <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+          <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+        </button>
+        <button class="tb-icon" aria-label="Thông báo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>
+      </div>
+    </header>
+    <main class="content scroll">
+      <div class="content-inner" id="pageContent">
+        <div style="text-align:center;padding:80px 20px;color:var(--text-3)">Đang tải...</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  var IT_MAP = {
+    "Task":    {color:"#3B5BDB", svg:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke-linecap="round" stroke-linejoin="round"/>'},
+    "Bug":     {color:"#ef4444", svg:'<path d="M12 8v4M12 16h.01" stroke-linecap="round"/><circle cx="12" cy="12" r="9"/>'},
+    "Story":   {color:"#22c55e", svg:'<path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M9 9h6M9 13h4" stroke-linecap="round"/>'},
+    "Subtask": {color:"#f59e0b", svg:'<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/>'}
+  };
+  var MEMBERS = [{v:"MA",l:"Minh Anh"},{v:"HG",l:"Hoàng"},{v:"LN",l:"Lan"},{v:"TU",l:"Tú"}];
+  var SPRINTS = ["Sprint 14","Sprint 13","Sprint 12","Backlog"];
+  var PRIO = {hi:"Cao",md:"Vừa",lo:"Thấp"};
+  var PRIO_COLORS = {hi:"var(--danger)",md:"var(--warn)",lo:"var(--ok)"};
+  var SP_OPTS = ["1","2","3","5","8","13"];
+  var COL_NAMES = ["Backlog","In Progress","Pending Review","Done","Blocked"];
+
+  /* load task from localStorage */
+  var task;
+  try { task = JSON.parse(localStorage.getItem("jh-task-detail")); } catch(e){}
+  if(!task) {
+    /* fallback demo task */
+    task = {id:"JH-233",title:"[Task] API endpoint chấm công (Office Time)",prio:"hi",tags:[["Backend"],["API",1]],who:"HG",meta:[["live","01:24:08"],["due","Hôm nay",1]],progress:65,_col:"In Progress"};
+  }
+
+  var it = (function(){
+    var k = Object.keys(IT_MAP).find(function(k){ return task.title&&task.title.startsWith("["+k+"]"); }) || "Task";
+    return {type:k, it:IT_MAP[k]};
+  })();
+  var cleanTitle = (task.title||"").replace(/^\[[A-Za-z]+\]\s*/,"");
+  var dueM = (task.meta||[]).find(function(m){return m[0]==="due";});
+  var estM = (task.meta||[]).find(function(m){return m[0]==="est"||m[0]==="live";});
+
+  /* update breadcrumb */
+  var ck = document.getElementById("crumbKey");
+  if(ck) ck.textContent = task.id || "—";
+
+  /* comments state */
+  var comments = [
+    {who:"MA",name:"Minh Anh",time:"2 giờ trước",text:"Đã review sơ bộ, cần bổ sung error handling cho trường hợp timeout.",replies:[{who:"DL",name:"Do thi Lan",time:"1 giờ trước",text:"Đã noted, mình sẽ thêm try/catch cho toàn bộ async calls."}]},
+    {who:"HG",name:"Hoàng",time:"3 giờ trước",text:"Đang test trên staging, sẽ update tiến độ sau.",replies:[]}
+  ];
+  var subtasks = [
+    {id:"JH-245-1",type:"Task",title:"Setup environment variables và config file",prio:"md",sp:"3",who:"TU",col:"Done"},
+    {id:"JH-245-2",type:"Bug",title:"Fix CORS issue trên endpoint /api/checkin",prio:"hi",sp:"2",who:"HG",col:"In Progress"}
+  ];
+  var selectedSP = "3";
+  var timerSec = 0, timerRun = false, timerIntvl = null;
+
+  function fmtTime(s){ return [Math.floor(s/3600),Math.floor((s%3600)/60),s%60].map(function(v){return String(v).padStart(2,"0");}).join(":"); }
+
+  /* RTE TOOLBAR */
+  var RTE_TOOLBAR = '<div class="rte-bar" id="pageRteBar">'+
+    '<button class="rte-btn" data-cmd="bold"><b>B</b></button>'+
+    '<button class="rte-btn" data-cmd="italic"><i>I</i></button>'+
+    '<button class="rte-btn" data-cmd="underline"><u>U</u></button>'+
+    '<button class="rte-btn" data-cmd="strikeThrough"><s>S</s></button>'+
+    '<span class="rte-sep"></span>'+
+    '<button class="rte-btn" data-cmd="h2" style="font-size:0.76rem;font-weight:800">H2</button>'+
+    '<button class="rte-btn" data-cmd="h3" style="font-size:0.72rem;font-weight:700">H3</button>'+
+    '<span class="rte-sep"></span>'+
+    '<button class="rte-btn" data-cmd="insertUnorderedList"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>'+
+    '<button class="rte-btn" data-cmd="insertOrderedList"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6h11M10 12h11M10 18h11"/></svg></button>'+
+    '<span class="rte-sep"></span>'+
+    '<button class="rte-btn" data-cmd="code" style="font-family:var(--font-mono);font-size:0.76rem">&lt;/&gt;</button>'+
+    '<button class="rte-btn" data-cmd="blockquote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/></svg></button>'+
+    '<button class="rte-btn" data-cmd="link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg></button>'+
+    '<span class="rte-sep"></span>'+
+    '<button class="rte-btn" data-cmd="removeFormat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12l-8 10M4 20h8M20 4l-4 16"/></svg></button>'+
+  '</div>';
+
+  /* Build page HTML */
+  var col = task._col || "Backlog";
+  var html =
+    '<div class="tdp-head">'+
+      '<span class="tdp-type" style="background:'+it.it.color+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+it.it.svg+'</svg></span>'+
+      '<span class="tdp-crumb"><span style="color:var(--text-3)">'+it.type+'</span><span class="sep"> / </span><span class="tdp-key">'+task.id+'</span></span>'+
+      '<div class="tdp-actions">'+
+        '<button class="abtn primary" id="startBtn" style="gap:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Bắt đầu</button>'+
+        '<button class="abtn ghost" id="logBtn" style="gap:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Log Time</button>'+
+        '<span class="tdp-timer-live" id="pageTimer">00:00:00</span>'+
+        '<a class="abtn ghost" href="tasks.html" style="gap:7px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Xem board</a>'+
+      '</div>'+
+    '</div>'+
+    '<div class="tdp-body">'+
+      /* LEFT */
+      '<div class="tdp-left">'+
+        '<textarea class="tdp-title" id="pageTitle" rows="2">'+cleanTitle.replace(/</g,'&lt;')+'</textarea>'+
+        /* Description */
+        '<div class="tdp-section">'+
+          '<div class="tdp-sec-head"><h3>Mô tả</h3><div style="display:flex;gap:8px"><button class="abtn ghost" style="height:30px;font-size:0.78rem" id="descCancel">Hủy</button><button class="abtn primary" style="height:30px;font-size:0.78rem" id="descSave">Lưu</button></div></div>'+
+          '<div class="rte-wrap" style="border:none;border-radius:0">'+RTE_TOOLBAR+
+            '<div class="rte-area" id="pageDesc" contenteditable="true" data-placeholder="Thêm mô tả chi tiết, acceptance criteria, ghi chú…" style="min-height:160px;padding:14px 16px"></div>'+
+          '</div>'+
+        '</div>'+
+        /* Sub Tasks */
+        '<div class="tdp-section" id="stSection">'+
+          '<div class="tdp-sec-head">'+
+            '<button id="stToggle" style="background:none;border:none;color:var(--text-3);display:flex;align-items:center;gap:8px;font-size:0.88rem;font-weight:700;color:var(--text);cursor:pointer"><svg id="stChev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="transition:transform 0.2s"><path d="M6 9l6 6 6-6"/></svg>Subtasks <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-3)" id="stCount">(0)</span></button>'+
+            '<div style="display:flex;align-items:center;gap:4px">'+
+              '<button class="tb-icon" style="width:30px;height:30px" title="Thêm tùy chọn"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></button>'+
+              '<button class="tb-icon" style="width:30px;height:30px" id="stDelAll" title="Xóa tất cả"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M8 6V4h8v2"/></svg></button>'+
+              '<button class="abtn primary" style="height:28px;font-size:0.8rem;gap:6px;padding:0 12px" id="addStBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" width="13" height="13"><path d="M12 5v14M5 12h14"/></svg>Add</button>'+
+            '</div>'+
+          '</div>'+
+          '<div id="stBody"><div id="stList" style="padding:0 16px 14px"></div></div>'+
+        '</div>'+
+        /* Comments */
+        '<div class="tdp-section act-wrap" id="actSection">'+
+          '<div class="act-head">'+
+            '<button class="act-toggle" id="actToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" id="actChev"><path d="M6 9l6 6 6-6"/></svg>Activity</button>'+
+            '<div class="act-head-right">'+
+              '<button class="tb-icon" style="width:30px;height:30px" title="Sắp xếp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 6h18M7 12h10M11 18h2"/></svg></button>'+
+              '<button class="tb-icon" style="width:30px;height:30px" title="Lọc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg></button>'+
+            '</div>'+
+          '</div>'+
+          '<div id="actBody">'+
+            '<div class="act-tabs">'+
+              '<button class="act-tab" data-at="all">All</button>'+
+              '<button class="act-tab on" data-at="comments">Comments</button>'+
+              '<button class="act-tab" data-at="history">History</button>'+
+              '<button class="act-tab" data-at="worklog">Work log</button>'+
+              '<button class="act-tab" data-at="approvals">Approvals</button>'+
+            '</div>'+
+            '<div class="act-body">'+
+              '<div class="act-input-row">'+
+                '<span class="act-av">DL</span>'+
+                '<div class="act-input-card">'+
+                  '<textarea id="newCmt" rows="2" placeholder="Add a comment…"></textarea>'+
+                  '<div class="act-quick-row">'+
+                    '<button class="act-quick" id="aqSuggest">Suggest a reply…</button>'+
+                    '<button class="act-quick" id="aqStatus">Status update…</button>'+
+                    '<button class="act-quick" id="aqThanks">Thanks…</button>'+
+                    '<button class="abtn primary act-send" style="height:32px;font-size:0.82rem" id="cmtSave">Lưu</button>'+
+                    '<button class="abtn ghost" style="height:32px;font-size:0.82rem" id="cmtCancel">Hủy</button>'+
+                  '</div>'+
+                '</div>'+
+              '</div>'+
+              '<p class="act-protip"><b>Pro tip:</b> nhấn <kbd>Ctrl</kbd>+<kbd>Enter</kbd> để gửi bình luận</p>'+
+              '<div id="cmtList"></div>'+
+              '<div id="histList" style="display:none"></div>'+
+              '<div id="worklogList" style="display:none"></div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      /* RIGHT */
+      '<div class="tdp-right">'+
+        '<div class="tdp-meta-sec">Chi tiết</div>'+
+        '<div class="tdp-meta-row"><span class="ml">Trạng thái</span><span class="mv"><select id="metaStatus">'+COL_NAMES.map(function(c){return '<option'+(c===col?' selected':'')+'>'+c+'</option>';}).join("")+'</select></span></div>'+
+        '<div class="tdp-meta-row"><span class="ml">Ưu tiên</span><span class="mv"><span class="prio-dot" style="background:'+PRIO_COLORS[task.prio]+'"></span>'+PRIO[task.prio||"md"]+'</span></div>'+
+        '<div class="tdp-meta-row"><span class="ml">Phụ trách</span><span class="mv"><select id="metaAssign">'+MEMBERS.map(function(m){return '<option value="'+m.v+'"'+(m.v===task.who?' selected':'')+'>'+m.l+'</option>';}).join("")+'</select></span></div>'+
+        '<div class="tdp-meta-row"><span class="ml">Hỗ trợ</span><span class="mv"><select id="metaSupport"><option value="">— Chưa chọn —</option>'+MEMBERS.map(function(m){return '<option value="'+m.v+'">'+m.l+'</option>';}).join("")+'</select></span></div>'+
+        '<div class="tdp-meta-row"><span class="ml">Sprint</span><span class="mv"><select id="metaSprint">'+SPRINTS.map(function(s){return '<option>'+s+'</option>';}).join("")+'</select></span></div>'+
+        (task.progress!==undefined?'<div class="tdp-meta-row"><span class="ml">Tiến độ</span><span class="mv"><div style="flex:1;height:6px;background:var(--border);border-radius:99px;overflow:hidden"><div style="width:'+task.progress+'%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:99px"></div></div><span style="font-family:var(--font-mono);font-size:0.72rem">'+task.progress+'%</span></span></div>':"")+
+        (estM?'<div class="tdp-meta-row"><span class="ml">Ước tính</span><span class="mv">'+estM[1]+'</span></div>':"")+
+        (dueM?'<div class="tdp-meta-row"><span class="ml">Hạn</span><span class="mv" style="'+(dueM[2]?'color:var(--warn);font-weight:600':'')+'">'+dueM[1]+'</span></div>':"")+
+        '<div class="tdp-meta-row" style="flex-direction:column;align-items:flex-start;gap:10px;padding:12px 16px">'+
+          '<span style="font-size:0.78rem;color:var(--text-3)">Story Points</span>'+
+          '<div class="sp-row-full" id="spRow">'+SP_OPTS.map(function(s){ return '<button class="sp-btn-s'+(s===selectedSP?" on":"")+'" data-sp="'+s+'">'+s+'</button>'; }).join("")+'</div>'+
+        '</div>'+
+        (task.tags&&task.tags.length?'<div class="tdp-meta-row" style="flex-direction:column;align-items:flex-start;gap:8px;padding:12px 16px"><span style="font-size:0.78rem;color:var(--text-3)">Labels</span><div style="display:flex;flex-wrap:wrap;gap:5px">'+task.tags.map(function(tg){return '<span class="ttag'+(tg[1]?" alt":"")+'">'+tg[0]+'</span>';}).join("")+'</div></div>':"")+
+        '<div class="tdp-meta-sec" style="border-top:1px solid var(--border)">Người tạo</div>'+
+        '<div class="tdp-meta-row"><span class="ml">Reporter</span><span class="mv"><span class="av-sm" style="width:22px;height:22px;font-size:0.62rem">DL</span>Do thi Lan</span></div>'+
+        '<div class="tdp-meta-row"><span class="ml">Tạo lúc</span><span class="mv" style="font-size:0.78rem;color:var(--text-3)">15/06/2026 09:30</span></div>'+
+        '<div class="tdp-meta-row"><span class="ml">Cập nhật</span><span class="mv" style="font-size:0.78rem;color:var(--text-3)">Hôm nay 10:24</span></div>'+
+        '<div style="padding:14px 16px;border-top:1px solid var(--border)"><button class="abtn ghost" style="width:100%;color:var(--danger);border-color:rgba(239,68,68,0.3)" id="delTask">🗑 Xóa task</button></div>'+
+      '</div>'+
+    '</div>';
+
+  document.getElementById("pageContent").innerHTML = html;
+
+  /* === RTE INIT === */
+  var rteBar = document.getElementById("pageRteBar"), rteArea = document.getElementById("pageDesc");
+  if(rteBar && rteArea){
+    var RCMDS = ["bold","italic","underline","strikeThrough","insertUnorderedList","insertOrderedList"];
+    rteBar.addEventListener("mousedown",function(e){e.preventDefault();});
+    rteBar.addEventListener("click",function(e){
+      var btn=e.target.closest(".rte-btn"); if(!btn) return;
+      rteArea.focus(); var cmd=btn.getAttribute("data-cmd");
+      if(cmd==="h2"||cmd==="h3") document.execCommand("formatBlock",false,"<"+cmd+">");
+      else if(cmd==="code"){ var s=window.getSelection(); document.execCommand("insertHTML",false,"<code>"+(s&&!s.isCollapsed?s.toString():"code")+"</code>"); }
+      else if(cmd==="blockquote") document.execCommand("formatBlock",false,"<blockquote>");
+      else if(cmd==="link"){ var u=prompt("URL:","https://"); if(u){ var s=window.getSelection(); document.execCommand("insertHTML",false,'<a href="'+u+'" target="_blank">'+(s&&!s.isCollapsed?s.toString():u)+'</a>'); } }
+      else document.execCommand(cmd,false,null);
+    });
+    document.getElementById("descSave").addEventListener("click",function(){
+      var b=this; b.textContent="Đã lưu ✓"; b.style.opacity="0.7";
+      setTimeout(function(){ b.textContent="Lưu"; b.style.opacity=""; },1800);
+    });
+    document.getElementById("descCancel").addEventListener("click",function(){ rteArea.innerHTML=""; });
+  }
+
+  /* === TIMER === */
+  var startBtn=document.getElementById("startBtn"), pageTimer=document.getElementById("pageTimer");
+  startBtn.addEventListener("click",function(){
+    timerRun=!timerRun;
+    if(timerRun){
+      startBtn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Tạm dừng';
+      startBtn.classList.add("running"); pageTimer.classList.add("on");
+      timerIntvl=setInterval(function(){ timerSec++; pageTimer.textContent=fmtTime(timerSec); },1000);
+    } else {
+      startBtn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Tiếp tục';
+      startBtn.classList.remove("running"); clearInterval(timerIntvl);
+    }
+  });
+
+  /* === LOG TIME === */
+  document.getElementById("logBtn").addEventListener("click",function(){
+    if(document.getElementById("logModal")) return;
+    var mb=document.createElement("div"); mb.className="modal-back"; mb.id="logModal";
+    mb.innerHTML='<div style="background:var(--elev);border:1px solid var(--border-2);border-radius:14px;padding:24px;width:360px;max-width:95vw;box-shadow:var(--shadow-lg)">'+
+      '<h3 style="font-size:1rem;font-weight:700;margin-bottom:18px">⏱ Ghi nhận thời gian</h3>'+
+      '<div class="afield" style="margin-bottom:14px"><label>Thời gian đã làm</label><input id="ltHrs" type="text" placeholder="vd. 1h 30m" /></div>'+
+      '<div class="afield" style="margin-bottom:14px"><label>Ngày</label><input id="ltDate" type="date" /></div>'+
+      '<div class="afield" style="margin-bottom:18px"><label>Ghi chú</label><input id="ltNote" type="text" placeholder="Đã làm gì…" /></div>'+
+      '<div style="display:flex;justify-content:flex-end;gap:10px"><button class="abtn ghost" id="ltC" style="height:38px">Hủy</button><button class="abtn primary" id="ltS" style="height:38px">Lưu log</button></div></div>';
+    document.body.appendChild(mb);
+    var d=document.getElementById("ltDate"); if(d) d.valueAsDate=new Date();
+    if(timerSec>0) document.getElementById("ltHrs").value=fmtTime(timerSec);
+    document.getElementById("ltC").addEventListener("click",function(){mb.remove();});
+    document.getElementById("ltS").addEventListener("click",function(){mb.remove();});
+    mb.addEventListener("click",function(e){if(e.target===mb)mb.remove();});
+  });
+
+  /* === STORY POINTS === */
+  document.getElementById("spRow").addEventListener("click",function(e){
+    var btn=e.target.closest(".sp-btn-s"); if(!btn) return;
+    selectedSP=btn.getAttribute("data-sp");
+    document.querySelectorAll(".sp-btn-s").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-sp")===selectedSP);});
+  });
+
+  /* === SUBTASKS === */
+  var stFormVisible=false;
+  var stCollapsed = false;
+  var IT_META = {
+    "Task":    {c:"#3B5BDB",s:'<path d="M9 11l3 3L22 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'},
+    "Bug":     {c:"#ef4444",s:'<path d="M12 8v4M12 16h.01" stroke-linecap="round"/><circle cx="12" cy="12" r="9"/>'},
+    "Story":   {c:"#22c55e",s:'<path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M9 9h6M9 13h4" stroke-linecap="round"/>'},
+    "Subtask": {c:"#f59e0b",s:'<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/>'}
+  };
+  var COL_CHIP = {"Backlog":"todo","In Progress":"doing","Pending Review":"review","Done":"done","Blocked":"blocked"};
+  var COL_LABEL = {"Backlog":"BACKLOG","In Progress":"IN PROGRESS","Pending Review":"REVIEW","Done":"DONE ▾","Blocked":"BLOCKED"};
+  var PRIO_LBL = {hi:"Cao",md:"Vừa",lo:"Thấp"};
+  var MEMBERS_MAP = {"MA":"Minh Anh","HG":"Hoàng","LN":"Lan","TU":"Tú"};
+
+  function buildStForm(){
+    return '<tr class="st-add-row" id="stFormRow">'+
+      '<td colspan="5">'+
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+          '<select id="stTypeSel" style="background:var(--content);border:1px solid var(--border-2);border-radius:7px;padding:6px 10px;font-family:inherit;font-size:0.83rem;color:var(--text);outline:none">'+
+            ['Task','Bug','Story','Subtask'].map(function(t){return '<option>'+t+'</option>';}).join("")+
+          '</select>'+
+          '<input id="stInput" type="text" placeholder="Tiêu đề subtask..." style="flex:1;min-width:200px;background:none;border:1.5px solid var(--accent);border-radius:8px;padding:8px 11px;font-family:inherit;font-size:0.86rem;color:var(--text);outline:none;box-shadow:0 0 0 3px var(--accent-soft)" />'+
+          '<select id="stColSel" style="background:var(--content);border:1px solid var(--border-2);border-radius:7px;padding:6px 10px;font-family:inherit;font-size:0.83rem;color:var(--text);outline:none">'+
+            COL_NAMES.map(function(c){return '<option'+(c==="In Progress"?" selected":"")+'>'+c+'</option>';}).join("")+
+          '</select>'+
+          '<select id="stWhoSel" style="background:var(--content);border:1px solid var(--border-2);border-radius:7px;padding:6px 10px;font-family:inherit;font-size:0.83rem;color:var(--text);outline:none">'+
+            '<option value="">Người phụ trách</option>'+MEMBERS.map(function(m){return '<option value="'+m.v+'">'+m.l+'</option>';}).join("")+
+          '</select>'+
+          '<button class="abtn primary" id="stCreate" style="height:36px;gap:6px;padding:0 14px;font-size:0.83rem"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Create</button>'+
+          '<button class="abtn ghost" id="stCancel" style="height:36px;font-size:0.83rem;padding:0 12px">Cancel</button>'+
+        '</div>'+
+      '</td></tr>';
+  }
+
+  function renderST(){
+    var el=document.getElementById("stList"); if(!el) return;
+    var total=subtasks.length, done=subtasks.filter(function(s){return s.col==="Done";}).length;
+    var pct=total>0?Math.round(done/total*100):0;
+
+    var wrap='<div class="st-table-wrap">'+
+      '<div class="st-prog-row">'+
+        '<div class="st-prog-bar"><i style="width:'+pct+'%"></i></div>'+
+        '<span class="st-prog-label">'+pct+'% Done</span>'+
+      '</div>'+
+      '<table class="sttable"><thead><tr>'+
+        '<th style="width:99%">Work</th>'+
+        '<th style="min-width:70px">Pri...</th>'+
+        '<th style="min-width:60px">Stor...</th>'+
+        '<th style="min-width:52px">Ass...</th>'+
+        '<th style="min-width:110px">Status</th>'+
+        '<th style="width:30px"></th>'+
+      '</tr></thead><tbody id="stTbody">'+
+      subtasks.map(function(s,i){
+        var im=IT_META[s.type]||IT_META["Task"];
+        var isDone=s.col==="Done";
+        return '<tr>'+
+          '<td><div class="st-row-work">'+
+            '<span class="st-type-ico" style="background:'+im.c+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+im.s+'</svg></span>'+
+            '<span class="st-id'+(isDone?" done":"")+'">'+(s.id||("ST-"+(i+1)))+'</span>'+
+            '<span class="st-t" title="'+s.title+'">'+s.title+'</span>'+
+          '</div></td>'+
+          '<td><div class="st-prio-cell"><div class="st-prio-bar '+(s.prio||"md")+'"></div><span style="font-size:0.78rem;color:var(--text-3)">'+PRIO_LBL[s.prio||"md"]+'</span></div></td>'+
+          '<td style="font-size:0.8rem;color:var(--text-3)">'+(s.sp||"—")+'</td>'+
+          '<td>'+(s.who?'<span class="st-av-sm">'+s.who+'</span>':'<span style="font-size:0.78rem;color:var(--text-3)">None</span>')+'</td>'+
+          '<td><span class="st-chip '+(COL_CHIP[s.col]||"todo")+'" data-i="'+i+'">'+(COL_LABEL[s.col]||"TODO")+' ▾</span></td>'+
+          '<td><button class="st-del" data-i="'+i+'" style="color:var(--text-3);opacity:0.6">×</button></td>'+
+        '</tr>';
+      }).join("")+
+      (stFormVisible?buildStForm():'')+
+      '</tbody></table>'+
+      (!stFormVisible?'<div style="padding:10px 14px;border-top:1px solid var(--border)"><button class="td-st-empty" id="stEmpty" style="width:100%">+ Add Subtask</button></div>':'')+
+    '</div>';
+
+    el.innerHTML=(total===0&&!stFormVisible)?
+      '<button class="td-st-empty" id="stEmpty" style="width:100%">+ Add Subtask</button>':
+      wrap;
+
+    document.getElementById("stCount").textContent="("+total+")";
+
+    var chev=document.getElementById("stChev");
+    if(chev) chev.style.transform=stCollapsed?"rotate(-90deg)":"";
+
+    /* status chip click — cycle */
+    el.querySelectorAll(".st-chip[data-i]").forEach(function(chip){
+      chip.addEventListener("click",function(){
+        var i=+chip.getAttribute("data-i"), cols=COL_NAMES, ci=cols.indexOf(subtasks[i].col);
+        subtasks[i].col=cols[(ci+1)%cols.length]; renderST();
+      });
+    });
+    el.querySelectorAll(".st-del[data-i]").forEach(function(b){
+      b.addEventListener("click",function(){ subtasks.splice(+b.getAttribute("data-i"),1); renderST(); });
+    });
+    var emp=document.getElementById("stEmpty"); if(emp) emp.addEventListener("click",function(){ stFormVisible=true; renderST(); var si=document.getElementById("stInput"); if(si) si.focus(); });
+    if(stFormVisible){
+      var si=document.getElementById("stInput");
+      function doCreate(){
+        if(!si||!si.value.trim()) return;
+        var newId="ST-"+(subtasks.length+1);
+        subtasks.push({id:newId,type:document.getElementById("stTypeSel").value,title:si.value.trim(),prio:"md",sp:"3",who:document.getElementById("stWhoSel").value||"",col:document.getElementById("stColSel").value});
+        stFormVisible=true; renderST(); var ni=document.getElementById("stInput"); if(ni) ni.focus();
+      }
+      document.getElementById("stCreate").addEventListener("click",doCreate);
+      document.getElementById("stCancel").addEventListener("click",function(){ stFormVisible=false; renderST(); });
+      if(si) si.addEventListener("keydown",function(e){ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();doCreate();} });
+    }
+  }
+
+  /* toggle collapse */
+  document.getElementById("stToggle").addEventListener("click",function(){
+    stCollapsed=!stCollapsed;
+    var body=document.getElementById("stBody"); if(body) body.style.display=stCollapsed?"none":"";
+    var chev=document.getElementById("stChev"); if(chev) chev.style.transform=stCollapsed?"rotate(-90deg)":"";
+  });
+  document.getElementById("addStBtn").addEventListener("click",function(){ stCollapsed=false; var body=document.getElementById("stBody"); if(body) body.style.display=""; stFormVisible=true; renderST(); var si=document.getElementById("stInput"); if(si) si.focus(); });
+  renderST();
+
+  /* === COMMENTS 2-LEVEL === */
+  var actCollapsed = false;
+  var HIST_DATA = [
+    {who:"DL",name:"Do thi Lan",time:"Hôm nay 10:24",text:"chuyển trạng thái từ <b>Backlog</b> → <b>In Progress</b>"},
+    {who:"MA",name:"Minh Anh",time:"Hôm nay 09:30",text:"tạo task này trong <b>Sprint 14</b>"},
+    {who:"LN",name:"Lan",time:"Hôm qua 17:00",text:"giao task cho <b>Tú</b>"}
+  ];
+  var WORK_DATA = [
+    {who:"HG",name:"Hoàng",time:"Hôm nay 10:30",text:"Ghi nhận <b>1h 24m</b> — Test API endpoint trên staging"}
+  ];
+
+  function renderComments(){
+    var el=document.getElementById("cmtList"); if(!el) return;
+    el.innerHTML=comments.map(function(c,ci){
+      var replies=(c.replies||[]).map(function(r){
+        return '<div class="act-reply"><span class="cav-sm">'+r.who+'</span><div class="cbody">'+
+          '<div class="cname-row"><span class="cname">'+r.name+'</span><span class="crole">— Internal</span></div>'+
+          '<div class="cdate">'+r.time+'</div>'+
+          '<div class="ctext">'+r.text+'</div>'+
+          '<div class="cbar"><button>↩</button><button>👍</button><button>😊</button></div>'+
+        '</div></div>';
+      }).join("");
+      return '<div class="act-comment" data-ci="'+ci+'">'+
+        '<span class="cav-lg">'+c.who+'</span>'+
+        '<div class="cbody">'+
+          '<div class="cname-row"><span class="cname">'+c.name+'</span><span class="crole">— Internal</span></div>'+
+          '<div class="cdate">'+c.time+'</div>'+
+          '<div class="ctext">'+c.text+'</div>'+
+          '<div class="cbar">'+
+            '<button class="c-reply-btn" data-ci="'+ci+'" title="Phản hồi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg></button>'+
+            '<button title="Thích">👍</button>'+
+            '<button title="Emoji">😊</button>'+
+            '<button title="Thêm"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></button>'+
+          '</div>'+
+        '</div></div>'+
+        replies+
+        '<div class="act-reply-input" id="ri-'+ci+'" style="display:none">'+
+          '<textarea rows="2" placeholder="Phản hồi '+c.name+'…" id="rta-'+ci+'"></textarea>'+
+          '<div class="ri-foot">'+
+            '<button class="abtn ghost" style="height:28px;font-size:0.78rem" data-rcancel="'+ci+'">Hủy</button>'+
+            '<button class="abtn primary" style="height:28px;font-size:0.78rem" data-rsave="'+ci+'">Gửi</button>'+
+          '</div></div>';
+    }).join("");
+    el.querySelectorAll(".c-reply-btn").forEach(function(b){
+      b.addEventListener("click",function(){
+        el.querySelectorAll(".tdp-reply-input").forEach(function(r){r.style.display="none";});
+        var ri=document.getElementById("ri-"+b.getAttribute("data-ci")); if(ri){ ri.style.display="block"; var ta=document.getElementById("rta-"+b.getAttribute("data-ci")); if(ta) ta.focus(); }
+      });
+    });
+    el.querySelectorAll("[data-rcancel]").forEach(function(b){ b.addEventListener("click",function(){ var ri=document.getElementById("ri-"+b.getAttribute("data-rcancel")); if(ri) ri.style.display="none"; }); });
+    el.querySelectorAll("[data-rsave]").forEach(function(b){
+      b.addEventListener("click",function(){
+        var i=+b.getAttribute("data-rsave"), ta=document.getElementById("rta-"+i);
+        if(ta&&ta.value.trim()){ if(!comments[i].replies) comments[i].replies=[]; comments[i].replies.push({who:"DL",name:"Do thi Lan",time:"Vừa xong",text:ta.value.trim()}); renderComments(); }
+      });
+    });
+  }
+  renderComments();
+  /* quick reply chips */
+  ["aqSuggest","aqStatus","aqThanks"].forEach(function(id,i){
+    var b=document.getElementById(id); if(!b) return;
+    var texts=["Suggest a reply…","Cập nhật trạng thái: ","Cảm ơn! 🙏"];
+    b.addEventListener("click",function(){ var nc=document.getElementById("newCmt"); if(nc){nc.value=texts[i];nc.focus();}});
+  });
+
+  /* activity tabs */
+  var actTabs=document.querySelectorAll(".act-tab");
+  actTabs.forEach(function(tab){
+    tab.addEventListener("click",function(){
+      actTabs.forEach(function(t){t.classList.remove("on");});
+      tab.classList.add("on");
+      var k=tab.getAttribute("data-at");
+      document.getElementById("cmtList").style.display=(k==="all"||k==="comments")?"":"none";
+      document.getElementById("histList").style.display=(k==="all"||k==="history")?"":"none";
+      document.getElementById("worklogList").style.display=(k==="all"||k==="worklog")?"":"none";
+    });
+  });
+
+  /* history */
+  function renderHist(){
+    var el=document.getElementById("histList"); if(!el) return;
+    el.innerHTML=HIST_DATA.map(function(a){
+      return '<div class="act-hist-row"><span class="hav">'+a.who+'</span><div class="htxt"><b>'+a.name+'</b> '+a.text+'<span class="htime">'+a.time+'</span></div></div>';
+    }).join("");
+  }
+  function renderWorklog(){
+    var el=document.getElementById("worklogList"); if(!el) return;
+    el.innerHTML=WORK_DATA.map(function(a){
+      return '<div class="act-hist-row"><span class="hav">'+a.who+'</span><div class="htxt"><b>'+a.name+'</b> '+a.text+'<span class="htime">'+a.time+'</span></div></div>';
+    }).join("");
+  }
+  renderHist(); renderWorklog();
+
+  /* collapse */
+  var actToggle=document.getElementById("actToggle"), actBody=document.getElementById("actBody"), actChev=document.getElementById("actChev");
+  if(actToggle) actToggle.addEventListener("click",function(){
+    actCollapsed=!actCollapsed;
+    if(actBody) actBody.style.display=actCollapsed?"none":"";
+    if(actChev) actChev.style.transform=actCollapsed?"rotate(-90deg)":"";
+  });
+
+  var nc=document.getElementById("newCmt");
+  document.getElementById("cmtSave").addEventListener("click",function(){
+    if(nc&&nc.value.trim()){ comments.unshift({who:"DL",name:"Do thi Lan",time:"Vừa xong",text:nc.value.trim(),replies:[]}); nc.value=""; renderComments(); }
+  });
+  document.getElementById("cmtCancel").addEventListener("click",function(){ if(nc) nc.value=""; });
+  if(nc) nc.addEventListener("keydown",function(e){ if(e.key==="Enter"&&e.ctrlKey){ document.getElementById("cmtSave").click(); } });
+
+  /* === DELETE === */
+  document.getElementById("delTask").addEventListener("click",function(){
+    if(confirm("Xóa task "+task.id+"?")) window.location.href="tasks.html";
+  });
+})();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

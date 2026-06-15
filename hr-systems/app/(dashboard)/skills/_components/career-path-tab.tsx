@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Loader2, TrendingUp, Sparkles, AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SKILL_LEVELS } from "@/lib/skills";
+import { SKILL_LEVELS } from "@/lib/skills/constants";
 
 interface SkillGap {
   skillId: number;

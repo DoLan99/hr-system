@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Plus, Loader2, Trash2, ShieldCheck, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SKILL_LEVELS } from "@/lib/skills";
+import { SKILL_LEVELS } from "@/lib/skills/constants";
 
 interface Skill {
   id: number;

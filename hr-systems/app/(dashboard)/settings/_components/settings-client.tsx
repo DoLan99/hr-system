@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Globe, Check } from "lucide-react";
 import { useLocale } from "@/lib/i18n/context";
+import { MicrosoftConnect } from "./microsoft-connect";
+import { ChannelSetup } from "./channel-setup";
 import { SUPPORTED_LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -78,6 +80,16 @@ export function SettingsClient() {
             <p className="text-[13px] text-emerald-700 dark:text-emerald-300 font-medium">{t("settings.saved")}</p>
           </div>
         )}
+      </div>
+
+      {/* Microsoft 365 */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+        <MicrosoftConnect isManager={true} />
+      </div>
+
+      {/* Channel Integrations */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+        <ChannelSetup />
       </div>
     </div>
   );
