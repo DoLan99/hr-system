@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Work Rules — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css"/>
+<style>
+/* extra bottom padding so content isn't hidden behind save bar */
+.content-inner{padding-bottom:74px !important}
+/* ── Work Rules page ── */
+.wr-layout{display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start}
+
+/* policy list */
+.pol-list{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;position:sticky;top:calc(var(--nav-h,66px) + 20px)}
+.pol-head{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--border)}
+.pol-head h3{font-size:0.86rem;font-weight:700}
+.pol-item{display:flex;align-items:center;gap:11px;padding:12px 15px;cursor:pointer;transition:background .12s;border-bottom:1px solid var(--border);position:relative}
+.pol-item:last-child{border-bottom:none}
+.pol-item:hover{background:var(--content)}
+.pol-item.active{background:var(--accent-soft)}
+.pol-item.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:0 3px 3px 0}
+.pol-ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.pol-ico svg{width:16px;height:16px}
+.pol-name{font-weight:600;font-size:0.86rem}
+.pol-sub{font-size:0.72rem;color:var(--text-3);margin-top:1px}
+.pol-badge{margin-left:auto;font-family:var(--font-mono);font-size:0.68rem;color:var(--accent-ink);background:var(--accent-soft);border:1px solid var(--accent-soft-2);border-radius:99px;padding:2px 7px;white-space:nowrap}
+
+/* right panel */
+.wr-panel{display:flex;flex-direction:column;gap:16px}
+.wr-tabs{display:flex;gap:4px;flex-wrap:wrap;background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);padding:10px}
+.wr-tab{font-size:0.83rem;font-weight:500;padding:7px 16px;border-radius:9px;color:var(--text-2);transition:all .15s;cursor:pointer}
+.wr-tab:hover{background:var(--content);color:var(--text)}
+.wr-tab.on{background:var(--accent);color:#fff;font-weight:600}
+.wr-pane{display:none}
+.wr-pane.on{display:flex;flex-direction:column;gap:16px}
+
+/* section card */
+.ws{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.ws-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.ws-head h3{font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.ws-head h3 svg{width:16px;height:16px;color:var(--accent-ink)}
+.ws-body{padding:18px}
+
+/* schedule grid */
+.sched-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sf{display:flex;flex-direction:column;gap:5px}
+.sf label{font-size:0.8rem;font-weight:600;color:var(--text-2)}
+.sf input[type=text],.sf input[type=time],.sf input[type=number],.sf select{background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:9px 12px;font-family:inherit;font-size:0.9rem;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.sf input:focus,.sf select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.sf .hint{font-size:0.74rem;color:var(--text-3);margin-top:3px}
+
+/* day picker */
+.day-pick{display:flex;gap:6px;flex-wrap:wrap}
+.dp{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:0.8rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border-2);color:var(--text-2);transition:all .15s;user-select:none}
+.dp:hover{border-color:var(--accent);color:var(--accent-ink)}
+.dp.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.dp.off{background:var(--content);color:var(--text-3)}
+
+/* time slot row */
+.ts-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px dashed var(--border)}
+.ts-row:last-child{border-bottom:none}
+.ts-label{font-size:0.84rem;font-weight:600;width:180px;flex-shrink:0}
+.ts-sub{font-size:0.76rem;color:var(--text-3);margin-top:2px}
+.ts-inputs{display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap}
+.ts-inputs input[type=time]{background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:8px 11px;font-family:var(--font-mono);font-size:0.88rem;color:var(--text);outline:none;width:120px;transition:border-color .15s}
+.ts-inputs input[type=time]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.ts-sep{font-size:0.8rem;color:var(--text-3)}
+.ts-inputs input[type=number]{width:72px;background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:8px 10px;font-family:var(--font-mono);font-size:0.88rem;color:var(--text);outline:none}
+.ts-inputs .unit{font-size:0.8rem;color:var(--text-3)}
+
+/* toggle switch */
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.tog-row:last-child{border-bottom:none}
+.tog-info .tl{font-size:0.87rem;font-weight:600}
+.tog-info .ts{font-size:0.76rem;color:var(--text-3);margin-top:2px}
+.tog{position:relative;width:40px;height:22px;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0;position:absolute}
+.tog .tk{position:absolute;inset:0;border-radius:99px;background:var(--border-2);cursor:pointer;transition:background .2s}
+.tog .th{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.tog input:checked~.tk{background:var(--accent)}
+.tog input:checked~.th{transform:translateX(18px)}
+
+/* overtime multiplier */
+.ot-tiers{display:flex;flex-direction:column;gap:8px}
+.ot-tier{display:flex;align-items:center;gap:12px;background:var(--content);border:1px solid var(--border);border-radius:10px;padding:10px 14px}
+.ot-tier .olab{font-size:0.82rem;font-weight:600;flex:1}
+.ot-tier .oval{font-family:var(--font-mono);font-size:0.88rem;color:var(--accent-ink);font-weight:700}
+.ot-tier input[type=number]{width:68px;background:var(--elev);border:1.5px solid var(--border-2);border-radius:7px;padding:5px 8px;font-family:var(--font-mono);font-size:0.86rem;color:var(--text);outline:none;text-align:center}
+
+/* holiday list */
+.holiday-list{display:flex;flex-direction:column;gap:8px}
+.hol-row{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--content);border:1px solid var(--border);border-radius:10px}
+.hol-date{font-family:var(--font-mono);font-size:0.78rem;color:var(--text-3);width:90px;flex-shrink:0}
+.hol-name{font-size:0.86rem;font-weight:500;flex:1}
+.hol-type{font-family:var(--font-mono);font-size:0.68rem;padding:2px 8px;border-radius:99px}
+.hol-type.national{background:var(--ok-soft);color:var(--ok)}
+.hol-type.custom{background:var(--accent-soft);color:var(--accent-ink)}
+.hol-del{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:var(--text-3);margin-left:auto}
+.hol-del:hover{background:var(--danger-soft);color:var(--danger)}
+.hol-del svg{width:13px;height:13px}
+
+/* add holiday row */
+.add-hol-row{display:flex;gap:8px;align-items:center;margin-top:8px}
+.add-hol-row input{flex:1;background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:8px 11px;font-family:inherit;font-size:0.86rem;color:var(--text);outline:none}
+.add-hol-row input[type=date]{font-family:var(--font-mono);width:140px;flex:0}
+.add-hol-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* leave types */
+.leave-type-list{display:flex;flex-direction:column;gap:8px}
+.lt-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--content);border:1px solid var(--border);border-radius:10px}
+.lt-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.lt-name{font-weight:600;font-size:0.87rem;flex:1}
+.lt-days{display:flex;align-items:center;gap:8px}
+.lt-days input[type=number]{width:56px;background:var(--elev);border:1.5px solid var(--border-2);border-radius:7px;padding:5px 8px;font-family:var(--font-mono);font-size:0.86rem;color:var(--text);text-align:center;outline:none}
+.lt-days .unit{font-size:0.78rem;color:var(--text-3)}
+.lt-paid{font-size:0.72rem;font-family:var(--font-mono);padding:2px 8px;border-radius:99px}
+.lt-paid.yes{background:var(--ok-soft);color:var(--ok)}
+.lt-paid.no{background:var(--border);color:var(--text-3)}
+
+/* info strip */
+.info-strip{display:flex;align-items:center;gap:10px;background:var(--accent-soft);border:1px solid var(--accent-soft-2);border-radius:10px;padding:11px 14px;font-size:0.83rem;color:var(--accent-ink)}
+.info-strip svg{width:16px;height:16px;flex-shrink:0}
+
+/* save bar — fixed to viewport bottom, spanning right of sidebar */
+.save-bar{position:fixed;bottom:0;left:var(--side-w,264px);right:0;background:color-mix(in srgb,var(--content) 94%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;justify-content:flex-end;gap:10px;z-index:50}
+
+/* modal */
+.wm-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.wm-modal.open{opacity:1;pointer-events:auto}
+.wm-scrim{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.wm-card{position:relative;z-index:1;background:var(--elev);border:1px solid var(--border-2);border-radius:var(--r-lg);width:100%;max-width:440px;padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-lg)}
+.wm-card h2{font-size:1rem;font-weight:800}
+.wm-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--text-3)}
+.wm-close:hover{background:var(--content);color:var(--text)}
+.wm-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:4px;border-top:1px solid var(--border)}
+
+@media(max-width:900px){.wr-layout{grid-template-columns:1fr}.pol-list{position:static}.sched-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="side-brand"><span class="lm">j</span><div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div></div>
+    <nav class="side-nav scroll" id="sideNav"></nav>
+    <div class="side-foot"><div class="side-user"><span class="av">DL</span><div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span></div></div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <button class="tb-icon menu-btn" id="menuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div><div class="tb-title">Work Rules</div></div>
+      <div class="tb-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input type="text" placeholder="Tìm quy tắc…"/>
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="tb-right">
+        <button class="tb-icon" id="themeToggle">
+          <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+          <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+        </button>
+        <button class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+      </div>
+    </header>
+
+    <main class="content scroll">
+      <div class="content-inner">
+
+        <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div><h1>Work Rules</h1><p>Cấu hình lịch làm việc, quy tắc chấm công, tăng ca, nghỉ phép và ngày lễ.</p></div>
+          <button class="abtn primary" id="addPolBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Tạo chính sách</button>
+        </div>
+
+        <div class="wr-layout">
+          <!-- left: policy list -->
+          <div class="pol-list" id="polList"></div>
+
+          <!-- right: editor -->
+          <div class="wr-panel" id="wrPanel"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Add policy modal -->
+<div class="wm-modal" id="addPolModal">
+  <div class="wm-scrim" id="polScrim"></div>
+  <div class="wm-card">
+    <h2>Tạo chính sách làm việc</h2>
+    <button class="wm-close" id="polClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <div class="sf"><label>Tên chính sách *</label><input type="text" id="polName" placeholder="VD: Full-time Standard, Remote Team…"/></div>
+    <div class="sf"><label>Mô tả</label><input type="text" id="polDesc" placeholder="Mô tả ngắn về chính sách này…"/></div>
+    <div class="sf"><label>Loại</label>
+      <select id="polType">
+        <option value="fulltime">Toàn thời gian (Full-time)</option>
+        <option value="parttime">Bán thời gian (Part-time)</option>
+        <option value="remote">Làm việc từ xa (Remote)</option>
+        <option value="flexible">Linh hoạt (Flexible hours)</option>
+      </select>
+    </div>
+    <div class="wm-foot">
+      <button class="abtn ghost" id="polCancel">Hủy</button>
+      <button class="abtn primary" id="polSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="13" height="13"><path d="M5 12l5 5L20 6"/></svg>Tạo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Data ── */
+var DAYS = ["T2","T3","T4","T5","T6","T7","CN"];
+var TYPE_LBL = {fulltime:"Full-time",parttime:"Part-time",remote:"Remote",flexible:"Linh hoạt"};
+var TYPE_COLOR = {fulltime:"#3B5BDB",parttime:"#059669",remote:"#7c3aed",flexible:"#d97706"};
+
+var POLICIES = [
+  {id:"P1", name:"Full-time Standard", desc:"Nhân viên toàn thời gian 8h/ngày", type:"fulltime",
+   workDays:[0,1,2,3,4], startTime:"08:00", endTime:"17:00", breakStart:"12:00", breakEnd:"13:00", breakPaid:false,
+   graceIn:15, graceOut:15, minHours:8, minHoursWeek:40,
+   checkinOpen:"07:30", checkinClose:"09:30", checkoutOpen:"16:30",
+   autoCheckout:true, autoCheckoutTime:"21:00",
+   calcMethod:"fixed",
+   ot:{enabled:true, startAfter:8, maxPerDay:4, tier1:{hours:2,rate:1.5}, tier2:{hours:2,rate:2.0}, weekendRate:2.0, holidayRate:3.0},
+   penaltyLate:{enabled:true, thresholdMin:15, deductMin:30},
+   penaltyLeave:{enabled:true, thresholdMin:30, deductMin:60},
+   members:10},
+  {id:"P2", name:"Part-time 4h", desc:"Nhân viên bán thời gian sáng", type:"parttime",
+   workDays:[0,1,2,3,4], startTime:"08:00", endTime:"12:00", breakStart:"", breakEnd:"", breakPaid:false,
+   graceIn:10, graceOut:10, minHours:4, minHoursWeek:20,
+   checkinOpen:"07:45", checkinClose:"08:30", checkoutOpen:"11:45",
+   autoCheckout:false, autoCheckoutTime:"",
+   calcMethod:"timelog",
+   ot:{enabled:false, startAfter:4, maxPerDay:2, tier1:{hours:2,rate:1.5}, tier2:{hours:0,rate:0}, weekendRate:1.5, holidayRate:2.0},
+   penaltyLate:{enabled:true, thresholdMin:10, deductMin:15},
+   penaltyLeave:{enabled:false, thresholdMin:30, deductMin:60},
+   members:2},
+  {id:"P3", name:"Remote Flexible", desc:"Team làm việc remote, giờ linh hoạt", type:"remote",
+   workDays:[0,1,2,3,4], startTime:"09:00", endTime:"18:00", breakStart:"12:00", breakEnd:"13:00", breakPaid:false,
+   graceIn:60, graceOut:60, minHours:8, minHoursWeek:40,
+   checkinOpen:"07:00", checkinClose:"12:00", checkoutOpen:"14:00",
+   autoCheckout:true, autoCheckoutTime:"23:59",
+   calcMethod:"timelog",
+   ot:{enabled:false, startAfter:8, maxPerDay:4, tier1:{hours:2,rate:1.5}, tier2:{hours:2,rate:2.0}, weekendRate:2.0, holidayRate:3.0},
+   penaltyLate:{enabled:false, thresholdMin:30, deductMin:60},
+   penaltyLeave:{enabled:false, thresholdMin:30, deductMin:60},
+   members:3}
+];
+
+var NATIONAL_HOLIDAYS = [
+  {date:"2026-01-01",name:"Tết Dương lịch",type:"national"},
+  {date:"2026-01-27",name:"Tết Nguyên Đán (29 Tết)",type:"national"},
+  {date:"2026-01-28",name:"Tết Nguyên Đán (30 Tết)",type:"national"},
+  {date:"2026-01-29",name:"Mùng 1 Tết",type:"national"},
+  {date:"2026-01-30",name:"Mùng 2 Tết",type:"national"},
+  {date:"2026-01-31",name:"Mùng 3 Tết",type:"national"},
+  {date:"2026-04-18",name:"Giỗ Tổ Hùng Vương",type:"national"},
+  {date:"2026-04-30",name:"Ngày Giải phóng miền Nam",type:"national"},
+  {date:"2026-05-01",name:"Quốc tế Lao động",type:"national"},
+  {date:"2026-09-02",name:"Quốc khánh",type:"national"},
+  {date:"2026-09-03",name:"Quốc khánh (nghỉ bù)",type:"national"}
+];
+var customHolidays = [
+  {date:"2026-12-24",name:"Nghỉ Giáng Sinh (nội bộ)",type:"custom"},
+  {date:"2026-12-31",name:"Nghỉ Tất niên",type:"custom"}
+];
+
+var LEAVE_TYPES = [
+  {id:"LT1",name:"Phép năm",color:"#3B5BDB",days:12,paid:true},
+  {id:"LT2",name:"Nghỉ ốm",color:"#dc2626",days:5,paid:true},
+  {id:"LT3",name:"Nghỉ cưới",color:"#be185d",days:3,paid:true},
+  {id:"LT4",name:"Nghỉ tang",color:"#64748b",days:3,paid:true},
+  {id:"LT5",name:"Nghỉ không lương",color:"#94a3b8",days:999,paid:false},
+  {id:"LT6",name:"Nghỉ thai sản (nữ)",color:"#0891b2",days:180,paid:true},
+  {id:"LT7",name:"Nghỉ thai sản (nam)",color:"#059669",days:5,paid:true}
+];
+
+var activePolId = POLICIES[0].id, activeTab = "schedule";
+
+/* ── Policy list ── */
+function renderPolList(){
+  document.getElementById("polList").innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--border)"><h3 style="font-size:0.86rem;font-weight:700">Chính sách</h3></div>'+
+    POLICIES.map(function(p){
+      var c=TYPE_COLOR[p.type]||"#3B5BDB";
+      return '<div class="pol-item'+(p.id===activePolId?" active":"")+'" data-pid="'+p.id+'">'+
+        '<span class="pol-ico" style="background:'+c+'22;color:'+c+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/></svg></span>'+
+        '<div><div class="pol-name">'+p.name+'</div><div class="pol-sub">'+TYPE_LBL[p.type]+' · '+p.members+' NV</div></div>'+
+        '<span class="pol-badge">'+p.workDays.length+'d/w</span>'+
+      '</div>';
+    }).join("");
+  document.querySelectorAll(".pol-item[data-pid]").forEach(function(it){
+    it.addEventListener("click",function(){activePolId=it.getAttribute("data-pid");renderPolList();renderWrPanel();});
+  });
+}
+
+/* ── Main panel ── */
+function renderWrPanel(){
+  var p = POLICIES.find(function(x){return x.id===activePolId;}); if(!p) return;
+  var c = TYPE_COLOR[p.type]||"#3B5BDB";
+  var panel = document.getElementById("wrPanel");
+
+  panel.innerHTML =
+    /* header */
+    '<div class="ws" style="padding:18px 20px">' +
+      '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+        '<span style="width:46px;height:46px;border-radius:14px;background:'+c+'22;color:'+c+';display:grid;place-items:center;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/></svg></span>' +
+        '<div><div style="font-size:1.1rem;font-weight:800;letter-spacing:-.02em">'+p.name+'</div>' +
+        '<div style="font-size:0.82rem;color:var(--text-3);margin-top:3px">'+p.desc+'</div>' +
+        '<div style="margin-top:7px;display:flex;gap:7px;flex-wrap:wrap">' +
+          '<span style="display:inline-flex;align-items:center;gap:5px;font-size:0.74rem;font-weight:600;padding:3px 9px;border-radius:99px;background:'+c+'22;color:'+c+'">'+TYPE_LBL[p.type]+'</span>' +
+          '<span style="display:inline-flex;align-items:center;gap:5px;font-size:0.74rem;padding:3px 9px;border-radius:99px;background:var(--ok-soft);color:var(--ok)">'+p.members+' nhân viên áp dụng</span>' +
+        '</div></div>' +
+        '<div style="margin-left:auto;display:flex;gap:8px">' +
+          '<button class="abtn ghost" style="height:32px;font-size:0.8rem" id="clonePolBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Nhân bản</button>' +
+          (!p.system?'<button class="abtn ghost" style="height:32px;font-size:0.8rem;color:var(--danger);border-color:var(--danger-soft)" id="delPolBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M3 6h18M19 6l-1 14H6L5 6"/></svg>Xóa</button>':'')+
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    /* tabs */
+    '<div class="wr-tabs">' +
+      [["schedule","Lịch làm việc"],["attendance","Chấm công"],["overtime","Tăng ca"],["leave","Nghỉ phép"],["holidays","Ngày lễ"]].map(function(t){
+        return '<div class="wr-tab'+(activeTab===t[0]?" on":"")+'" data-tab="'+t[0]+'">'+t[1]+'</div>';
+      }).join("") +
+    '</div>' +
+    /* panes */
+    buildSchedulePane(p) +
+    buildAttendancePane(p) +
+    buildOvertimePane(p) +
+    buildLeavePane() +
+    buildHolidayPane() +
+    /* save bar */
+    '<div class="save-bar">' +
+      '<span style="font-size:0.82rem;color:var(--text-3)">Thay đổi sẽ áp dụng cho tất cả nhân viên trong chính sách này</span>' +
+      '<button class="abtn ghost" style="height:36px">Đặt lại</button>' +
+      '<button class="abtn primary" style="height:36px" id="savePolBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="14" height="14"><path d="M5 12l5 5L20 6"/></svg>Lưu thay đổi</button>' +
+    '</div>';
+
+  /* tab switch */
+  panel.querySelectorAll(".wr-tab[data-tab]").forEach(function(t){
+    t.addEventListener("click",function(){
+      activeTab=t.getAttribute("data-tab");
+      panel.querySelectorAll(".wr-tab").forEach(function(x){x.classList.toggle("on",x===t);});
+      panel.querySelectorAll(".wr-pane").forEach(function(x){x.classList.toggle("on",x.getAttribute("data-pane")===activeTab);});
+    });
+  });
+
+  /* day picker */
+  panel.querySelectorAll(".dp[data-day]").forEach(function(d){
+    d.addEventListener("click",function(){
+      var di=parseInt(d.getAttribute("data-day")), idx=p.workDays.indexOf(di);
+      if(idx>-1)p.workDays.splice(idx,1); else p.workDays.push(di);
+      p.workDays.sort(); d.classList.toggle("on",p.workDays.indexOf(di)>-1); d.classList.toggle("off",p.workDays.indexOf(di)===-1);
+      renderPolList();
+    });
+  });
+
+  /* save */
+  document.getElementById("savePolBtn").addEventListener("click",function(){
+    var btn=document.getElementById("savePolBtn");
+    btn.textContent="✓ Đã lưu"; setTimeout(function(){btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="14" height="14"><path d="M5 12l5 5L20 6"/></svg>Lưu thay đổi';},1500);
+  });
+  /* clone */
+  document.getElementById("clonePolBtn").addEventListener("click",function(){
+    var cl=JSON.parse(JSON.stringify(p)); cl.id="P"+(POLICIES.length+1); cl.name=p.name+" (copy)"; cl.members=0; POLICIES.push(cl); activePolId=cl.id; renderPolList(); renderWrPanel();
+  });
+  var delBtn=document.getElementById("delPolBtn");
+  if(delBtn) delBtn.addEventListener("click",function(){if(confirm("Xóa chính sách này?")){POLICIES=POLICIES.filter(function(x){return x.id!==p.id;}); activePolId=POLICIES[0].id; renderPolList(); renderWrPanel();}});
+
+  /* holiday */
+  panel.querySelectorAll(".hol-del[data-hi]").forEach(function(b){
+    b.addEventListener("click",function(){customHolidays.splice(parseInt(b.getAttribute("data-hi")),1);activeTab="holidays";renderWrPanel();});
+  });
+  document.getElementById("addHolBtn") && document.getElementById("addHolBtn").addEventListener("click",function(){
+    var d=document.getElementById("holDate").value, n=document.getElementById("holName").value.trim();
+    if(!d||!n){alert("Nhập ngày và tên ngày nghỉ.");return;}
+    customHolidays.push({date:d,name:n,type:"custom"});
+    document.getElementById("holDate").value=""; document.getElementById("holName").value="";
+    activeTab="holidays"; renderWrPanel();
+  });
+}
+
+function buildSchedulePane(p){
+  var days=DAYS.map(function(d,i){ return '<div class="dp'+(p.workDays.indexOf(i)>-1?" on":" off")+'" data-day="'+i+'">'+d+'</div>';}).join("");
+  return '<div class="wr-pane'+(activeTab==="schedule"?" on":"")+'" data-pane="schedule">'+
+    '<div class="ws"><div class="ws-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Ngày làm việc trong tuần</h3></div>'+
+    '<div class="ws-body">'+
+      '<div class="sf" style="margin-bottom:18px"><label>Chọn các ngày làm việc</label><div class="day-pick">'+days+'</div></div>'+
+      '<div class="sched-grid">'+
+        '<div class="sf"><label>Giờ bắt đầu</label><input type="time" value="'+p.startTime+'"/><div class="hint">Giờ vào làm chính thức</div></div>'+
+        '<div class="sf"><label>Giờ kết thúc</label><input type="time" value="'+p.endTime+'"/><div class="hint">Giờ tan làm chính thức</div></div>'+
+        '<div class="sf"><label>Nghỉ trưa từ</label><input type="time" value="'+(p.breakStart||"")+'"/></div>'+
+        '<div class="sf"><label>Nghỉ trưa đến</label><input type="time" value="'+(p.breakEnd||"")+'"/></div>'+
+        '<div class="sf"><label>Số giờ tối thiểu / ngày</label><input type="number" value="'+p.minHours+'" min="1" max="12"/><div class="hint">Bên dưới ngưỡng này → thiếu giờ</div></div>'+
+        '<div class="sf"><label>Số giờ tối thiểu / tuần</label><input type="number" value="'+p.minHoursWeek+'" min="1" max="60"/></div>'+
+      '</div>'+
+      '<div class="tog-row" style="margin-top:8px"><div class="tog-info"><div class="tl">Nghỉ trưa tính lương</div><div class="ts">Nếu bật, giờ nghỉ trưa vẫn được tính vào giờ làm việc</div></div><label class="tog"><input type="checkbox" '+(p.breakPaid?"checked":"")+'"/><span class="tk"></span><span class="th"></span></label></div>'+
+    '</div></div>'+
+    '<div class="info-strip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>Thay đổi lịch làm việc sẽ ảnh hưởng đến tính toán tăng ca và lương từ kỳ tiếp theo.</div>'+
+  '</div>';
+}
+
+function buildAttendancePane(p){
+  return '<div class="wr-pane'+(activeTab==="attendance"?" on":"")+'" data-pane="attendance">'+
+    '<div class="ws"><div class="ws-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Khung giờ check-in / check-out</h3></div>'+
+    '<div class="ws-body">'+
+      '<div class="ts-row"><div><div class="ts-label">Cửa sổ check-in</div><div class="ts-sub">Khoảng thời gian nhân viên có thể check-in</div></div><div class="ts-inputs"><input type="time" value="'+p.checkinOpen+'"/><span class="ts-sep">→</span><input type="time" value="'+p.checkinClose+'"/></div></div>'+
+      '<div class="ts-row"><div><div class="ts-label">Cửa sổ check-out</div><div class="ts-sub">Check-out chỉ được phép sau giờ này</div></div><div class="ts-inputs"><input type="time" value="'+p.checkoutOpen+'"/> <span class="ts-sub">trở đi</span></div></div>'+
+      '<div class="ts-row"><div><div class="ts-label">Ân hạn đến muộn</div><div class="ts-sub">Số phút cho phép đến muộn mà không bị phạt</div></div><div class="ts-inputs"><input type="number" value="'+p.graceIn+'" min="0" max="120"/><span class="unit">phút</span></div></div>'+
+      '<div class="ts-row"><div><div class="ts-label">Ân hạn về sớm</div><div class="ts-sub">Số phút cho phép về sớm mà không bị phạt</div></div><div class="ts-inputs"><input type="number" value="'+p.graceOut+'" min="0" max="120"/><span class="unit">phút</span></div></div>'+
+    '</div></div>'+
+    '<div class="ws"><div class="ws-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg>Phương thức & Hình phạt</h3></div>'+
+    '<div class="ws-body">'+
+      '<div class="sf" style="margin-bottom:16px"><label>Phương thức tính giờ làm</label>'+
+        '<select><option value="fixed"'+(p.calcMethod==="fixed"?" selected":"")+'>Fixed schedule — theo khung giờ</option><option value="timelog"'+(p.calcMethod==="timelog"?" selected":"")+'>Time log — cộng dồn time log</option></select>'+
+        '<div class="hint">Fixed: trừ thẳng giờ không có mặt. Time log: cộng tổng thời gian bấm giờ.</div>'+
+      '</div>'+
+      '<div class="tog-row"><div class="tog-info"><div class="tl">Tự động check-out cuối ngày</div><div class="ts">Hệ thống tự đóng session nếu nhân viên quên check-out</div></div><label class="tog"><input type="checkbox" '+(p.autoCheckout?"checked":"")+'/><span class="tk"></span><span class="th"></span></label></div>'+
+      (p.autoCheckout?'<div class="sf" style="margin:10px 0"><label>Giờ auto check-out</label><input type="time" value="'+(p.autoCheckoutTime||"21:00")+'"/></div>':'')+
+      '<div class="tog-row"><div class="tog-info"><div class="tl">Phạt đến muộn</div><div class="ts">Trừ giờ công khi vào muộn quá ngưỡng</div></div><label class="tog"><input type="checkbox" '+(p.penaltyLate.enabled?"checked":"")+'/><span class="tk"></span><span class="th"></span></label></div>'+
+      (p.penaltyLate.enabled?'<div class="ts-row"><div><div class="ts-label">Ngưỡng đến muộn</div></div><div class="ts-inputs"><input type="number" value="'+p.penaltyLate.thresholdMin+'" min="1" max="60"/><span class="unit">phút → trừ</span><input type="number" value="'+p.penaltyLate.deductMin+'" min="1"/><span class="unit">phút công</span></div></div>':'')+
+      '<div class="tog-row"><div class="tog-info"><div class="tl">Phạt về sớm</div><div class="ts">Trừ giờ công khi ra về sớm quá ngưỡng</div></div><label class="tog"><input type="checkbox" '+(p.penaltyLeave.enabled?"checked":"")+'/><span class="tk"></span><span class="th"></span></label></div>'+
+    '</div></div>'+
+  '</div>';
+}
+
+function buildOvertimePane(p){
+  return '<div class="wr-pane'+(activeTab==="overtime"?" on":"")+'" data-pane="overtime">'+
+    '<div class="ws"><div class="ws-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2L3 14h7l-1 8 10-12h-7z" stroke-linejoin="round"/></svg>Cấu hình tăng ca</h3></div>'+
+    '<div class="ws-body">'+
+      '<div class="tog-row"><div class="tog-info"><div class="tl">Bật tính tăng ca</div><div class="ts">Tự động tính lương tăng ca dựa trên giờ làm vượt định mức</div></div><label class="tog"><input type="checkbox" '+(p.ot.enabled?"checked":"")+'/><span class="tk"></span><span class="th"></span></label></div>'+
+      '<div class="sched-grid" style="margin-top:14px">'+
+        '<div class="sf"><label>Tăng ca bắt đầu sau</label><input type="number" value="'+p.ot.startAfter+'" min="1" max="16"/><div class="hint">Số giờ làm tối thiểu trước khi tính OT</div></div>'+
+        '<div class="sf"><label>OT tối đa / ngày</label><input type="number" value="'+p.ot.maxPerDay+'" min="0" max="12"/><div class="hint">Giới hạn giờ tăng ca được ghi nhận mỗi ngày</div></div>'+
+      '</div>'+
+      '<div class="sf" style="margin-top:16px;margin-bottom:10px"><label>Hệ số lương tăng ca</label></div>'+
+      '<div class="ot-tiers">'+
+        '<div class="ot-tier"><div class="olab"><b>Bậc 1:</b> '+p.ot.tier1.hours+'h đầu tiên ngoài giờ (ngày thường)<div style="font-size:0.72rem;color:var(--text-3);margin-top:2px">Áp dụng cho '+p.ot.tier1.hours+'h OT đầu</div></div><span class="oval">×</span><input type="number" value="'+p.ot.tier1.rate+'" min="1" max="5" step="0.25"/></div>'+
+        '<div class="ot-tier"><div class="olab"><b>Bậc 2:</b> '+p.ot.tier2.hours+'h tiếp theo (ngày thường)<div style="font-size:0.72rem;color:var(--text-3);margin-top:2px">Sau bậc 1</div></div><span class="oval">×</span><input type="number" value="'+p.ot.tier2.rate+'" min="1" max="5" step="0.25"/></div>'+
+        '<div class="ot-tier"><div class="olab"><b>Cuối tuần (T7, CN)</b><div style="font-size:0.72rem;color:var(--text-3);margin-top:2px">Mọi giờ làm ngày nghỉ tuần</div></div><span class="oval">×</span><input type="number" value="'+p.ot.weekendRate+'" min="1" max="5" step="0.25"/></div>'+
+        '<div class="ot-tier"><div class="olab"><b>Ngày lễ / Tết</b><div style="font-size:0.72rem;color:var(--text-3);margin-top:2px">Mọi giờ làm ngày lễ quốc gia</div></div><span class="oval">×</span><input type="number" value="'+p.ot.holidayRate+'" min="1" max="5" step="0.25"/></div>'+
+      '</div>'+
+    '</div></div>'+
+  '</div>';
+}
+
+function buildLeavePane(){
+  return '<div class="wr-pane'+(activeTab==="leave"?" on":"")+'" data-pane="leave">'+
+    '<div class="ws"><div class="ws-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Loại nghỉ phép & số ngày</h3>'+
+      '<button class="abtn primary" style="height:28px;font-size:0.8rem" id="addLeaveTypeBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="12" height="12"><path d="M12 5v14M5 12h14"/></svg>Thêm</button>'+
+    '</div>'+
+    '<div class="ws-body">'+
+      '<div class="leave-type-list">'+
+        LEAVE_TYPES.map(function(lt){
+          return '<div class="lt-row">'+
+            '<span class="lt-dot" style="background:'+lt.color+'"></span>'+
+            '<div class="lt-name">'+lt.name+'</div>'+
+            '<div class="lt-days">'+
+              '<input type="number" value="'+(lt.days>=999?"Không giới hạn":lt.days)+'" min="0" style="width:'+(lt.days>=999?'120px':'56px')+'"/>'+
+              (lt.days<999?'<span class="unit">ngày/năm</span>':'')+
+            '</div>'+
+            '<span class="lt-paid '+(lt.paid?"yes":"no")+'">'+(lt.paid?"Có lương":"Không lương")+'</span>'+
+          '</div>';
+        }).join("")+
+      '</div>'+
+    '</div></div>'+
+    '<div class="ws"><div class="ws-head"><h3>Cài đặt phép chung</h3></div>'+
+    '<div class="ws-body">'+
+      '<div class="tog-row"><div class="tog-info"><div class="tl">Cho phép xin phép trước ngày làm việc</div><div class="ts">Nhân viên phải nộp đơn ít nhất 1 ngày trước</div></div><label class="tog"><input type="checkbox" checked/><span class="tk"></span><span class="th"></span></label></div>'+
+      '<div class="tog-row"><div class="tog-info"><div class="tl">Phép năm cộng dồn sang năm sau</div><div class="ts">Số ngày phép dư được chuyển sang năm sau (tối đa 5 ngày)</div></div><label class="tog"><input type="checkbox" checked/><span class="tk"></span><span class="th"></span></label></div>'+
+      '<div class="tog-row"><div class="tog-info"><div class="tl">Tự động duyệt nghỉ ốm</div><div class="ts">Đơn nghỉ ốm dưới 2 ngày không cần manager duyệt</div></div><label class="tog"><input type="checkbox"/><span class="tk"></span><span class="th"></span></label></div>'+
+    '</div></div>'+
+  '</div>';
+}
+
+function buildHolidayPane(){
+  var allHol=[].concat(NATIONAL_HOLIDAYS, customHolidays).sort(function(a,b){return a.date.localeCompare(b.date);});
+  return '<div class="wr-pane'+(activeTab==="holidays"?" on":"")+'" data-pane="holidays">'+
+    '<div class="ws"><div class="ws-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l3.1 6.3L22.4 9l-5.2 5.1 1.2 7.1-6.4-3.4-6.4 3.4 1.2-7.1L1.6 9l7.3-1.1z"/></svg>Ngày lễ & Ngày nghỉ bù 2026</h3>'+
+      '<div style="display:flex;gap:7px;align-items:center"><span style="font-size:0.78rem;color:var(--text-3)">'+NATIONAL_HOLIDAYS.length+' ngày quốc lễ · '+customHolidays.length+' ngày nội bộ</span></div>'+
+    '</div>'+
+    '<div class="ws-body">'+
+      '<div class="holiday-list">'+
+        allHol.map(function(h,i){
+          var isCustom=h.type==="custom"; var ci=customHolidays.indexOf(h);
+          return '<div class="hol-row">'+
+            '<span class="hol-date">'+h.date+'</span>'+
+            '<span class="hol-name">'+h.name+'</span>'+
+            '<span class="hol-type '+h.type+'">'+(h.type==="national"?"Quốc lễ":"Nội bộ")+'</span>'+
+            (isCustom&&ci>-1?'<button class="hol-del" data-hi="'+ci+'" title="Xóa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6l-1 14H6L5 6"/></svg></button>':'')+
+          '</div>';
+        }).join("")+
+      '</div>'+
+      '<div class="add-hol-row" style="margin-top:14px">'+
+        '<input type="date" id="holDate" style="min-width:140px"/>'+
+        '<input type="text" id="holName" placeholder="Tên ngày nghỉ nội bộ…" style="flex:1"/>'+
+        '<button class="abtn primary" style="height:36px;font-size:0.82rem" id="addHolBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="13" height="13"><path d="M12 5v14M5 12h14"/></svg>Thêm</button>'+
+      '</div>'+
+    '</div></div>'+
+  '</div>';
+}
+
+/* ── Modal ── */
+document.getElementById("addPolBtn").addEventListener("click",function(){document.getElementById("addPolModal").classList.add("open");document.getElementById("polName").focus();});
+document.getElementById("polClose").addEventListener("click",function(){document.getElementById("addPolModal").classList.remove("open");});
+document.getElementById("polScrim").addEventListener("click",function(){document.getElementById("addPolModal").classList.remove("open");});
+document.getElementById("polCancel").addEventListener("click",function(){document.getElementById("addPolModal").classList.remove("open");});
+document.getElementById("polSave").addEventListener("click",function(){
+  var name=document.getElementById("polName").value.trim(); if(!name){alert("Nhập tên chính sách.");return;}
+  var base=JSON.parse(JSON.stringify(POLICIES[0]));
+  base.id="P"+(POLICIES.length+1); base.name=name; base.desc=document.getElementById("polDesc").value.trim();
+  base.type=document.getElementById("polType").value; base.members=0;
+  POLICIES.push(base); activePolId=base.id; activeTab="schedule";
+  document.getElementById("addPolModal").classList.remove("open");
+  document.getElementById("polName").value=""; document.getElementById("polDesc").value="";
+  renderPolList(); renderWrPanel();
+});
+
+/* ── Init ── */
+renderPolList();
+renderWrPanel();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

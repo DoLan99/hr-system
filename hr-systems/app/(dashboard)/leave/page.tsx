@@ -14,23 +14,36 @@ export default async function LeavePage() {
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
-  const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month, 1);
+  const startOfMonth = new Date(year, month - 1, 1);
+  const endOfMonth = new Date(year, month, 1);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const where: any = {
+  const whereAll: any = { organizationId: organization.id };
+  if (!isManager) whereAll.employeeId = userId;
+
+  const whereMonth: any = {
     organizationId: organization.id,
-    date: { gte: start, lt: end },
+    date: { gte: startOfMonth, lt: endOfMonth },
   };
-  if (!isManager) where.employeeId = userId;
+  if (!isManager) whereMonth.employeeId = userId;
 
-  const [leaves, employees] = await Promise.all([
+  const whereToday: any = {
+    organizationId: organization.id,
+    date: { gte: today, lt: tomorrow },
+    status: "APPROVED",
+  };
+
+  const [leaves, employees, todayLeaves] = await Promise.all([
     prisma.leave.findMany({
-      where,
+      where: whereAll,
       include: {
         employee: { select: { id: true, fullName: true, department: true } },
         approvedBy: { select: { id: true, fullName: true } },
       },
-      orderBy: { date: "desc" },
+      orderBy: { createdAt: "desc" },
     }),
     isManager
       ? prisma.employee.findMany({
@@ -39,7 +52,28 @@ export default async function LeavePage() {
           orderBy: { fullName: "asc" },
         })
       : [],
+    prisma.leave.findMany({
+      where: whereToday,
+      include: {
+        employee: { select: { id: true, fullName: true, department: true } },
+      },
+    }),
   ]);
+
+  // Compute KPIs
+  const pendingCount = leaves.filter((l) => l.status === "PENDING").length;
+  const approvedMonth = leaves.filter(
+    (l) =>
+      l.status === "APPROVED" &&
+      l.date >= startOfMonth &&
+      l.date < endOfMonth
+  );
+  const approvedMonthHours = approvedMonth.reduce(
+    (sum, l) => sum + Number(l.requestedHours),
+    0
+  );
+  const onLeaveToday = todayLeaves.length;
+  const totalRequests = leaves.length;
 
   return (
     <LeaveClient
@@ -48,6 +82,14 @@ export default async function LeavePage() {
       initialYear={year}
       employees={employees}
       currentUserId={userId}
+      todayLeaves={JSON.parse(JSON.stringify(todayLeaves))}
+      kpis={{
+        pendingCount,
+        approvedMonthCount: approvedMonth.length,
+        approvedMonthHours: Math.round(approvedMonthHours),
+        onLeaveToday,
+        totalRequests,
+      }}
     />
   );
 }

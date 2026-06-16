@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quản lý kho — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="wh-scrim" id="whScrim"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="side-brand">
+      <span class="lm">j</span>
+      <div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div>
+    </div>
+    <nav class="side-nav scroll" id="sideNav"></nav>
+    <div class="side-foot">
+      <div class="side-user">
+        <span class="av">DL</span>
+        <div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div>
+        <span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <button class="tb-icon menu-btn" id="menuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div><div class="tb-title">Quản lý kho</div></div>
+      <div class="tb-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input type="text" placeholder="Tìm sản phẩm, SKU…" id="tbSearch" />
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="tb-right">
+        <button class="tb-icon" id="themeToggle">
+          <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+          <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+        </button>
+        <button class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+      </div>
+    </header>
+
+    <main class="content scroll">
+      <div class="content-inner">
+
+        <!-- page header -->
+        <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;">
+          <div>
+            <h1>Quản lý kho</h1>
+            <p>Tổng hợp tồn kho, nhập xuất và cảnh báo sắp hết hàng</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="abtn ghost" id="importBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Nhập Excel
+            </button>
+            <button class="abtn primary" id="addProdBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
+              Thêm sản phẩm
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI stats -->
+        <div class="wh-stats" id="whStats"></div>
+
+        <!-- toolbar -->
+        <div class="wh-toolbar">
+          <div class="wh-tabs" id="whTabs"></div>
+          <div class="wh-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <input type="text" placeholder="Lọc nhanh…" id="quickFilter" />
+          </div>
+          <div class="spacer"></div>
+          <button class="abtn ghost" id="exportBtn" style="gap:7px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 5 17 10"/><line x1="12" y1="5" x2="12" y2="15"/></svg>
+            Xuất CSV
+          </button>
+          <button class="abtn ghost" style="gap:7px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
+            Bộ lọc
+          </button>
+        </div>
+
+        <!-- bulk bar (hidden by default) -->
+        <div class="bulk-bar" id="bulkBar" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span><b id="bulkCount">0</b> sản phẩm được chọn</span>
+          <div class="spacer"></div>
+          <button class="abtn ghost" style="height:32px;font-size:0.82rem;gap:6px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 5 17 10"/><line x1="12" y1="5" x2="12" y2="15"/></svg>
+            Xuất
+          </button>
+          <button class="abtn ghost" style="height:32px;font-size:0.82rem;gap:6px;color:var(--danger);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M8 6V4h8v2"/></svg>
+            Xóa
+          </button>
+        </div>
+
+        <!-- table -->
+        <div class="wh-table-wrap">
+          <table class="wh-table">
+            <thead>
+              <tr>
+                <th style="width:38px;"><input type="checkbox" class="wh-cb" id="cbAll" /></th>
+                <th style="min-width:220px;">Sản phẩm
+                  <span class="sort-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M6 7l6-6 6 6"/></svg></span>
+                </th>
+                <th>Danh mục</th>
+                <th class="sort-asc">Tồn kho
+                  <span class="sort-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M6 7l6-6 6 6"/></svg></span>
+                </th>
+                <th>Đơn giá</th>
+                <th>Giá trị kho</th>
+                <th>Nhà cung cấp</th>
+                <th>Trạng thái</th>
+                <th style="width:80px;"></th>
+              </tr>
+            </thead>
+            <tbody id="whTbody"></tbody>
+          </table>
+          <div class="wh-footer">
+            <span id="whCount">Hiển thị 10 / 42 sản phẩm</span>
+            <div class="spacer"></div>
+            <div class="pg-btns" id="pgBtns"></div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ADD/EDIT DRAWER -->
+<aside class="wh-drawer" id="whDrawer">
+  <div class="wd-head">
+    <div class="prod-thumb" style="width:32px;height:32px;border-radius:8px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>
+    <h2 id="drawerTitle">Thêm sản phẩm</h2>
+    <button class="tb-icon" id="closeDrawer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="wd-body">
+    <div class="wd-divider">Thông tin cơ bản</div>
+    <div class="wd-field">
+      <label>Tên sản phẩm <span class="req">*</span></label>
+      <input type="text" class="wd-input" id="wdName" placeholder="VD: Laptop Dell XPS 13" />
+    </div>
+    <div class="wd-row">
+      <div class="wd-field">
+        <label>Mã SKU <span class="req">*</span></label>
+        <input type="text" class="wd-input" id="wdSku" placeholder="SKU-001" />
+      </div>
+      <div class="wd-field">
+        <label>Danh mục</label>
+        <select class="wd-input" id="wdCat">
+          <option value="">-- Chọn danh mục --</option>
+          <option>Thiết bị IT</option>
+          <option>Văn phòng phẩm</option>
+          <option>Nội thất</option>
+          <option>Phụ kiện</option>
+          <option>Khác</option>
+        </select>
+      </div>
+    </div>
+    <div class="wd-field">
+      <label>Nhà cung cấp</label>
+      <input type="text" class="wd-input" id="wdSupplier" placeholder="VD: FPT Retail" />
+    </div>
+
+    <div class="wd-divider">Tồn kho & giá</div>
+    <div class="wd-row">
+      <div class="wd-field">
+        <label>Số lượng hiện tại <span class="req">*</span></label>
+        <input type="number" class="wd-input" id="wdQty" placeholder="0" min="0" />
+      </div>
+      <div class="wd-field">
+        <label>Ngưỡng cảnh báo</label>
+        <input type="number" class="wd-input" id="wdThresh" placeholder="10" min="0" />
+      </div>
+    </div>
+    <div class="wd-row">
+      <div class="wd-field">
+        <label>Đơn giá (đ)</label>
+        <input type="number" class="wd-input" id="wdPrice" placeholder="0" min="0" />
+      </div>
+      <div class="wd-field">
+        <label>Đơn vị tính</label>
+        <select class="wd-input" id="wdUnit">
+          <option>Cái</option>
+          <option>Chiếc</option>
+          <option>Hộp</option>
+          <option>Thùng</option>
+          <option>Kg</option>
+          <option>Bộ</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="wd-divider">Thông tin bổ sung</div>
+    <div class="wd-field">
+      <label>Vị trí trong kho</label>
+      <input type="text" class="wd-input" id="wdLoc" placeholder="VD: Kệ A3 - Tầng 2" />
+    </div>
+    <div class="wd-field">
+      <label>Ghi chú</label>
+      <textarea class="wd-input" rows="3" id="wdNote" placeholder="Ghi chú thêm về sản phẩm…" style="resize:vertical;min-height:72px;"></textarea>
+    </div>
+  </div>
+  <div class="wd-foot">
+    <button class="abtn ghost" id="cancelDrawer">Hủy</button>
+    <button class="abtn primary" id="saveProduct">Lưu sản phẩm</button>
+  </div>
+</aside>
+
+<script>
+(function () {
+  /* -------- data -------- */
+  var PRODUCTS = [
+    {id:"P001",name:"Laptop Dell XPS 13",sku:"SKU-LAP-001",cat:"Thiết bị IT",catC:"c1",qty:14,thresh:5,price:28500000,supplier:"FPT Retail",loc:"Kệ A1"},
+    {id:"P002",name:"Màn hình LG 27\" 4K",sku:"SKU-MON-002",cat:"Thiết bị IT",catC:"c1",qty:3,thresh:5,price:12300000,supplier:"FPT Retail",loc:"Kệ A2"},
+    {id:"P003",name:"Bàn phím cơ Keychron K2",sku:"SKU-KB-003",cat:"Phụ kiện",catC:"c4",qty:22,thresh:8,price:1850000,supplier:"TechBox",loc:"Kệ B1"},
+    {id:"P004",name:"Chuột Logitech MX Master 3",sku:"SKU-MS-004",cat:"Phụ kiện",catC:"c4",qty:8,thresh:8,price:1650000,supplier:"TechBox",loc:"Kệ B2"},
+    {id:"P005",name:"Tai nghe Sony WH-1000XM5",sku:"SKU-HP-005",cat:"Phụ kiện",catC:"c4",qty:0,thresh:3,price:7200000,supplier:"Sony VN",loc:"Kệ B3"},
+    {id:"P006",name:"Giấy A4 Double A (ream)",sku:"SKU-PPR-006",cat:"Văn phòng phẩm",catC:"c2",qty:120,thresh:20,price:95000,supplier:"Lê Quỳnh",loc:"Kệ C1"},
+    {id:"P007",name:"Mực in HP 85A",sku:"SKU-INK-007",cat:"Văn phòng phẩm",catC:"c2",qty:4,thresh:5,price:680000,supplier:"Lê Quỳnh",loc:"Kệ C2"},
+    {id:"P008",name:"Ghế công thái học Ergonomic E1",sku:"SKU-CHR-008",cat:"Nội thất",catC:"c3",qty:7,thresh:3,price:6500000,supplier:"Nội thất Hoà Phát",loc:"Kệ D1"},
+    {id:"P009",name:"Bàn làm việc đứng Flexispot",sku:"SKU-DSK-009",cat:"Nội thất",catC:"c3",qty:2,thresh:2,price:9200000,supplier:"Flexispot VN",loc:"Kệ D2"},
+    {id:"P010",name:"Webcam Logitech C920 HD",sku:"SKU-CAM-010",cat:"Thiết bị IT",catC:"c1",qty:11,thresh:4,price:1950000,supplier:"TechBox",loc:"Kệ A3"}
+  ];
+
+  function fmtPrice(p) {
+    if (p >= 1000000) return (p/1000000).toFixed(1).replace(/\.0$/,"") + "tr";
+    if (p >= 1000) return (p/1000).toFixed(0) + "k";
+    return p.toString();
+  }
+  function fmtPriceFull(p) {
+    return p.toString().replace(/\B(?=(\d{3})+(?!\d))/g,".") + "đ";
+  }
+  function stockStatus(qty, thresh) {
+    if (qty === 0) return ["danger","Hết hàng"];
+    if (qty <= thresh) return ["warn","Sắp hết"];
+    return ["ok","Còn hàng"];
+  }
+  function stockPct(qty, thresh) {
+    var max = Math.max(thresh * 4, 50);
+    return Math.min(100, Math.round(qty / max * 100));
+  }
+
+  var activeTab = "all";
+  var searchQ = "";
+  var selectedIds = new Set();
+  var page = 1;
+  var PAGE_SIZE = 10;
+
+  /* -------- stats -------- */
+  function renderStats() {
+    var total = PRODUCTS.length;
+    var outCount = PRODUCTS.filter(function(p){return p.qty===0;}).length;
+    var lowCount = PRODUCTS.filter(function(p){return p.qty>0&&p.qty<=p.thresh;}).length;
+    var totalVal = PRODUCTS.reduce(function(s,p){return s+p.qty*p.price;},0);
+    document.getElementById("whStats").innerHTML = [
+      {ico:'<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 11l9-6 9 6" stroke-linecap="round"/>',bg:"var(--accent-soft)",ic:"var(--accent-ink)",label:"Tổng sản phẩm",val:total,sub:"trong kho"},
+      {ico:'<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',bg:"var(--ok-soft)",ic:"var(--ok)",label:"Tổng giá trị",val:(totalVal/1000000).toFixed(0)+"tr đ",sub:"tồn kho hiện tại"},
+      {ico:'<path d="M10.3 3.9l-7 12A2 2 0 0 0 5 19h14a2 2 0 0 0 1.7-3l-7-12a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',bg:"var(--warn-soft)",ic:"var(--warn)",label:"Sắp hết",val:lowCount,sub:'cần nhập thêm'},
+      {ico:'<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>',bg:"rgba(255,107,107,0.1)",ic:"var(--danger)",label:"Hết hàng",val:outCount,sub:"cần nhập khẩn"}
+    ].map(function(s){
+      return '<div class="wh-stat">'+
+        '<div class="ws-ico" style="background:'+s.bg+'"><svg viewBox="0 0 24 24" fill="none" stroke="'+s.ic+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+s.ico+'</svg></div>'+
+        '<div class="ws-label">'+s.label+'</div>'+
+        '<div class="ws-val">'+s.val+'</div>'+
+        '<div class="ws-sub">'+s.sub+'</div>'+
+      '</div>';
+    }).join("");
+  }
+
+  /* -------- tabs -------- */
+  var TABS = [
+    {k:"all",label:"Tất cả",extra:""},
+    {k:"ok",label:"Còn hàng",extra:""},
+    {k:"warn",label:"Sắp hết",extra:"twarn"},
+    {k:"danger",label:"Hết hàng",extra:"tdanger"}
+  ];
+  function renderTabs() {
+    var counts = {all:PRODUCTS.length,ok:0,warn:0,danger:0};
+    PRODUCTS.forEach(function(p){ var s=stockStatus(p.qty,p.thresh)[0]; counts[s]=(counts[s]||0)+1; });
+    document.getElementById("whTabs").innerHTML = TABS.map(function(t){
+      return '<button class="wh-tab '+(t.extra)+(activeTab===t.k?" on":"")+(t.extra&&activeTab===t.k?" on":"")+'" data-tab="'+t.k+'">'+
+        t.label+'<span class="wt-ct">'+counts[t.k]+'</span></button>';
+    }).join("");
+    document.querySelectorAll(".wh-tab").forEach(function(b){
+      b.addEventListener("click",function(){ activeTab=b.getAttribute("data-tab"); page=1; renderTabs(); renderTable(); });
+    });
+  }
+
+  /* -------- table -------- */
+  function filtered() {
+    return PRODUCTS.filter(function(p){
+      var st = stockStatus(p.qty,p.thresh)[0];
+      var tabOk = activeTab==="all" || st===activeTab;
+      var q = searchQ.toLowerCase();
+      var srchOk = !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q) || p.supplier.toLowerCase().includes(q);
+      return tabOk && srchOk;
+    });
+  }
+  function renderTable() {
+    var data = filtered();
+    var total = data.length;
+    var start = (page-1)*PAGE_SIZE, end = Math.min(start+PAGE_SIZE, total);
+    var pageData = data.slice(start, end);
+    var tbody = document.getElementById("whTbody");
+    tbody.innerHTML = pageData.map(function(p){
+      var [sc, sl] = stockStatus(p.qty, p.thresh);
+      var pct = stockPct(p.qty, p.thresh);
+      var val = p.qty * p.price;
+      var sel = selectedIds.has(p.id) ? " wh-selected" : "";
+      return '<tr class="'+sel+'" data-id="'+p.id+'">'+
+        '<td><input type="checkbox" class="wh-cb row-cb" data-id="'+p.id+'"'+(selectedIds.has(p.id)?" checked":"")+' /></td>'+
+        '<td><div class="prod-cell"><div class="prod-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div><div><div class="prod-name">'+p.name+'</div><div class="prod-sku">'+p.sku+'</div></div></div></td>'+
+        '<td><span class="cat-chip '+p.catC+'">'+p.cat+'</span></td>'+
+        '<td><div class="stock-cell"><div class="stock-num">'+p.qty+' '+( p.qty===0?"cái":"cái")+'</div><div class="stock-bar"><i class="'+sc+'" style="width:'+pct+'%"></i></div><div class="stock-thresh">Min: '+p.thresh+'</div></div></td>'+
+        '<td style="font-weight:600;white-space:nowrap;">'+fmtPriceFull(p.price)+'</td>'+
+        '<td style="color:var(--text-2);white-space:nowrap;">'+fmtPriceFull(val)+'</td>'+
+        '<td style="color:var(--text-2);font-size:0.84rem;">'+p.supplier+'</td>'+
+        '<td><span class="st-badge '+sc+'">'+sl+'</span></td>'+
+        '<td><div class="row-actions">'+
+          '<button class="row-act-btn" title="Chỉnh sửa" data-edit="'+p.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'+
+          '<button class="row-act-btn" title="Nhập hàng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>'+
+          '<button class="row-act-btn rdel" title="Xóa" data-del="'+p.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M8 6V4h8v2"/></svg></button>'+
+        '</div></td>'+
+      '</tr>';
+    }).join("");
+    document.getElementById("whCount").textContent = "Hiển thị "+Math.min(start+1,total)+"–"+end+" / "+total+" sản phẩm";
+
+    /* pagination */
+    var pages = Math.ceil(total / PAGE_SIZE) || 1;
+    var pg = document.getElementById("pgBtns");
+    var btns = '<button class="pg-btn" id="pgPrev" '+(page<=1?"disabled":"")+' style="'+(page<=1?"opacity:0.4;pointer-events:none":"")+'">'+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>';
+    for (var i=1; i<=pages; i++) {
+      btns += '<button class="pg-btn'+(i===page?" on":"")+'" data-pg="'+i+'">'+i+'</button>';
+    }
+    btns += '<button class="pg-btn" id="pgNext" '+(page>=pages?"disabled":"")+' style="'+(page>=pages?"opacity:0.4;pointer-events:none":"")+'">'+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>';
+    pg.innerHTML = btns;
+    pg.querySelectorAll("[data-pg]").forEach(function(b){ b.addEventListener("click",function(){ page=+b.getAttribute("data-pg"); renderTable(); }); });
+    document.getElementById("pgPrev").addEventListener("click",function(){ if(page>1){page--;renderTable();} });
+    document.getElementById("pgNext").addEventListener("click",function(){ if(page<pages){page++;renderTable();} });
+
+    /* row cb */
+    tbody.querySelectorAll(".row-cb").forEach(function(cb){
+      cb.addEventListener("change",function(){ if(cb.checked) selectedIds.add(cb.getAttribute("data-id")); else selectedIds.delete(cb.getAttribute("data-id")); updateBulk(); });
+    });
+    /* edit btn */
+    tbody.querySelectorAll("[data-edit]").forEach(function(b){
+      b.addEventListener("click",function(e){ e.stopPropagation(); openDrawer(b.getAttribute("data-edit")); });
+    });
+    /* del btn */
+    tbody.querySelectorAll("[data-del]").forEach(function(b){
+      b.addEventListener("click",function(e){ e.stopPropagation(); var id=b.getAttribute("data-del"); PRODUCTS=PRODUCTS.filter(function(p){return p.id!==id;}); selectedIds.delete(id); renderStats(); renderTabs(); renderTable(); });
+    });
+    /* row click -> edit */
+    tbody.querySelectorAll("tr").forEach(function(tr){
+      tr.addEventListener("click",function(e){ if(e.target.closest(".row-actions,.row-cb")) return; openDrawer(tr.getAttribute("data-id")); });
+    });
+  }
+
+  /* -------- select all -------- */
+  document.getElementById("cbAll").addEventListener("change",function(cb){
+    var checked = cb.target.checked;
+    filtered().forEach(function(p){ if(checked) selectedIds.add(p.id); else selectedIds.delete(p.id); });
+    renderTable(); updateBulk();
+  });
+  function updateBulk() {
+    var n = selectedIds.size;
+    var bar = document.getElementById("bulkBar");
+    bar.style.display = n>0 ? "flex" : "none";
+    document.getElementById("bulkCount").textContent = n;
+  }
+
+  /* -------- search -------- */
+  document.getElementById("quickFilter").addEventListener("input",function(e){ searchQ=e.target.value; page=1; renderTable(); });
+  document.getElementById("tbSearch").addEventListener("input",function(e){ searchQ=e.target.value; page=1; renderTable(); });
+
+  /* -------- drawer -------- */
+  var editingId = null;
+  function openDrawer(id) {
+    editingId = id || null;
+    var p = id ? PRODUCTS.find(function(x){return x.id===id;}) : null;
+    document.getElementById("drawerTitle").textContent = p ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm";
+    document.getElementById("wdName").value = p ? p.name : "";
+    document.getElementById("wdSku").value = p ? p.sku : "";
+    document.getElementById("wdCat").value = p ? p.cat : "";
+    document.getElementById("wdSupplier").value = p ? p.supplier : "";
+    document.getElementById("wdQty").value = p ? p.qty : "";
+    document.getElementById("wdThresh").value = p ? p.thresh : "10";
+    document.getElementById("wdPrice").value = p ? p.price : "";
+    document.getElementById("wdLoc").value = p ? (p.loc||"") : "";
+    document.getElementById("wdNote").value = "";
+    document.getElementById("whDrawer").classList.add("open");
+    document.getElementById("whScrim").classList.add("open");
+  }
+  function closeDrawer() {
+    document.getElementById("whDrawer").classList.remove("open");
+    document.getElementById("whScrim").classList.remove("open");
+    editingId = null;
+  }
+  document.getElementById("addProdBtn").addEventListener("click",function(){ openDrawer(null); });
+  document.getElementById("closeDrawer").addEventListener("click",closeDrawer);
+  document.getElementById("cancelDrawer").addEventListener("click",closeDrawer);
+  document.getElementById("whScrim").addEventListener("click",closeDrawer);
+  document.getElementById("saveProduct").addEventListener("click",function(){
+    var name = document.getElementById("wdName").value.trim();
+    var sku = document.getElementById("wdSku").value.trim();
+    if (!name || !sku) { document.getElementById("wdName").focus(); return; }
+    var catVal = document.getElementById("wdCat").value;
+    var catCMap = {"Thiết bị IT":"c1","Văn phòng phẩm":"c2","Nội thất":"c3","Phụ kiện":"c4","Khác":"c5"};
+    var obj = {
+      id: editingId || ("P" + String(PRODUCTS.length+1).padStart(3,"0")),
+      name: name, sku: sku,
+      cat: catVal || "Khác", catC: catCMap[catVal] || "c5",
+      qty: +document.getElementById("wdQty").value || 0,
+      thresh: +document.getElementById("wdThresh").value || 10,
+      price: +document.getElementById("wdPrice").value || 0,
+      supplier: document.getElementById("wdSupplier").value.trim() || "—",
+      loc: document.getElementById("wdLoc").value.trim() || ""
+    };
+    if (editingId) { PRODUCTS = PRODUCTS.map(function(p){ return p.id===editingId ? obj : p; }); }
+    else { PRODUCTS.push(obj); }
+    closeDrawer();
+    renderStats(); renderTabs(); renderTable();
+  });
+
+  /* -------- export CSV (demo) -------- */
+  document.getElementById("exportBtn").addEventListener("click",function(){
+    var rows = [["ID","Tên","SKU","Danh mục","Tồn kho","Đơn giá","Nhà cung cấp","Trạng thái"]];
+    filtered().forEach(function(p){ rows.push([p.id,p.name,p.sku,p.cat,p.qty,p.price,p.supplier,stockStatus(p.qty,p.thresh)[1]]); });
+    var csv = rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");
+    var a = document.createElement("a"); a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+    a.download="inventory.csv"; a.click();
+  });
+
+  /* -------- init -------- */
+  renderStats();
+  renderTabs();
+  renderTable();
+})();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

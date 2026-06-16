@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Phân quyền — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css"/>
+<style>
+/* ── Roles page ── */
+.roles-layout{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+
+/* role list (left) */
+.role-list{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.role-list-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+.role-list-head h3{font-size:0.88rem;font-weight:700}
+.role-item{display:flex;align-items:center;gap:11px;padding:12px 16px;cursor:pointer;transition:background .12s;border-bottom:1px solid var(--border);position:relative}
+.role-item:last-child{border-bottom:none}
+.role-item:hover{background:var(--content)}
+.role-item.active{background:var(--accent-soft)}
+.role-item.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:0 3px 3px 0}
+.ri-ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.ri-ico svg{width:16px;height:16px}
+.ri-name{font-weight:600;font-size:0.88rem}
+.ri-sub{font-size:0.74rem;color:var(--text-3);margin-top:1px}
+.ri-ct{margin-left:auto;font-family:var(--font-mono);font-size:0.72rem;color:var(--text-3);background:var(--content);border:1px solid var(--border);border-radius:99px;padding:2px 8px;white-space:nowrap}
+.role-item.active .ri-ct{background:var(--accent-soft-2);color:var(--accent-ink);border-color:var(--accent-soft-2)}
+
+/* right panel */
+.role-panel{display:flex;flex-direction:column;gap:16px}
+.rp-head{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;display:flex;align-items:center;gap:16px}
+.rp-ico{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;flex-shrink:0}
+.rp-ico svg{width:22px;height:22px}
+.rp-name{font-size:1.15rem;font-weight:800;letter-spacing:-.02em}
+.rp-desc{font-size:0.85rem;color:var(--text-2);margin-top:3px}
+.rp-badges{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+.rp-head-actions{margin-left:auto;display:flex;gap:8px;flex-shrink:0}
+
+/* permission matrix */
+.perm-matrix{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.pm-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.pm-head h3{font-size:0.9rem;font-weight:700}
+.pm-group{border-bottom:1px solid var(--border)}
+.pm-group:last-child{border-bottom:none}
+.pm-group-head{display:flex;align-items:center;gap:10px;padding:12px 18px;background:var(--content);cursor:pointer;user-select:none}
+.pm-group-head .gico{width:26px;height:26px;border-radius:7px;display:grid;place-items:center}
+.pm-group-head .gico svg{width:13px;height:13px}
+.pm-group-head .glabel{font-weight:600;font-size:0.84rem}
+.pm-group-head .gchev{margin-left:auto;color:var(--text-3);transition:transform .18s}
+.pm-group-head .gchev svg{width:14px;height:14px}
+.pm-group.collapsed .gchev{transform:rotate(-90deg)}
+.pm-items{display:flex;flex-direction:column}
+.pm-group.collapsed .pm-items{display:none}
+.pm-row{display:flex;align-items:center;gap:14px;padding:10px 18px;border-top:1px dashed var(--border)}
+.pm-row .pr-name{font-size:0.85rem;font-weight:500;color:var(--text);flex:1}
+.pm-row .pr-desc{font-size:0.76rem;color:var(--text-3);flex:2}
+.pm-toggle{position:relative;width:36px;height:20px;flex-shrink:0}
+.pm-toggle input{opacity:0;width:0;height:0;position:absolute}
+.pm-toggle .track{position:absolute;inset:0;border-radius:99px;background:var(--border-2);cursor:pointer;transition:background .2s}
+.pm-toggle .thumb{position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.pm-toggle input:checked~.track{background:var(--accent)}
+.pm-toggle input:checked~.thumb{transform:translateX(16px)}
+.pm-toggle.disabled .track{opacity:.4;cursor:not-allowed}
+
+/* members assigned */
+.assigned-list{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.al-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)}
+.al-head h3{font-size:0.86rem;font-weight:700}
+.al-row{display:flex;align-items:center;gap:11px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+.al-row:last-child{border-bottom:none}
+.al-row:hover{background:var(--content)}
+.al-av{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:0.74rem;font-weight:700;color:#fff;flex-shrink:0}
+.al-name{font-weight:600;font-size:0.86rem}
+.al-dept{font-size:0.74rem;color:var(--text-3)}
+
+/* add/edit role modal */
+.rm-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.rm-modal.open{opacity:1;pointer-events:auto}
+.rm-scrim{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.rm-card{position:relative;z-index:1;background:var(--elev);border:1px solid var(--border-2);border-radius:var(--r-lg);width:100%;max-width:520px;max-height:88vh;overflow-y:auto;padding:26px;display:flex;flex-direction:column;gap:16px;box-shadow:var(--shadow-lg)}
+.rm-card h2{font-size:1.05rem;font-weight:800}
+.rm-close{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--text-3)}
+.rm-close:hover{background:var(--content);color:var(--text)}
+.rm-f{display:flex;flex-direction:column;gap:5px}
+.rm-f label{font-size:0.81rem;font-weight:600;color:var(--text-2)}
+.rm-f input,.rm-f textarea{background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:9px 12px;font-family:inherit;font-size:0.88rem;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.rm-f input::placeholder,.rm-f textarea::placeholder{color:var(--text-3)}
+.rm-f input:focus,.rm-f textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.rm-color-row{display:flex;gap:7px}
+.rm-cpick{width:26px;height:26px;border-radius:7px;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s}
+.rm-cpick:hover{transform:scale(1.15)}
+.rm-cpick.on{border-color:var(--text)}
+.rm-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:4px;border-top:1px solid var(--border)}
+
+/* system role badge */
+.sys-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:0.68rem;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--warn-soft);color:var(--warn)}
+
+@media(max-width:900px){.roles-layout{grid-template-columns:1fr}.role-list{display:none}}
+</style>
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="side-brand"><span class="lm">j</span><div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div></div>
+    <nav class="side-nav scroll" id="sideNav"></nav>
+    <div class="side-foot"><div class="side-user"><span class="av">DL</span><div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span></div></div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <button class="tb-icon menu-btn" id="menuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div><div class="tb-title">Phân quyền</div></div>
+      <div class="tb-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input type="text" placeholder="Tìm quyền, vai trò…"/>
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="tb-right">
+        <button class="tb-icon" id="themeToggle">
+          <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+          <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+        </button>
+        <button class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+      </div>
+    </header>
+
+    <main class="content scroll">
+      <div class="content-inner">
+
+        <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div><h1>Phân quyền</h1><p>Quản lý vai trò và quyền hạn cho từng thành viên trong workspace.</p></div>
+          <button class="abtn primary" id="addRoleBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Tạo vai trò</button>
+        </div>
+
+        <div class="roles-layout">
+          <!-- Left: role list -->
+          <div>
+            <div class="role-list" id="roleList"></div>
+          </div>
+          <!-- Right: role detail -->
+          <div class="role-panel" id="rolePanel"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Add/edit role modal -->
+<div class="rm-modal" id="roleModal">
+  <div class="rm-scrim" id="roleScrim"></div>
+  <div class="rm-card">
+    <h2 id="rmTitle">Tạo vai trò mới</h2>
+    <button class="rm-close" id="rmClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <div class="rm-f"><label>Tên vai trò *</label><input type="text" id="rmName" placeholder="vd. Project Lead"/></div>
+    <div class="rm-f"><label>Mô tả</label><input type="text" id="rmDesc" placeholder="Mô tả ngắn về vai trò này…"/></div>
+    <div class="rm-f"><label>Màu nhận diện</label><div class="rm-color-row" id="rmColorRow"></div></div>
+    <div class="rm-foot">
+      <button class="abtn ghost" id="rmCancel">Hủy</button>
+      <button class="abtn primary" id="rmSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="14" height="14"><path d="M5 12l5 5L20 6"/></svg>Lưu vai trò</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var AVCOLORS=["#3B5BDB","#2196f3","#7c3aed","#0891b2","#059669","#d97706","#dc2626","#7c3aed","#0f766e","#b45309","#1d4ed8","#6d28d9","#047857","#be185d"];
+var RM_COLORS=["#3B5BDB","#7c3aed","#0891b2","#059669","#d97706","#dc2626","#0f766e","#be185d","#64748b","#1d4ed8"];
+var rmPickedColor=RM_COLORS[0];
+
+/* ── Permission groups & items ── */
+var PERM_GROUPS=[
+  {id:"tasks",label:"Tasks & Time",color:"#3B5BDB",svg:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',perms:[
+    {id:"task.view",name:"Xem tasks",desc:"Xem danh sách và chi tiết task"},
+    {id:"task.create",name:"Tạo task",desc:"Tạo và giao task cho thành viên"},
+    {id:"task.edit",name:"Sửa task",desc:"Chỉnh sửa nội dung và trạng thái task"},
+    {id:"task.delete",name:"Xóa task",desc:"Xóa task khỏi hệ thống"},
+    {id:"task.review",name:"Duyệt task",desc:"Duyệt task hoàn thành của thành viên"},
+    {id:"timelog.view",name:"Xem time log",desc:"Xem lịch sử bấm giờ"},
+    {id:"timelog.manage",name:"Quản lý time log",desc:"Chỉnh sửa và xóa time log"}
+  ]},
+  {id:"hr",label:"Nhân sự",color:"#059669",svg:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke-linecap="round"/><path d="M16 4a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-5" stroke-linecap="round"/>',perms:[
+    {id:"emp.view",name:"Xem nhân viên",desc:"Xem danh sách nhân viên cơ bản"},
+    {id:"emp.view_full",name:"Xem hồ sơ đầy đủ",desc:"Xem CCCD, lương, hợp đồng nhân viên"},
+    {id:"emp.create",name:"Thêm nhân viên",desc:"Tạo hồ sơ nhân viên mới"},
+    {id:"emp.edit",name:"Sửa nhân viên",desc:"Cập nhật thông tin nhân viên"},
+    {id:"emp.delete",name:"Xóa nhân viên",desc:"Xóa hồ sơ nhân viên"},
+    {id:"dept.manage",name:"Quản lý phòng ban",desc:"Tạo, sửa phòng ban và teams"}
+  ]},
+  {id:"time",label:"Chấm công",color:"#0891b2",svg:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/>',perms:[
+    {id:"officetime.view",name:"Xem chấm công",desc:"Xem bảng chấm công của bản thân"},
+    {id:"officetime.view_all",name:"Xem tất cả chấm công",desc:"Xem chấm công của mọi thành viên"},
+    {id:"officetime.approve",name:"Duyệt chấm công",desc:"Duyệt/từ chối bảng chấm công"},
+    {id:"workreg.manage",name:"Cấu hình work rules",desc:"Thiết lập quy tắc giờ làm việc"}
+  ]},
+  {id:"salary",label:"Lương & Thanh toán",color:"#d97706",svg:'<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',perms:[
+    {id:"salary.view_own",name:"Xem lương bản thân",desc:"Xem slip lương của chính mình"},
+    {id:"salary.view_all",name:"Xem tất cả lương",desc:"Xem lương toàn bộ nhân viên"},
+    {id:"salary.manage",name:"Quản lý lương",desc:"Tính toán và chốt bảng lương"},
+    {id:"payment.manage",name:"Quản lý thanh toán",desc:"Tạo và xác nhận lệnh chi"}
+  ]},
+  {id:"perf",label:"Hiệu suất",color:"#7c3aed",svg:'<path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z"/>',perms:[
+    {id:"perf.view_own",name:"Tự đánh giá",desc:"Nộp self-review và xem kết quả bản thân"},
+    {id:"perf.view_all",name:"Xem review tất cả",desc:"Xem kết quả review mọi thành viên"},
+    {id:"perf.review",name:"Đánh giá nhân viên",desc:"Viết và lưu manager review"},
+    {id:"perf.manage",name:"Quản lý chu kỳ",desc:"Tạo và kết thúc chu kỳ đánh giá"}
+  ]},
+  {id:"leave",label:"Nghỉ phép",color:"#be185d",svg:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>',perms:[
+    {id:"leave.apply",name:"Xin nghỉ phép",desc:"Nộp đơn xin nghỉ phép"},
+    {id:"leave.approve",name:"Duyệt nghỉ phép",desc:"Duyệt hoặc từ chối đơn nghỉ"},
+    {id:"leave.manage",name:"Quản lý loại phép",desc:"Tạo và cấu hình loại nghỉ phép"}
+  ]},
+  {id:"admin",label:"Quản trị hệ thống",color:"#64748b",svg:'<path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/>',perms:[
+    {id:"audit.view",name:"Xem audit log",desc:"Xem lịch sử hành động trong hệ thống"},
+    {id:"vault.view",name:"Xem Vault",desc:"Truy cập credentials khách hàng"},
+    {id:"vault.manage",name:"Quản lý Vault",desc:"Thêm/sửa/xóa credentials"},
+    {id:"settings.manage",name:"Cài đặt hệ thống",desc:"Thay đổi cấu hình workspace"},
+    {id:"roles.manage",name:"Quản lý phân quyền",desc:"Tạo, sửa, xóa vai trò"},
+    {id:"billing.manage",name:"Quản lý thanh toán dịch vụ",desc:"Xem và quản lý gói dịch vụ"}
+  ]}
+];
+
+/* ── Roles data ── */
+var ROLES=[
+  {id:"R1",name:"Super Admin",desc:"Toàn quyền hệ thống trên mọi tổ chức",color:"#dc2626",system:true,
+    perms:["task.view","task.create","task.edit","task.delete","task.review","timelog.view","timelog.manage",
+           "emp.view","emp.view_full","emp.create","emp.edit","emp.delete","dept.manage",
+           "officetime.view","officetime.view_all","officetime.approve","workreg.manage",
+           "salary.view_own","salary.view_all","salary.manage","payment.manage",
+           "perf.view_own","perf.view_all","perf.review","perf.manage",
+           "leave.apply","leave.approve","leave.manage",
+           "audit.view","vault.view","vault.manage","settings.manage","roles.manage","billing.manage"],
+    members:["JH-E005"]},
+  {id:"R2",name:"Owner",desc:"Chủ workspace — toàn quyền trong tổ chức",color:"#7c3aed",system:true,
+    perms:["task.view","task.create","task.edit","task.delete","task.review","timelog.view","timelog.manage",
+           "emp.view","emp.view_full","emp.create","emp.edit","emp.delete","dept.manage",
+           "officetime.view","officetime.view_all","officetime.approve","workreg.manage",
+           "salary.view_own","salary.view_all","salary.manage","payment.manage",
+           "perf.view_own","perf.view_all","perf.review","perf.manage",
+           "leave.apply","leave.approve","leave.manage",
+           "audit.view","vault.view","vault.manage","settings.manage","roles.manage","billing.manage"],
+    members:["JH-E001","JH-E002"]},
+  {id:"R3",name:"Manager",desc:"Quản lý team, duyệt leave/chấm công, viết review",color:"#3B5BDB",system:true,
+    perms:["task.view","task.create","task.edit","task.review","timelog.view","timelog.manage",
+           "emp.view","dept.manage",
+           "officetime.view","officetime.view_all","officetime.approve",
+           "salary.view_own",
+           "perf.view_own","perf.view_all","perf.review",
+           "leave.apply","leave.approve",
+           "audit.view"],
+    members:["JH-E001","JH-E006"]},
+  {id:"R4",name:"HR",desc:"Quản lý nhân sự, hợp đồng và thông tin nội bộ",color:"#059669",system:true,
+    perms:["task.view","timelog.view",
+           "emp.view","emp.view_full","emp.create","emp.edit","dept.manage",
+           "officetime.view","officetime.view_all","officetime.approve","workreg.manage",
+           "salary.view_own","salary.view_all","salary.manage",
+           "perf.view_own","perf.view_all",
+           "leave.apply","leave.approve","leave.manage",
+           "audit.view"],
+    members:["JH-E005"]},
+  {id:"R5",name:"Accountant",desc:"Quản lý lương và lịch sử thanh toán",color:"#d97706",system:true,
+    perms:["task.view","timelog.view",
+           "emp.view",
+           "officetime.view",
+           "salary.view_own","salary.view_all","salary.manage","payment.manage",
+           "perf.view_own",
+           "leave.apply",
+           "audit.view"],
+    members:["JH-E012"]},
+  {id:"R6",name:"Member",desc:"Nhân viên — xem thông tin cá nhân, bấm giờ",color:"#0891b2",system:true,
+    perms:["task.view","task.create","task.edit","timelog.view",
+           "emp.view",
+           "officetime.view",
+           "salary.view_own",
+           "perf.view_own",
+           "leave.apply"],
+    members:["JH-E002","JH-E003","JH-E004","JH-E007","JH-E008","JH-E009","JH-E010","JH-E011"]}
+];
+
+var EMPLOYEES=[
+  {id:"JH-E001",name:"Nguyễn Minh Anh",initials:"MA",role:"Frontend Lead",dept:"Engineering",col:0},
+  {id:"JH-E002",name:"Trần Quốc Hoàng",initials:"HG",role:"Backend Developer",dept:"Engineering",col:1},
+  {id:"JH-E003",name:"Lê Thị Lan",initials:"LN",role:"UI/UX Designer",dept:"Design",col:2},
+  {id:"JH-E004",name:"Phạm Văn Tú",initials:"TU",role:"DevOps Engineer",dept:"Engineering",col:3},
+  {id:"JH-E005",name:"Đỗ Thị Lan",initials:"DL",role:"HR Manager",dept:"HR",col:4},
+  {id:"JH-E006",name:"Vũ Thanh Hà",initials:"TH",role:"Product Manager",dept:"Product",col:5},
+  {id:"JH-E007",name:"Nguyễn Đức Nam",initials:"DN",role:"QA Engineer",dept:"Engineering",col:6},
+  {id:"JH-E008",name:"Trần Thị Mai",initials:"TM",role:"Marketing Lead",dept:"Marketing",col:7},
+  {id:"JH-E009",name:"Lê Hoàng Phúc",initials:"HP",role:"Full-stack Dev",dept:"Engineering",col:8},
+  {id:"JH-E010",name:"Bùi Thị Ngọc",initials:"BN",role:"Designer",dept:"Design",col:9},
+  {id:"JH-E011",name:"Hoàng Văn Dũng",initials:"VD",role:"Sales Manager",dept:"Sales",col:10},
+  {id:"JH-E012",name:"Phan Thị Thu",initials:"PT",role:"Accountant",dept:"HR",col:11}
+];
+
+var activeRoleId=ROLES[0].id, openGroups={};
+PERM_GROUPS.forEach(function(g){openGroups[g.id]=true;});
+
+function emp(id){return EMPLOYEES.find(function(e){return e.id===id;})||{initials:"?",name:"Unknown",role:"",dept:"",col:0};}
+
+/* ── Role list ── */
+function renderRoleList(){
+  document.getElementById("roleList").innerHTML=
+    '<div class="role-list-head"><h3>Vai trò <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-3)">('+ROLES.length+')</span></h3></div>'+
+    ROLES.map(function(r){
+      return '<div class="role-item'+(r.id===activeRoleId?" active":"")+'" data-rid="'+r.id+'">'+
+        '<span class="ri-ico" style="background:'+r.color+'22;color:'+r.color+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></span>'+
+        '<div><div class="ri-name">'+r.name+'</div><div class="ri-sub">'+r.members.length+' người dùng</div></div>'+
+        '<span class="ri-ct">'+r.perms.length+' quyền</span>'+
+      '</div>';
+    }).join("");
+  document.querySelectorAll(".role-item[data-rid]").forEach(function(it){
+    it.addEventListener("click",function(){activeRoleId=it.getAttribute("data-rid");renderRoleList();renderRolePanel();});
+  });
+}
+
+/* ── Role panel ── */
+function renderRolePanel(){
+  var r=ROLES.find(function(x){return x.id===activeRoleId;}); if(!r) return;
+  var panel=document.getElementById("rolePanel");
+  var membersHTML=r.members.map(function(id){
+    var e=emp(id);
+    return '<div class="al-row">'+
+      '<span class="al-av" style="background:'+AVCOLORS[e.col%AVCOLORS.length]+'">'+e.initials+'</span>'+
+      '<div><div class="al-name">'+e.name+'</div><div class="al-dept">'+e.role+' · '+e.dept+'</div></div>'+
+      '<span class="emp-status active" style="font-size:0.7rem;margin-left:auto">'+r.name+'</span>'+
+    '</div>';
+  }).join("");
+
+  panel.innerHTML=
+    /* header */
+    '<div class="rp-head">'+
+      '<span class="rp-ico" style="background:'+r.color+'22;color:'+r.color+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></span>'+
+      '<div>'+
+        '<div class="rp-name">'+r.name+'</div>'+
+        '<div class="rp-desc">'+r.desc+'</div>'+
+        '<div class="rp-badges">'+
+          (r.system?'<span class="sys-badge">⚙ Vai trò hệ thống</span>':'')+
+          '<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-3);background:var(--content);border:1px solid var(--border);border-radius:99px;padding:3px 9px">'+r.perms.length+' quyền</span>'+
+          '<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-3);background:var(--content);border:1px solid var(--border);border-radius:99px;padding:3px 9px">'+r.members.length+' thành viên</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="rp-head-actions">'+
+        (!r.system?'<button class="abtn ghost" style="height:32px;font-size:0.8rem" data-act="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M8 6V4h8v2"/></svg>Xóa</button>':'')+
+        '<button class="abtn ghost" style="height:32px;font-size:0.8rem" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Chỉnh sửa</button>'+
+        '<button class="abtn primary" style="height:32px;font-size:0.8rem" data-act="clone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Nhân bản</button>'+
+      '</div>'+
+    '</div>'+
+    /* permission matrix */
+    '<div class="perm-matrix">'+
+      '<div class="pm-head"><h3>Ma trận quyền hạn <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-3)">('+r.perms.length+'/'+countAllPerms()+' quyền được cấp)</span></h3>'+
+        (r.system?'<span style="font-size:0.76rem;color:var(--text-3)">Vai trò hệ thống — chỉ xem</span>':'<button class="abtn primary" style="height:30px;font-size:0.8rem" id="savePermsBtn">Lưu thay đổi</button>')+
+      '</div>'+
+      PERM_GROUPS.map(function(g){
+        var grantedInGroup=g.perms.filter(function(p){return r.perms.indexOf(p.id)>-1;}).length;
+        return '<div class="pm-group'+(openGroups[g.id]?"":" collapsed")+'" data-gid="'+g.id+'">'+
+          '<div class="pm-group-head">'+
+            '<span class="gico" style="background:'+g.color+'22;color:'+g.color+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">'+g.svg+'</svg></span>'+
+            '<span class="glabel">'+g.label+'</span>'+
+            '<span style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-3);margin-left:8px">'+grantedInGroup+'/'+g.perms.length+'</span>'+
+            '<span class="gchev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>'+
+          '</div>'+
+          '<div class="pm-items">'+
+            g.perms.map(function(p){
+              var has=r.perms.indexOf(p.id)>-1;
+              var disabled=r.system;
+              return '<div class="pm-row">'+
+                '<span class="pr-name">'+p.name+'</span>'+
+                '<span class="pr-desc">'+p.desc+'</span>'+
+                '<label class="pm-toggle'+(disabled?" disabled":"")+'" title="'+(disabled?"Vai trò hệ thống không thể sửa":"Bật/tắt quyền này")+'">'+
+                  '<input type="checkbox" '+(has?"checked ":"")+(disabled?"disabled ":"")+' data-pid="'+p.id+'" data-rid="'+r.id+'"/>'+
+                  '<span class="track"></span><span class="thumb"></span>'+
+                '</label>'+
+              '</div>';
+            }).join("")+
+          '</div>'+
+        '</div>';
+      }).join("")+
+    '</div>'+
+    /* assigned members */
+    '<div class="assigned-list">'+
+      '<div class="al-head"><h3>Thành viên được gán vai trò này <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-3)">('+r.members.length+')</span></h3>'+
+        '<button class="abtn ghost" style="height:28px;font-size:0.8rem" data-act="addmem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="12" height="12"><path d="M12 5v14M5 12h14"/></svg>Thêm</button>'+
+      '</div>'+
+      (r.members.length?membersHTML:'<div style="padding:20px;text-align:center;color:var(--text-3);font-size:0.84rem">Chưa có thành viên nào</div>')+
+    '</div>';
+
+  /* group toggle */
+  panel.querySelectorAll(".pm-group-head").forEach(function(h){
+    h.addEventListener("click",function(){
+      var gid=h.parentElement.getAttribute("data-gid");
+      openGroups[gid]=!openGroups[gid];
+      h.parentElement.classList.toggle("collapsed",!openGroups[gid]);
+      h.querySelector(".gchev").style.transform=openGroups[gid]?"":"rotate(-90deg)";
+    });
+  });
+
+  /* permission toggles — live update */
+  panel.querySelectorAll("input[data-pid]").forEach(function(cb){
+    cb.addEventListener("change",function(){
+      var pid=cb.getAttribute("data-pid"), rid=cb.getAttribute("data-rid");
+      var role=ROLES.find(function(x){return x.id===rid;});
+      if(!role||role.system) return;
+      if(cb.checked){ if(role.perms.indexOf(pid)===-1) role.perms.push(pid); }
+      else { role.perms=role.perms.filter(function(p){return p!==pid;}); }
+      renderRoleList();
+    });
+  });
+
+  /* header actions */
+  panel.querySelectorAll("[data-act]").forEach(function(b){
+    b.addEventListener("click",function(){
+      var act=b.getAttribute("data-act");
+      if(act==="edit"){openRoleModal(r);}
+      else if(act==="clone"){
+        var c=JSON.parse(JSON.stringify(r));
+        c.id="R"+(ROLES.length+1); c.name=r.name+" (copy)"; c.system=false;
+        ROLES.push(c); activeRoleId=c.id; renderRoleList(); renderRolePanel();
+      }
+      else if(act==="del"){
+        if(confirm("Xóa vai trò '"+r.name+"'?")){
+          ROLES=ROLES.filter(function(x){return x.id!==r.id;});
+          activeRoleId=ROLES[0].id; renderRoleList(); renderRolePanel();
+        }
+      }
+    });
+  });
+  var spb=document.getElementById("savePermsBtn");
+  if(spb){spb.addEventListener("click",function(){spb.textContent="✓ Đã lưu"; setTimeout(function(){spb.textContent="Lưu thay đổi";},1500);});}
+}
+
+function countAllPerms(){var n=0;PERM_GROUPS.forEach(function(g){n+=g.perms.length;});return n;}
+
+/* ── Color picker ── */
+function buildRmColorPicker(){
+  var c=document.getElementById("rmColorRow");
+  c.innerHTML=RM_COLORS.map(function(col){
+    return '<span class="rm-cpick'+(col===rmPickedColor?" on":"")+'" style="background:'+col+'" data-c="'+col+'"></span>';
+  }).join("");
+  c.querySelectorAll(".rm-cpick").forEach(function(s){
+    s.addEventListener("click",function(){
+      c.querySelectorAll(".rm-cpick").forEach(function(x){x.classList.remove("on");}); s.classList.add("on"); rmPickedColor=s.getAttribute("data-c");
+    });
+  });
+}
+buildRmColorPicker();
+
+/* ── Modal ── */
+var editingRoleId=null;
+function openRoleModal(r){
+  editingRoleId=r?r.id:null;
+  document.getElementById("rmTitle").textContent=r?"Chỉnh sửa vai trò":"Tạo vai trò mới";
+  document.getElementById("rmName").value=r?r.name:"";
+  document.getElementById("rmDesc").value=r?r.desc:"";
+  rmPickedColor=r?r.color:RM_COLORS[0];
+  buildRmColorPicker();
+  document.getElementById("roleModal").classList.add("open");
+}
+document.getElementById("addRoleBtn").addEventListener("click",function(){openRoleModal(null);});
+document.getElementById("rmClose").addEventListener("click",function(){document.getElementById("roleModal").classList.remove("open");});
+document.getElementById("roleScrim").addEventListener("click",function(){document.getElementById("roleModal").classList.remove("open");});
+document.getElementById("rmCancel").addEventListener("click",function(){document.getElementById("roleModal").classList.remove("open");});
+document.getElementById("rmSave").addEventListener("click",function(){
+  var name=document.getElementById("rmName").value.trim(); if(!name){alert("Nhập tên vai trò.");return;}
+  var desc=document.getElementById("rmDesc").value.trim();
+  if(editingRoleId){
+    var r=ROLES.find(function(x){return x.id===editingRoleId;});
+    if(r){r.name=name;r.desc=desc;r.color=rmPickedColor;}
+  } else {
+    ROLES.push({id:"R"+(ROLES.length+1),name:name,desc:desc,color:rmPickedColor,system:false,perms:[],members:[]});
+    activeRoleId=ROLES[ROLES.length-1].id;
+  }
+  document.getElementById("roleModal").classList.remove("open");
+  renderRoleList(); renderRolePanel();
+});
+
+/* ── Init ── */
+renderRoleList();
+renderRolePanel();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

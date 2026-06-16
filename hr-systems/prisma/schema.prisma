@@ -205,6 +205,7 @@ model Employee {
   // Tasks & Time Logs
   tasksAssigned        Task[]                @relation("TaskAssignee")
   tasksCreated         Task[]                @relation("TaskCreator")
+  tasksSupporting      Task[]                @relation("TaskSupport")
   timeLogs             TimeLog[]             @relation("TimeLogEmployee")
   approvedTimeLogs     TimeLog[]             @relation("TimeLogApprover")
 
@@ -380,6 +381,9 @@ model Task {
   assignedTo          Employee     @relation("TaskAssignee", fields: [assignedToId], references: [id])
   assignedById        Int
   assignedBy          Employee     @relation("TaskCreator", fields: [assignedById], references: [id])
+
+  supportId           Int?
+  support             Employee?    @relation("TaskSupport", fields: [supportId], references: [id])
 
   customerId          Int?
   customer            Customer?    @relation(fields: [customerId], references: [id])

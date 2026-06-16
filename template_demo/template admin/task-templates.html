@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Task Templates — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css"/>
+<style>
+/* ── Task Templates page ── */
+
+/* category filter tabs */
+.cat-tabs{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.cat-tab{height:32px;padding:0 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--elev);font-size:.8rem;font-weight:500;color:var(--text-2);cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s,color .15s,box-shadow .15s;white-space:nowrap}
+.cat-tab:hover{border-color:var(--border-2);color:var(--text)}
+.cat-tab.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);font-weight:700}
+.cat-sep{width:1px;height:18px;background:var(--border);margin:0 2px;flex-shrink:0}
+
+.tt-search{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;background:var(--elev);border:1px solid var(--border);border-radius:9px;color:var(--text-3);min-width:220px}
+.tt-search svg{width:14px;height:14px;flex-shrink:0}
+.tt-search input{background:none;border:none;outline:none;font-family:inherit;font-size:.82rem;color:var(--text);width:100%}
+.tt-search input::placeholder{color:var(--text-3)}
+
+/* template grid */
+.tpl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:1100px){.tpl-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:720px){.tpl-grid{grid-template-columns:1fr}}
+
+/* template card */
+.tpl-card{background:var(--elev);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:0;overflow:hidden;cursor:pointer;transition:border-color .18s var(--ease),transform .18s var(--ease),box-shadow .18s;position:relative;display:flex;flex-direction:column}
+.tpl-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,50,.35)}
+.tpl-card-top{padding:18px 18px 14px;flex:1}
+.tpl-card-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+.tpl-type-ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;margin-top:1px}
+.tpl-type-ico svg{width:17px;height:17px;color:#fff}
+.tpl-card-name{font-size:.95rem;font-weight:700;color:var(--text);line-height:1.3;flex:1}
+.tpl-card-desc{font-size:.82rem;color:var(--text-3);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:14px}
+.tpl-checklist-preview{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.tpl-cl-item{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--text-2)}
+.tpl-cl-ico{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border-2);flex-shrink:0;display:grid;place-items:center}
+.tpl-cl-more{font-size:.74rem;color:var(--text-3);font-family:var(--font-mono);margin-left:22px}
+
+.tpl-card-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:color-mix(in srgb,var(--content) 60%,transparent)}
+.tpl-meta{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;color:var(--text-3)}
+.tpl-meta svg{width:12px;height:12px}
+.tpl-usage{font-family:var(--font-mono);font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent-ink);margin-left:auto;white-space:nowrap}
+
+/* card actions (show on hover) */
+.tpl-actions{position:absolute;top:12px;right:12px;display:flex;gap:4px;opacity:0;transition:opacity .15s;z-index:2}
+.tpl-card:hover .tpl-actions{opacity:1}
+.tpl-act-btn{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--text-3);border:1px solid transparent;background:var(--elev);transition:background .12s,color .12s,border-color .12s;cursor:pointer;font-family:inherit}
+.tpl-act-btn:hover{border-color:var(--border-2);color:var(--text)}
+.tpl-act-btn.del:hover{color:var(--danger);border-color:rgba(255,107,107,.3);background:var(--danger-soft)}
+.tpl-act-btn svg{width:14px;height:14px}
+
+/* empty state */
+.tpl-empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-3)}
+.tpl-empty svg{width:52px;height:52px;margin:0 auto 16px;opacity:.3}
+.tpl-empty p{font-size:.95rem;font-weight:500;color:var(--text-2)}
+.tpl-empty span{font-size:.83rem;margin-top:6px;display:block}
+
+/* detail drawer */
+.td-back{position:fixed;inset:0;background:rgba(4,8,18,.6);backdrop-filter:blur(3px);z-index:100;opacity:0;transition:opacity .22s;pointer-events:none}
+.td-back.open{opacity:1;pointer-events:auto}
+.td-drawer{position:fixed;top:0;right:0;height:100vh;width:540px;max-width:96vw;background:var(--elev);border-left:1px solid var(--border-2);box-shadow:-30px 0 60px rgba(0,0,0,.45);z-index:101;transform:translateX(100%);transition:transform .28s var(--ease);display:flex;flex-direction:column;overflow:hidden}
+.td-drawer.open{transform:translateX(0)}
+.td-dhead{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--border);flex-shrink:0}
+.td-dhead .tdi{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.td-dhead .tdi svg{width:18px;height:18px;color:#fff}
+.td-dhead h3{font-size:1rem;font-weight:700;flex:1;min-width:0}
+.td-dhead .td-dclose{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);cursor:pointer;font-family:inherit;border:none;background:none;flex-shrink:0}
+.td-dhead .td-dclose:hover{background:var(--content);color:var(--text)}
+.td-dhead .td-dclose svg{width:17px;height:17px}
+.td-dbody{flex:1;overflow-y:auto;padding:22px}
+
+.dd-sec{font-family:var(--font-mono);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.dd-row{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+.dd-row:last-child{border-bottom:none}
+.dd-row .drl{font-size:.78rem;color:var(--text-3);min-width:110px;flex-shrink:0;padding-top:2px}
+.dd-row .drv{font-size:.88rem;color:var(--text);flex:1}
+.dd-desc{font-size:.88rem;color:var(--text-2);line-height:1.6;margin-bottom:20px;padding:14px;background:var(--content);border-radius:10px;border:1px solid var(--border)}
+
+/* checklist in drawer */
+.dd-cl-list{display:flex;flex-direction:column;gap:6px;margin-bottom:20px}
+.dd-cl-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--content);border:1px solid var(--border);border-radius:9px;transition:border-color .15s}
+.dd-cl-row:hover{border-color:var(--border-2)}
+.dd-cl-check{width:16px;height:16px;border-radius:4px;border:2px solid var(--border-2);flex-shrink:0}
+.dd-cl-text{font-size:.86rem;color:var(--text-2);flex:1}
+.dd-cl-drag{color:var(--border-2);cursor:grab;display:grid;place-items:center}
+.dd-cl-drag svg{width:14px;height:14px}
+
+.td-dfoot{flex-shrink:0;border-top:1px solid var(--border);padding:16px 22px;display:flex;gap:10px}
+
+/* create / edit modal */
+.tpl-modal{width:100%;max-width:680px;max-height:92vh;background:var(--elev);border:1px solid var(--border-2);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}
+.tpl-mhead{display:flex;align-items:center;gap:12px;padding:18px 24px;border-bottom:1px solid var(--border);flex-shrink:0}
+.tpl-mhead .mico{width:32px;height:32px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex-shrink:0}
+.tpl-mhead .mico svg{width:17px;height:17px;color:#fff}
+.tpl-mhead h3{font-size:1.05rem;font-weight:700}
+.tpl-mhead .x{margin-left:auto;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);cursor:pointer;font-family:inherit;border:none;background:none}
+.tpl-mhead .x:hover{background:var(--content);color:var(--text)}
+.tpl-mhead .x svg{width:17px;height:17px}
+.tpl-mbody{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:18px}
+.tpl-mfoot{flex-shrink:0;display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid var(--border)}
+.tpl-mfield{display:flex;flex-direction:column;gap:7px}
+.tpl-mfield label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)}
+.tpl-mfield input,.tpl-mfield select,.tpl-mfield textarea{font-family:inherit;font-size:.9rem;color:var(--text);background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:9px 12px;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.tpl-mfield input:focus,.tpl-mfield select:focus,.tpl-mfield textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.tpl-mfield textarea{resize:vertical;min-height:80px}
+.tpl-mrow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tpl-mrow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+/* issue type selector */
+.itype-row{display:flex;gap:8px;flex-wrap:wrap}
+.itype-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9px;border:1.5px solid var(--border-2);font-size:.84rem;font-weight:500;color:var(--text-2);transition:border-color .15s,background .15s;cursor:pointer;font-family:inherit;background:none}
+.itype-btn .idot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.itype-btn.on{border-color:var(--accent);background:var(--accent-soft);color:var(--text)}
+.itype-btn:hover{border-color:var(--border-2);color:var(--text)}
+
+/* checklist builder */
+.cl-builder{display:flex;flex-direction:column;gap:6px}
+.cl-builder-item{display:flex;align-items:center;gap:8px;background:var(--content);border:1px solid var(--border);border-radius:8px;padding:8px 10px;transition:border-color .15s}
+.cl-builder-item:focus-within{border-color:var(--accent-soft-2)}
+.cl-builder-item .handle{color:var(--border-2);cursor:grab;flex-shrink:0;display:grid;place-items:center}
+.cl-builder-item .handle svg{width:14px;height:14px}
+.cl-builder-item .cl-num{font-family:var(--font-mono);font-size:.7rem;color:var(--text-3);min-width:18px;flex-shrink:0}
+.cl-builder-item input{flex:1;background:none;border:none;outline:none;font-family:inherit;font-size:.86rem;color:var(--text)}
+.cl-builder-item input::placeholder{color:var(--border-2)}
+.cl-builder-item .rm-cl{width:22px;height:22px;border-radius:5px;display:grid;place-items:center;color:var(--text-3);cursor:pointer;flex-shrink:0;font-family:inherit;border:none;background:none;transition:background .12s,color .12s}
+.cl-builder-item .rm-cl:hover{background:var(--danger-soft);color:var(--danger)}
+.cl-builder-item .rm-cl svg{width:12px;height:12px}
+.cl-add-btn{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;border:1.5px dashed var(--border-2);color:var(--text-3);font-size:.84rem;font-weight:500;cursor:pointer;transition:border-color .15s,color .15s,background .15s;font-family:inherit;background:none;width:100%;justify-content:flex-start}
+.cl-add-btn:hover{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
+.cl-add-btn svg{width:15px;height:15px}
+
+/* labels tag input */
+.tags-input{display:flex;flex-wrap:wrap;gap:5px;padding:5px 8px;min-height:38px;background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;cursor:text;transition:border-color .15s,box-shadow .15s}
+.tags-input:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.tags-input .ltag{font-size:.74rem;padding:3px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid var(--accent-soft-2);display:flex;align-items:center;gap:5px}
+.tags-input .ltag .rm{cursor:pointer;opacity:.7;font-size:.8rem}
+.tags-input .ltag .rm:hover{opacity:1}
+.tags-input input{flex:1;min-width:80px;background:none;border:none;font-family:inherit;font-size:.84rem;color:var(--text);outline:none;padding:2px 0}
+.tags-input input::placeholder{color:var(--text-3)}
+
+/* toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--elev);border:1px solid var(--border-2);border-radius:10px;padding:12px 22px;font-size:.86rem;font-weight:500;color:var(--text);box-shadow:var(--shadow-lg);z-index:500;opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-left:3px solid var(--ok)}
+.toast.err{border-left:3px solid var(--danger)}
+</style>
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="side">
+  <div class="side-brand">
+    <span class="lm">j</span>
+    <div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div>
+  </div>
+  <nav class="side-nav scroll" id="sideNav"></nav>
+  <div class="side-foot">
+    <div class="side-user">
+      <span class="av">DL</span>
+      <div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div>
+      <span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <button class="tb-icon menu-btn" id="menuBtn" aria-label="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div><div class="tb-title">Task Templates</div></div>
+    <div class="tb-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <input type="text" placeholder="Tìm template…"/>
+      <kbd>⌘K</kbd>
+    </div>
+    <div class="tb-right">
+      <button class="tb-icon" id="themeToggle" aria-label="Sáng/Tối" title="Sáng/Tối">
+        <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+        <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+      </button>
+      <button class="tb-icon" aria-label="Trợ giúp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3"/><path d="M12 17h.01"/></svg>
+      </button>
+      <button class="tb-icon" aria-label="Thông báo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        <span class="dot"></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="content scroll">
+    <div class="content-inner">
+
+      <!-- Page head -->
+      <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px">
+        <div>
+          <h1>Task Templates</h1>
+          <p><b id="tplCount">—</b> mẫu công việc · chuẩn hoá quy trình lặp lại cho toàn team</p>
+        </div>
+        <button class="abtn primary" id="createTplBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Tạo template
+        </button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpis" id="kpiRow"></div>
+
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:22px">
+        <div class="cat-tabs" id="catTabs"></div>
+        <div class="cat-sep"></div>
+        <div style="flex:1"></div>
+        <div class="tt-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <input type="text" id="tplSearch" placeholder="Tên template, label…"/>
+        </div>
+      </div>
+
+      <!-- Grid -->
+      <div class="tpl-grid" id="tplGrid"></div>
+
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- Detail Drawer -->
+<div class="td-back" id="tdBack"></div>
+<div class="td-drawer" id="tdDrawer">
+  <div class="td-dhead">
+    <div class="tdi" id="ddIco"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div style="flex:1;min-width:0">
+      <h3 id="ddTitle">—</h3>
+      <div id="ddSub" style="font-size:.74rem;color:var(--text-3);font-family:var(--font-mono);margin-top:2px"></div>
+    </div>
+    <button class="td-dclose" id="tdClose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="td-dbody" id="ddBody"></div>
+  <div class="td-dfoot">
+    <button class="abtn ghost" id="ddEditBtn" style="gap:8px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+      Sửa template
+    </button>
+    <button class="abtn primary" id="ddUseBtn" style="gap:8px;flex:1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>
+      Dùng template này
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ── CONSTANTS ── */
+var ISSUE_TYPES = {
+  "Task":    {color:"#3B5BDB", svg:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke-linecap="round" stroke-linejoin="round"/>'},
+  "Bug":     {color:"#ef4444", svg:'<path d="M12 8v4M12 16h.01" stroke-linecap="round"/><circle cx="12" cy="12" r="9"/>'},
+  "Story":   {color:"#22c55e", svg:'<path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M9 9h6M9 13h4" stroke-linecap="round"/>'},
+  "Subtask": {color:"#f59e0b", svg:'<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/>'}
+};
+var PRIO_COLORS = {hi:"var(--danger)",md:"var(--warn)",lo:"var(--ok)"};
+var PRIO_LABELS = {hi:"Cao",md:"Vừa",lo:"Thấp"};
+var MEMBERS = [
+  {v:"MA",l:"Minh Anh"},{v:"HG",l:"Hoàng"},{v:"LN",l:"Lan"},{v:"TU",l:"Tú"},{v:"DL",l:"Do thi Lan"},{v:"",l:"Không chỉ định"}
+];
+
+/* ── DATA ── */
+var nextId = 20;
+var TEMPLATES = [
+  {id:"TPL-001",name:"Backend API Endpoint",type:"Task",prio:"md",estHours:4,category:"Backend",
+   desc:"Template chuẩn cho việc xây dựng một API endpoint mới. Bao gồm thiết kế schema, implementation và viết test đầy đủ.",
+   labels:["API","Backend"],
+   checklist:["Thiết kế request/response schema","Implement route handler","Viết unit tests","Update API docs","Code review & merge PR"],
+   defaultAssignee:"TU",usedCount:23,createdBy:"TU"},
+  {id:"TPL-002",name:"Bug Report & Fix",type:"Bug",prio:"hi",estHours:2,category:"QA",
+   desc:"Template chuẩn cho quy trình phát hiện, reproduce và fix bug. Đảm bảo không tái diễn qua regression test.",
+   labels:["Bug","QA"],
+   checklist:["Mô tả bug và steps to reproduce","Xác định môi trường xảy ra","Tìm root cause","Implement fix","Viết regression test","QA verify trên staging"],
+   defaultAssignee:"HG",usedCount:41,createdBy:"HG"},
+  {id:"TPL-003",name:"UI Component Design",type:"Story",prio:"md",estHours:6,category:"Frontend",
+   desc:"Thiết kế và implement UI component mới theo design system hiện tại. Đảm bảo responsive và accessible.",
+   labels:["UI","Design","Frontend"],
+   checklist:["Figma design & review với team","Xác định component API (props)","Implement component","Kiểm tra responsive (mobile/tablet/desktop)","Accessibility audit (ARIA labels)","Viết Storybook docs","Unit test"],
+   defaultAssignee:"LN",usedCount:18,createdBy:"LN"},
+  {id:"TPL-004",name:"Code Review",type:"Task",prio:"lo",estHours:1,category:"Chung",
+   desc:"Review PR và đưa ra feedback constructive. Kiểm tra logic, test coverage và code style.",
+   labels:["Review"],
+   checklist:["Đọc PR description và linked issue","Review code logic & edge cases","Kiểm tra test coverage","Comment constructive (không chỉ trích)","Approve hoặc request changes"],
+   defaultAssignee:"MA",usedCount:67,createdBy:"MA"},
+  {id:"TPL-005",name:"Technical Documentation",type:"Task",prio:"lo",estHours:3,category:"Docs",
+   desc:"Viết technical docs cho feature, module hoặc API mới. Publish lên Confluence/Wiki nội bộ.",
+   labels:["Docs","Technical"],
+   checklist:["Xác định đối tượng đọc và scope","Outline nội dung chính","Viết draft v1","Review với tech lead / stakeholder","Cập nhật theo feedback","Publish và thông báo team"],
+   defaultAssignee:"TU",usedCount:12,createdBy:"TU"},
+  {id:"TPL-006",name:"Performance Testing",type:"Task",prio:"md",estHours:5,category:"QA",
+   desc:"Kiểm tra hiệu năng và tối ưu hóa hệ thống. Đo lường các chỉ số quan trọng và đề xuất cải tiến.",
+   labels:["Performance","QA","Testing"],
+   checklist:["Setup load testing tool (k6/JMeter)","Định nghĩa SLOs (response time, throughput)","Xây dựng test scenarios","Chạy load test trên staging","Phân tích kết quả","Đề xuất tối ưu hóa","Re-test sau optimize"],
+   defaultAssignee:"HG",usedCount:7,createdBy:"HG"},
+  {id:"TPL-007",name:"Database Migration",type:"Task",prio:"hi",estHours:8,category:"Backend",
+   desc:"Migrate database schema hoặc data một cách an toàn. Có rollback plan và verify data integrity.",
+   labels:["DB","Backend","Migration"],
+   checklist:["Backup toàn bộ DB hiện tại","Viết migration script","Test trên môi trường local","Deploy và test trên staging","Lập kế hoạch rollback","Báo cáo stakeholder và lên lịch","Chạy migration trên production","Verify data integrity sau migration"],
+   defaultAssignee:"TU",usedCount:5,createdBy:"TU"},
+  {id:"TPL-008",name:"Security Audit",type:"Task",prio:"hi",estHours:6,category:"Security",
+   desc:"Kiểm tra bảo mật định kỳ cho module hoặc feature. Phát hiện và vá các lỗ hổng tiềm ẩn.",
+   labels:["Security","Audit"],
+   checklist:["Kiểm tra authentication & authorization","Scan SQL injection / XSS vulnerabilities","Review xử lý dữ liệu nhạy cảm","Kiểm tra rate limiting & input validation","Review CORS & headers bảo mật","Cập nhật security docs & runbook"],
+   defaultAssignee:"DL",usedCount:3,createdBy:"DL"},
+  {id:"TPL-009",name:"Onboarding nhân viên mới",type:"Story",prio:"md",estHours:4,category:"HR",
+   desc:"Checklist đầy đủ cho quy trình onboard nhân viên mới. Đảm bảo nhân viên setup môi trường và hiểu quy trình làm việc.",
+   labels:["HR","Onboarding"],
+   checklist:["Tạo tài khoản (email, Slack, GitHub)","Cấp quyền truy cập hệ thống","Giới thiệu team và quy trình làm việc","Hướng dẫn setup môi trường dev","Giao starter task (buddy task)","1-on-1 sau 1 tuần"],
+   defaultAssignee:"DL",usedCount:9,createdBy:"DL"},
+  {id:"TPL-010",name:"Sprint Planning",type:"Story",prio:"md",estHours:2,category:"Chung",
+   desc:"Template cho buổi sprint planning. Chuẩn bị backlog, ước tính story points và commit sprint goal.",
+   labels:["Agile","Planning","Sprint"],
+   checklist:["Chuẩn bị backlog đã groomed","Xem lại velocity sprint trước","Vote story points (Planning Poker)","Xác định sprint goal","Giao task cho từng thành viên","Cập nhật sprint board"],
+   defaultAssignee:"MA",usedCount:15,createdBy:"MA"}
+];
+
+/* ── STATE ── */
+var selCat = "Tất cả";
+var searchText = "";
+var drawerTplId = null;
+var editLabels = [];
+var editChecklist = [];
+var editIssueType = "Task";
+
+/* ── UTILS ── */
+function getCategories(){
+  var cats = ["Tất cả"];
+  TEMPLATES.forEach(function(t){ if(cats.indexOf(t.category)===-1) cats.push(t.category); });
+  return cats;
+}
+function filtered(){
+  return TEMPLATES.filter(function(t){
+    if(selCat!=="Tất cả" && t.category!==selCat) return false;
+    if(searchText){
+      var q=searchText.toLowerCase();
+      return t.name.toLowerCase().indexOf(q)!==-1 ||
+             (t.desc||"").toLowerCase().indexOf(q)!==-1 ||
+             (t.labels||[]).some(function(l){return l.toLowerCase().indexOf(q)!==-1});
+    }
+    return true;
+  });
+}
+function icoSvg(type){
+  var it=ISSUE_TYPES[type]||ISSUE_TYPES["Task"];
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">'+it.svg+'</svg>';
+}
+
+/* ── KPI CARDS ── */
+function renderKPIs(){
+  var total=TEMPLATES.length;
+  var totalUsed=TEMPLATES.reduce(function(a,t){return a+t.usedCount;},0);
+  var cats=[...new Set(TEMPLATES.map(function(t){return t.category;}))].length;
+  var top=TEMPLATES.slice().sort(function(a,b){return b.usedCount-a.usedCount;})[0];
+  var avgCl=Math.round(TEMPLATES.reduce(function(a,t){return a+(t.checklist||[]).length;},0)/total);
+
+  document.getElementById("tplCount").textContent=total;
+
+  var cards=[
+    {ico:'<path d="M12 2l9 5-9 5-9-5z"/><path d="M3 12l9 5 9-5M3 17l9 5 9-5"/>',
+     lab:"Tổng templates",val:total,chg:cats+" danh mục",cls:"flat"},
+    {ico:'<path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/>',
+     lab:"Lượt dùng",val:totalUsed,chg:"tổng cộng",cls:"up"},
+    {ico:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+     lab:"Dùng nhiều nhất",val:top?top.usedCount+" lần":"—",chg:top?top.name.slice(0,20)+"…":"",cls:"up"},
+    {ico:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+     lab:"TB checklist",val:avgCl+" mục",chg:"mỗi template",cls:"flat"}
+  ];
+  document.getElementById("kpiRow").innerHTML=cards.map(function(k){
+    return '<div class="kpi"><div class="kt"><span class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+k.ico+'</svg></span>'+k.lab+'</div><div class="kv">'+k.val+'</div><div class="kc '+k.cls+'">'+k.chg+'</div></div>';
+  }).join("");
+}
+
+/* ── CATEGORY TABS ── */
+function renderCatTabs(){
+  var cats=getCategories();
+  document.getElementById("catTabs").innerHTML=cats.map(function(c){
+    var cnt=c==="Tất cả"?TEMPLATES.length:TEMPLATES.filter(function(t){return t.category===c;}).length;
+    return '<button class="cat-tab'+(selCat===c?" on":"")+'" data-cat="'+c+'">'+c+
+      '<span style="font-family:var(--font-mono);font-size:.66rem;opacity:.7;margin-left:5px">'+cnt+'</span>'+
+    '</button>';
+  }).join("");
+}
+
+/* ── TEMPLATE GRID ── */
+function renderGrid(){
+  var list=filtered();
+  var grid=document.getElementById("tplGrid");
+  if(!list.length){
+    grid.innerHTML='<div class="tpl-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l9 5-9 5-9-5z"/><path d="M3 12l9 5 9-5M3 17l9 5 9-5"/></svg><p>Không tìm thấy template</p><span>Thay đổi bộ lọc hoặc tạo template mới.</span></div>';
+    return;
+  }
+  grid.innerHTML=list.map(function(t){
+    var it=ISSUE_TYPES[t.type]||ISSUE_TYPES["Task"];
+    var cl=(t.checklist||[]);
+    var clPreview=cl.slice(0,3).map(function(c){
+      return '<div class="tpl-cl-item"><div class="tpl-cl-ico"></div><span>'+c+'</span></div>';
+    }).join("");
+    var clMore=cl.length>3?'<div class="tpl-cl-more">+'+( cl.length-3)+' mục nữa</div>':"";
+    var labels=(t.labels||[]).map(function(l){
+      return '<span style="font-family:var(--font-mono);font-size:.66rem;padding:2px 7px;border-radius:99px;background:var(--elev-2);color:var(--text-2);border:1px solid var(--border)">'+l+'</span>';
+    }).join("");
+
+    return '<div class="tpl-card" data-id="'+t.id+'">'+
+      /* hover actions */
+      '<div class="tpl-actions">'+
+        '<button class="tpl-act-btn edit" data-id="'+t.id+'" title="Sửa">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>'+
+        '</button>'+
+        '<button class="tpl-act-btn del" data-id="'+t.id+'" title="Xóa">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>'+
+        '</button>'+
+      '</div>'+
+      /* card content */
+      '<div class="tpl-card-top">'+
+        '<div class="tpl-card-head">'+
+          '<div class="tpl-type-ico" style="background:'+it.color+'">'+icoSvg(t.type)+'</div>'+
+          '<div>'+
+            '<div class="tpl-card-name">'+t.name+'</div>'+
+            '<span style="font-family:var(--font-mono);font-size:.7rem;color:'+it.color+';font-weight:600">'+t.type+'</span>'+
+            ' <span style="font-family:var(--font-mono);font-size:.7rem;color:var(--text-3)">· '+t.category+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<div class="tpl-card-desc">'+t.desc+'</div>'+
+        (cl.length?'<div class="tpl-checklist-preview">'+clPreview+clMore+'</div>':'')+
+        (t.labels&&t.labels.length?'<div style="display:flex;flex-wrap:wrap;gap:5px">'+labels+'</div>':'')+
+      '</div>'+
+      '<div class="tpl-card-footer">'+
+        '<span class="tpl-meta">'+
+          '<span style="width:8px;height:8px;border-radius:50%;background:'+PRIO_COLORS[t.prio]+';display:inline-block;margin-right:2px"></span>'+
+          PRIO_LABELS[t.prio]+
+        '</span>'+
+        '<span class="tpl-meta">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg>'+
+          t.estHours+'h est'+
+        '</span>'+
+        '<span class="tpl-meta">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>'+
+          cl.length+' bước'+
+        '</span>'+
+        '<span class="tpl-usage">▶ '+t.usedCount+' lần dùng</span>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+}
+
+/* ── DETAIL DRAWER ── */
+function openDrawer(id){
+  var t=TEMPLATES.find(function(x){return x.id===id;});
+  if(!t) return;
+  drawerTplId=id;
+  var it=ISSUE_TYPES[t.type]||ISSUE_TYPES["Task"];
+
+  document.getElementById("ddIco").style.background=it.color;
+  document.getElementById("ddTitle").textContent=t.name;
+  document.getElementById("ddSub").textContent=t.type+' · '+t.category+(t.estHours?' · '+t.estHours+'h est':'');
+
+  var assigneeName=(MEMBERS.find(function(m){return m.v===t.defaultAssignee;})||{l:"Không chỉ định"}).l;
+  var labelsHTML=(t.labels||[]).map(function(l){
+    return '<span style="font-family:var(--font-mono);font-size:.72rem;padding:3px 9px;border-radius:99px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid var(--accent-soft-2)">'+l+'</span>';
+  }).join("");
+
+  var clItems=(t.checklist||[]).map(function(c,i){
+    return '<div class="dd-cl-row">'+
+      '<div class="dd-cl-check"></div>'+
+      '<span class="dd-cl-text"><span style="font-family:var(--font-mono);font-size:.7rem;color:var(--text-3);margin-right:6px">'+(i+1)+'.</span>'+c+'</span>'+
+    '</div>';
+  }).join("");
+
+  document.getElementById("ddBody").innerHTML=
+    '<div class="dd-desc">'+t.desc+'</div>'+
+    '<div class="dd-sec">Thông tin template</div>'+
+    '<div style="background:var(--content);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px">'+
+      '<div class="dd-row"><span class="drl">Loại issue</span><span class="drv"><span style="display:inline-flex;align-items:center;gap:6px;font-size:.84rem;font-weight:600;color:'+it.color+'">'+
+        '<span style="width:22px;height:22px;border-radius:6px;background:'+it.color+';display:grid;place-items:center">'+icoSvg(t.type)+'</span>'+t.type+
+      '</span></span></div>'+
+      '<div class="dd-row"><span class="drl">Danh mục</span><span class="drv">'+t.category+'</span></div>'+
+      '<div class="dd-row"><span class="drl">Ưu tiên mặc định</span><span class="drv">'+
+        '<span style="display:inline-flex;align-items:center;gap:6px">'+
+          '<span style="width:9px;height:9px;border-radius:50%;background:'+PRIO_COLORS[t.prio]+';box-shadow:0 0 8px '+PRIO_COLORS[t.prio]+'66"></span>'+
+          PRIO_LABELS[t.prio]+
+        '</span>'+
+      '</span></div>'+
+      '<div class="dd-row"><span class="drl">Ước tính</span><span class="drv"><span style="font-family:var(--font-mono);font-weight:700">'+t.estHours+'h</span></span></div>'+
+      '<div class="dd-row"><span class="drl">Giao cho</span><span class="drv">'+
+        (t.defaultAssignee?
+          '<span style="display:inline-flex;align-items:center;gap:7px"><span class="av-sm" style="width:22px;height:22px;font-size:.62rem">'+t.defaultAssignee+'</span>'+assigneeName+'</span>':
+          '<span style="color:var(--text-3)">Không chỉ định</span>')+
+      '</span></div>'+
+      (labelsHTML?'<div class="dd-row"><span class="drl">Labels</span><span class="drv" style="display:flex;flex-wrap:wrap;gap:5px">'+labelsHTML+'</span></div>':'')+
+      '<div class="dd-row"><span class="drl">Đã dùng</span><span class="drv"><span style="font-family:var(--font-mono);font-weight:700;color:var(--accent-ink)">'+t.usedCount+' lần</span></span></div>'+
+      '<div class="dd-row" style="border:none"><span class="drl">Tạo bởi</span><span class="drv">'+
+        '<span style="display:inline-flex;align-items:center;gap:7px"><span class="av-sm" style="width:22px;height:22px;font-size:.62rem">'+t.createdBy+'</span>'+
+        (MEMBERS.find(function(m){return m.v===t.createdBy;})||{l:t.createdBy}).l+'</span>'+
+      '</span></div>'+
+    '</div>'+
+    '<div class="dd-sec">Checklist ('+(t.checklist||[]).length+' bước)</div>'+
+    '<div class="dd-cl-list">'+(clItems||'<div style="text-align:center;padding:16px;color:var(--text-3);font-size:.83rem">Chưa có checklist.</div>')+'</div>';
+
+  document.getElementById("tdBack").classList.add("open");
+  document.getElementById("tdDrawer").classList.add("open");
+}
+
+function closeDrawer(){
+  document.getElementById("tdBack").classList.remove("open");
+  document.getElementById("tdDrawer").classList.remove("open");
+  drawerTplId=null;
+}
+
+/* ── CREATE / EDIT MODAL ── */
+function openModal(tpl){
+  var isEdit=!!tpl;
+  editLabels=isEdit?(tpl.labels||[]).slice():[];
+  editChecklist=isEdit?(tpl.checklist||[]).slice():[""];
+  editIssueType=isEdit?tpl.type:"Task";
+
+  if(document.getElementById("tplModal")) return;
+  var back=document.createElement("div");back.className="modal-back";back.id="tplModal";
+
+  function itBtns(){
+    return Object.keys(ISSUE_TYPES).map(function(k){
+      var it=ISSUE_TYPES[k];
+      return '<button class="itype-btn'+(editIssueType===k?" on":"")+'" data-it="'+k+'" style="'+(editIssueType===k?"border-color:"+it.color+";background:"+it.color+"18":"")+'">'+
+        '<span class="idot" style="background:'+it.color+'"></span>'+k+'</button>';
+    }).join("");
+  }
+  function clItems(){
+    return editChecklist.map(function(c,i){
+      return '<div class="cl-builder-item" data-idx="'+i+'">'+
+        '<span class="handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01"/></svg></span>'+
+        '<span class="cl-num">'+(i+1)+'.</span>'+
+        '<input type="text" value="'+escHtml(c)+'" placeholder="Mô tả bước '+(i+1)+'…" data-cl-idx="'+i+'"/>'+
+        '<button class="rm-cl" data-idx="'+i+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'+
+      '</div>';
+    }).join("");
+  }
+  function labelsHtml(){
+    var tags=editLabels.map(function(l,i){
+      return '<span class="ltag">'+l+'<span class="rm" data-li="'+i+'">×</span></span>';
+    }).join("");
+    return tags+'<input type="text" id="lblInput" placeholder="Thêm label, Enter…"/>';
+  }
+  function escHtml(s){return (s||"").replace(/"/g,"&quot;").replace(/</g,"&lt;");}
+
+  back.innerHTML='<div class="tpl-modal">'+
+    '<div class="tpl-mhead">'+
+      '<div class="mico"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2l9 5-9 5-9-5z"/><path d="M3 12l9 5 9-5M3 17l9 5 9-5"/></svg></div>'+
+      '<h3>'+(isEdit?"Sửa template":"Tạo template mới")+'</h3>'+
+      '<button class="x" id="mClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'+
+    '</div>'+
+    '<div class="tpl-mbody">'+
+      /* name */
+      '<div class="tpl-mfield">'+
+        '<label>Tên template <span style="color:var(--danger)">*</span></label>'+
+        '<input type="text" id="mName" placeholder="vd. Backend API Endpoint" value="'+(isEdit?escHtml(tpl.name):"")+'"/>'+
+      '</div>'+
+      /* issue type */
+      '<div class="tpl-mfield">'+
+        '<label>Loại issue</label>'+
+        '<div class="itype-row" id="mItypeRow">'+itBtns()+'</div>'+
+      '</div>'+
+      /* row: category + priority */
+      '<div class="tpl-mrow">'+
+        '<div class="tpl-mfield"><label>Danh mục</label>'+
+          '<input type="text" id="mCat" list="catList" placeholder="vd. Backend, Frontend…" value="'+(isEdit?escHtml(tpl.category):"")+'"/>'+
+          '<datalist id="catList">'+getCategories().filter(function(c){return c!=="Tất cả";}).map(function(c){return '<option>'+c+'</option>';}).join("")+'</datalist>'+
+        '</div>'+
+        '<div class="tpl-mfield"><label>Ưu tiên mặc định</label>'+
+          '<select id="mPrio">'+
+            ['<option value="hi"'+(isEdit&&tpl.prio==="hi"?" selected":"")+'>Cao</option>',
+             '<option value="md"'+((!isEdit||tpl.prio==="md")?" selected":"")+'>Vừa</option>',
+             '<option value="lo"'+(isEdit&&tpl.prio==="lo"?" selected":"")+'>Thấp</option>'].join("")+
+          '</select>'+
+        '</div>'+
+      '</div>'+
+      /* row: est hours + assignee */
+      '<div class="tpl-mrow">'+
+        '<div class="tpl-mfield"><label>Ước tính (giờ)</label>'+
+          '<input type="number" id="mEst" min="0.5" step="0.5" value="'+(isEdit?tpl.estHours:2)+'" placeholder="vd. 4"/>'+
+        '</div>'+
+        '<div class="tpl-mfield"><label>Giao mặc định</label>'+
+          '<select id="mAssignee">'+MEMBERS.map(function(m){return '<option value="'+m.v+'"'+(isEdit&&tpl.defaultAssignee===m.v?" selected":"")+'>'+m.l+'</option>';}).join("")+'</select>'+
+        '</div>'+
+      '</div>'+
+      /* description */
+      '<div class="tpl-mfield">'+
+        '<label>Mô tả</label>'+
+        '<textarea id="mDesc" placeholder="Mô tả ngắn về mục đích của template này…">'+(isEdit?tpl.desc||"":"")+'</textarea>'+
+      '</div>'+
+      /* labels */
+      '<div class="tpl-mfield">'+
+        '<label>Labels</label>'+
+        '<div class="tags-input" id="labelsWrap">'+labelsHtml()+'</div>'+
+      '</div>'+
+      /* checklist */
+      '<div class="tpl-mfield">'+
+        '<label>Checklist <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(kéo để sắp xếp)</span></label>'+
+        '<div class="cl-builder" id="clBuilder">'+clItems()+'</div>'+
+        '<button class="cl-add-btn" id="clAddBtn">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'+
+          'Thêm bước'+
+        '</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="tpl-mfoot">'+
+      '<button class="abtn ghost" id="mCancel">Hủy</button>'+
+      '<button class="abtn primary" id="mSave">'+(isEdit?"Lưu thay đổi":"Tạo template")+'</button>'+
+    '</div>'+
+  '</div>';
+  document.body.appendChild(back);
+
+  /* issue type toggle */
+  document.getElementById("mItypeRow").addEventListener("click",function(e){
+    var b=e.target.closest(".itype-btn"); if(!b) return;
+    editIssueType=b.dataset.it;
+    var it=ISSUE_TYPES[editIssueType];
+    document.querySelectorAll(".itype-btn").forEach(function(x){
+      x.classList.remove("on");x.style.borderColor="";x.style.background="";
+    });
+    b.classList.add("on");b.style.borderColor=it.color;b.style.background=it.color+"18";
+  });
+
+  /* checklist add */
+  document.getElementById("clAddBtn").addEventListener("click",function(){
+    editChecklist.push("");
+    document.getElementById("clBuilder").innerHTML=clItems();
+    wireChecklist();
+    var last=document.querySelector("#clBuilder .cl-builder-item:last-child input");
+    if(last) last.focus();
+  });
+
+  /* checklist wire */
+  function wireChecklist(){
+    document.querySelectorAll(".cl-builder-item input[data-cl-idx]").forEach(function(inp){
+      inp.addEventListener("input",function(){editChecklist[+inp.dataset.clIdx]=inp.value;});
+      inp.addEventListener("keydown",function(e){
+        if(e.key==="Enter"){
+          e.preventDefault();editChecklist.push("");
+          document.getElementById("clBuilder").innerHTML=clItems();wireChecklist();
+          var items=document.querySelectorAll("#clBuilder .cl-builder-item input");
+          if(items.length) items[items.length-1].focus();
+        }
+        if(e.key==="Backspace"&&inp.value===""&&editChecklist.length>1){
+          e.preventDefault();
+          var idx=+inp.dataset.clIdx;
+          editChecklist.splice(idx,1);
+          document.getElementById("clBuilder").innerHTML=clItems();wireChecklist();
+          var prev=document.querySelectorAll("#clBuilder .cl-builder-item input");
+          if(prev[Math.max(0,idx-1)]) prev[Math.max(0,idx-1)].focus();
+        }
+      });
+    });
+    document.querySelectorAll(".rm-cl").forEach(function(btn){
+      btn.addEventListener("click",function(){
+        var idx=+btn.dataset.idx;
+        editChecklist.splice(idx,1);
+        if(!editChecklist.length) editChecklist.push("");
+        document.getElementById("clBuilder").innerHTML=clItems();wireChecklist();
+      });
+    });
+  }
+  wireChecklist();
+
+  /* labels */
+  function syncLabels(){
+    var wrap=document.getElementById("labelsWrap");
+    wrap.querySelectorAll(".ltag").forEach(function(el){el.remove();});
+    var inp=document.getElementById("lblInput");
+    editLabels.forEach(function(l,i){
+      var span=document.createElement("span");span.className="ltag";
+      span.innerHTML=l+'<span class="rm" data-li="'+i+'">×</span>';
+      wrap.insertBefore(span,inp);
+    });
+    wrap.querySelectorAll(".rm").forEach(function(rm){
+      rm.addEventListener("click",function(){editLabels.splice(+rm.dataset.li,1);syncLabels();});
+    });
+  }
+  document.getElementById("labelsWrap").addEventListener("click",function(){document.getElementById("lblInput").focus();});
+  document.getElementById("lblInput").addEventListener("keydown",function(e){
+    var inp=document.getElementById("lblInput");
+    if((e.key==="Enter"||e.key===",")&&inp.value.trim()){
+      e.preventDefault();var v=inp.value.trim().replace(",","");
+      if(editLabels.indexOf(v)===-1) editLabels.push(v);
+      inp.value="";syncLabels();
+    }
+    if(e.key==="Backspace"&&!inp.value&&editLabels.length){editLabels.pop();syncLabels();}
+  });
+
+  /* close */
+  function close(){var m=document.getElementById("tplModal");if(m)m.remove();}
+  back.addEventListener("click",function(e){if(e.target===back)close();});
+  document.getElementById("mClose").addEventListener("click",close);
+  document.getElementById("mCancel").addEventListener("click",close);
+
+  /* save */
+  document.getElementById("mSave").addEventListener("click",function(){
+    var name=document.getElementById("mName").value.trim();
+    var cat=document.getElementById("mCat").value.trim();
+    var prio=document.getElementById("mPrio").value;
+    var est=parseFloat(document.getElementById("mEst").value)||2;
+    var assignee=document.getElementById("mAssignee").value;
+    var desc=document.getElementById("mDesc").value.trim();
+    if(!name){showToast("Vui lòng nhập tên template","err");document.getElementById("mName").focus();return;}
+    var cl=editChecklist.filter(function(c){return c.trim();});
+
+    if(isEdit){
+      var idx=TEMPLATES.findIndex(function(x){return x.id===tpl.id;});
+      if(idx!==-1) TEMPLATES[idx]=Object.assign({},TEMPLATES[idx],{name:name,type:editIssueType,prio:prio,estHours:est,category:cat||"Chung",desc:desc,labels:editLabels.slice(),checklist:cl,defaultAssignee:assignee});
+      showToast("Đã cập nhật template ✓","ok");
+    } else {
+      TEMPLATES.unshift({id:"TPL-"+(nextId++),name:name,type:editIssueType,prio:prio,estHours:est,category:cat||"Chung",desc:desc,labels:editLabels.slice(),checklist:cl,defaultAssignee:assignee,usedCount:0,createdBy:"DL"});
+      showToast("Đã tạo template ✓","ok");
+    }
+    close();closeDrawer();renderAll();
+  });
+
+  requestAnimationFrame(function(){document.getElementById("mName").focus();});
+}
+
+/* ── EVENTS ── */
+document.getElementById("createTplBtn").addEventListener("click",function(){openModal(null);});
+
+document.getElementById("tplGrid").addEventListener("click",function(e){
+  /* edit btn */
+  var eb=e.target.closest(".tpl-act-btn.edit");
+  if(eb){e.stopPropagation();var t=TEMPLATES.find(function(x){return x.id===eb.dataset.id;});if(t)openModal(t);return;}
+  /* delete btn */
+  var db=e.target.closest(".tpl-act-btn.del");
+  if(db){
+    e.stopPropagation();
+    var idx=TEMPLATES.findIndex(function(x){return x.id===db.dataset.id;});
+    if(idx!==-1){TEMPLATES.splice(idx,1);renderAll();showToast("Đã xóa template","ok");}
+    return;
+  }
+  /* card click → drawer */
+  var card=e.target.closest(".tpl-card");
+  if(card) openDrawer(card.dataset.id);
+});
+
+document.getElementById("catTabs").addEventListener("click",function(e){
+  var b=e.target.closest(".cat-tab");if(!b)return;
+  selCat=b.dataset.cat;renderCatTabs();renderGrid();
+});
+
+document.getElementById("tplSearch").addEventListener("input",function(e){
+  searchText=e.target.value.trim();renderGrid();
+});
+
+document.getElementById("tdBack").addEventListener("click",closeDrawer);
+document.getElementById("tdClose").addEventListener("click",closeDrawer);
+
+document.getElementById("ddEditBtn").addEventListener("click",function(){
+  if(!drawerTplId) return;
+  var t=TEMPLATES.find(function(x){return x.id===drawerTplId;});
+  if(t) openModal(t);
+});
+
+document.getElementById("ddUseBtn").addEventListener("click",function(){
+  if(!drawerTplId) return;
+  var idx=TEMPLATES.findIndex(function(x){return x.id===drawerTplId;});
+  if(idx!==-1) TEMPLATES[idx].usedCount++;
+  renderGrid();renderKPIs();closeDrawer();
+  showToast("Template đã được áp dụng — chuyển sang Tasks để xem ✓","ok");
+  setTimeout(function(){window.location.href="tasks.html";},1600);
+});
+
+/* ── TOAST ── */
+function showToast(msg,type){
+  var t=document.getElementById("toast");
+  t.textContent=msg;t.className="toast "+(type||"ok");
+  t.classList.add("show");
+  setTimeout(function(){t.classList.remove("show");},3000);
+}
+
+/* ── RENDER ALL ── */
+function renderAll(){
+  renderKPIs();renderCatTabs();renderGrid();
+  document.getElementById("tplCount").textContent=TEMPLATES.length;
+}
+
+/* ── INIT ── */
+renderAll();
+
+})();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

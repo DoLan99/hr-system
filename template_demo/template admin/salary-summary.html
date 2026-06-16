@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Salary Summary — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css"/>
+<style>
+/* ── Salary Summary page ── */
+
+/* month nav */
+.month-nav{display:inline-flex;align-items:center;gap:4px;background:var(--elev);border:1px solid var(--border);border-radius:9px;padding:3px}
+.month-nav button{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--text-2);border:none;background:none;cursor:pointer;transition:background .15s,color .15s;font-family:inherit}
+.month-nav button:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.month-nav .mval{padding:0 16px;font-size:.87rem;font-weight:700;color:var(--text);min-width:130px;text-align:center}
+
+/* status tabs */
+.sal-tabs{display:flex;gap:4px}
+.sal-tab{height:32px;padding:0 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--elev);font-size:.81rem;font-weight:600;color:var(--text-2);cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.sal-tab:hover{border-color:var(--border-2);color:var(--text)}
+.sal-tab.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+.sal-tab .tcnt{font-family:var(--font-mono);font-size:.64rem;padding:1px 6px;border-radius:99px;background:rgba(255,255,255,.08)}
+.sal-tab.on .tcnt{background:var(--accent-soft-2)}
+
+/* salary status chips */
+.sal-status{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:.69rem;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap}
+.sal-status.paid{background:var(--ok-soft);color:var(--ok)}
+.sal-status.approved{background:rgba(59,91,219,.14);color:var(--accent-ink)}
+.sal-status.processing{background:var(--warn-soft);color:var(--warn)}
+.sal-status.draft{background:var(--border);color:var(--text-3)}
+
+/* top grid (chart + tabs) */
+.sal-top-grid{display:grid;grid-template-columns:1fr 260px;gap:16px;margin-bottom:20px}
+@media(max-width:760px){.sal-top-grid{grid-template-columns:1fr}}
+
+/* main table */
+.sal-table-wrap{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow-x:auto}
+.sal-table{width:100%;border-collapse:collapse;min-width:900px}
+.sal-table th{text-align:right;padding:10px 14px;font-family:var(--font-mono);font-size:.63rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);font-weight:600;background:var(--content);border-bottom:1px solid var(--border);white-space:nowrap}
+.sal-table th:first-child,.sal-table th:last-child,.sal-table th:nth-child(2){text-align:left}
+.sal-table td{padding:13px 14px;border-bottom:1px solid var(--border);vertical-align:middle;text-align:right;white-space:nowrap}
+.sal-table td:first-child,.sal-table td:last-child,.sal-table td:nth-child(2){text-align:left}
+.sal-table tbody tr:last-child td{border-bottom:none}
+.sal-table tbody tr{transition:background .12s;cursor:pointer}
+.sal-table tbody tr:hover{background:var(--content)}
+.sal-table tfoot td{padding:12px 14px;border-top:2px solid var(--border-2);background:var(--content);font-weight:700;font-family:var(--font-mono);font-size:.82rem}
+.sal-table tfoot td:first-child{text-align:left;color:var(--text-3);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}
+
+/* money cells */
+.money{font-family:var(--font-mono);font-size:.85rem;color:var(--text)}
+.money.base{color:var(--text-2)}
+.money.net{font-weight:800;font-size:.9rem;color:var(--text)}
+.money.deduct{color:var(--danger-soft);color:rgba(255,107,107,.8)}
+.money.bonus{color:var(--ok)}
+.days-cell{font-family:var(--font-mono);font-size:.78rem;color:var(--text-2)}
+
+/* payslip drawer */
+.ps-back{position:fixed;inset:0;background:rgba(4,8,18,.6);backdrop-filter:blur(3px);z-index:100;opacity:0;transition:opacity .22s;pointer-events:none}
+.ps-back.open{opacity:1;pointer-events:auto}
+.ps-drawer{position:fixed;top:0;right:0;height:100vh;width:560px;max-width:97vw;background:var(--elev);border-left:1px solid var(--border-2);box-shadow:-30px 0 60px rgba(0,0,0,.45);z-index:101;transform:translateX(100%);transition:transform .28s var(--ease);display:flex;flex-direction:column;overflow:hidden}
+.ps-drawer.open{transform:translateX(0)}
+.ps-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--border);flex-shrink:0}
+.ps-close{margin-left:auto;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);cursor:pointer;font-family:inherit;border:none;background:none}
+.ps-close:hover{background:var(--content);color:var(--text)}
+.ps-close svg{width:17px;height:17px}
+.ps-body{flex:1;overflow-y:auto;padding:22px}
+
+/* payslip card */
+.payslip-card{background:var(--content);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:18px}
+.pc-header{padding:18px 20px;background:linear-gradient(135deg,var(--accent),var(--accent-2));position:relative;overflow:hidden}
+.pc-header::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.08) 1px,transparent 1px);background-size:18px 18px;pointer-events:none}
+.pc-header h3{font-size:1.05rem;font-weight:800;color:#fff;letter-spacing:-.02em}
+.pc-header .pch-sub{font-size:.76rem;color:rgba(255,255,255,.75);margin-top:3px;font-family:var(--font-mono)}
+.pc-header .pch-net{font-size:2rem;font-weight:800;color:#fff;font-family:var(--font-mono);letter-spacing:-.03em;margin-top:12px;line-height:1}
+.pc-header .pch-netlbl{font-size:.72rem;color:rgba(255,255,255,.65);margin-top:4px}
+
+.ps-row{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--border)}
+.ps-row:last-child{border-bottom:none}
+.ps-row .prl{font-size:.84rem;color:var(--text-2);display:flex;align-items:center;gap:8px}
+.ps-row .prl .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ps-row .prv{font-family:var(--font-mono);font-size:.86rem;font-weight:700;color:var(--text)}
+.ps-section-head{padding:10px 18px 6px;background:var(--elev);border-bottom:1px solid var(--border)}
+.ps-section-head span{font-family:var(--font-mono);font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3)}
+.ps-total-row{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:var(--elev);border-top:2px solid var(--border-2)}
+.ps-total-row .ptl{font-size:.86rem;font-weight:700;color:var(--text)}
+.ps-total-row .ptv{font-family:var(--font-mono);font-size:1rem;font-weight:800}
+
+/* approval flow actions */
+.ps-actions{display:flex;gap:8px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap}
+
+/* bar chart mini */
+.sal-chart{display:flex;align-items:flex-end;gap:6px;height:100px;padding:10px 0 0}
+.sal-chart .sc-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.sal-chart .sc-bar{width:100%;max-width:32px;border-radius:5px 5px 2px 2px;transition:height .4s var(--ease),background .2s;cursor:pointer;min-height:4px}
+.sal-chart .sc-bar:hover{opacity:.8}
+.sal-chart .sc-bar.active{background:linear-gradient(180deg,var(--accent-2),var(--accent))}
+.sal-chart .sc-lbl{font-family:var(--font-mono);font-size:.62rem;color:var(--text-3)}
+
+/* bulk action bar */
+.bulk-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--accent-soft);border:1px solid var(--accent-soft-2);border-radius:10px;margin-bottom:16px}
+.bulk-bar span{font-size:.85rem;color:var(--text-2)}
+.bulk-bar b{color:var(--text)}
+
+/* toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--elev);border:1px solid var(--border-2);border-radius:10px;padding:12px 22px;font-size:.86rem;font-weight:500;color:var(--text);box-shadow:var(--shadow-lg);z-index:500;opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-left:3px solid var(--ok)}
+.toast.warn{border-left:3px solid var(--warn)}
+.toast.err{border-left:3px solid var(--danger)}
+</style>
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="app">
+<aside class="side">
+  <div class="side-brand"><span class="lm">j</span><div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div></div>
+  <nav class="side-nav scroll" id="sideNav"></nav>
+  <div class="side-foot"><div class="side-user"><span class="av">DL</span><div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span></div></div>
+</aside>
+<div class="main">
+  <header class="topbar">
+    <button class="tb-icon menu-btn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div><div class="tb-title">Salary Summary</div></div>
+    <div class="tb-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input type="text" placeholder="Tìm nhân sự…"/><kbd>⌘K</kbd></div>
+    <div class="tb-right">
+      <button class="tb-icon" id="themeToggle" aria-label="Sáng/Tối">
+        <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+        <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+      </button>
+      <button class="tb-icon" aria-label="Thông báo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+    </div>
+  </header>
+
+  <main class="content scroll">
+    <div class="content-inner">
+
+      <!-- Page head -->
+      <div class="page-head" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px">
+        <div>
+          <h1>Salary Summary</h1>
+          <p>Bảng lương · <b id="monthDisplay">Tháng 6/2026</b> · Quỹ lương: <b id="totalFund">—</b></p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="month-nav">
+            <button id="prevMonth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <span class="mval" id="monthNav">Tháng 6 / 2026</span>
+            <button id="nextMonth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+          </div>
+          <button class="abtn ghost" id="exportBtn" style="gap:7px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Xuất Excel
+          </button>
+          <button class="abtn primary" id="runPayrollBtn" style="gap:7px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Chạy bảng lương
+          </button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpis" id="kpiRow"></div>
+
+      <!-- Chart + tabs row -->
+      <div class="sal-top-grid">
+        <!-- Status tabs + bulk -->
+        <div style="display:flex;flex-direction:column;gap:10px;justify-content:flex-end">
+          <div class="sal-tabs" id="salTabs"></div>
+          <div class="bulk-bar" id="bulkBar" style="display:none">
+            <span><b id="bulkCount">0</b> bản ghi được chọn</span>
+            <button class="abtn primary" id="bulkApprove" style="height:32px;font-size:.8rem">✓ Duyệt tất cả</button>
+            <button class="abtn ghost" id="bulkPay" style="height:32px;font-size:.8rem">💸 Thanh toán</button>
+          </div>
+        </div>
+        <!-- Mini chart -->
+        <div style="background:var(--elev);border:1px solid var(--border);border-radius:var(--r);padding:14px">
+          <div style="font-size:.76rem;font-weight:700;color:var(--text-3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Quỹ lương 6 tháng</div>
+          <div class="sal-chart" id="salChart"></div>
+          <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.62rem;color:var(--text-3);margin-top:6px">
+            <span>T1</span><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span style="color:var(--accent-ink);font-weight:700">T6</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="sal-table-wrap">
+        <table class="sal-table">
+          <thead>
+            <tr>
+              <th style="width:32px"><input type="checkbox" id="checkAll" style="accent-color:var(--accent);cursor:pointer"/></th>
+              <th>Nhân sự</th>
+              <th>Lương CB</th>
+              <th>OT</th>
+              <th>Phụ cấp</th>
+              <th>Thưởng</th>
+              <th>Gross</th>
+              <th>Khấu trừ</th>
+              <th style="color:var(--text)">Thực lĩnh</th>
+              <th>Ngày làm</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody id="salBody"></tbody>
+          <tfoot><tr id="salFoot"></tr></tfoot>
+        </table>
+      </div>
+
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- Payslip drawer -->
+<div class="ps-back" id="psBack"></div>
+<div class="ps-drawer" id="psDrawer">
+  <div class="ps-head">
+    <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#8b7bff,#4f7aff);display:grid;place-items:center;color:#fff;font-size:.84rem;font-weight:700;flex-shrink:0" id="psAv">—</div>
+    <div style="flex:1;min-width:0">
+      <div id="psName" style="font-size:.98rem;font-weight:700;color:var(--text)"></div>
+      <div id="psMeta" style="font-size:.74rem;color:var(--text-3);font-family:var(--font-mono);margin-top:2px"></div>
+    </div>
+    <button class="ps-close" id="psClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="ps-body" id="psBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ── DATA ── */
+var MEMBERS = [
+  {v:"MA",l:"Minh Anh",role:"Frontend Lead",dept:"Frontend"},
+  {v:"HG",l:"Hoàng",role:"Backend Dev",dept:"Backend"},
+  {v:"LN",l:"Lan",role:"UI/UX Designer",dept:"Design"},
+  {v:"TU",l:"Tú",role:"Backend Dev",dept:"Backend"},
+  {v:"DL",l:"Do thi Lan",role:"GM",dept:"GM"}
+];
+
+var PAYROLL = [
+  {id:"SAL-001",who:"MA",period:"2026-06",
+   base:18000000,otHrs:0,otAmt:0,allowance:1500000,bonus:2000000,
+   gross:21500000,bhxh:1440000,bhyt:270000,pit:1200000,
+   net:18590000,workDays:22,leaveDays:0,
+   status:"paid",approver:"DL",paidAt:"25/06/2026"},
+  {id:"SAL-002",who:"HG",period:"2026-06",
+   base:14000000,otHrs:8,otAmt:875000,allowance:1000000,bonus:0,
+   gross:15875000,bhxh:1120000,bhyt:210000,pit:520000,
+   net:14025000,workDays:22,leaveDays:0,
+   status:"approved",approver:"DL",paidAt:null},
+  {id:"SAL-003",who:"LN",period:"2026-06",
+   base:12000000,otHrs:0,otAmt:0,allowance:1000000,bonus:0,
+   gross:13000000,bhxh:960000,bhyt:180000,pit:280000,
+   net:11580000,workDays:21,leaveDays:1,
+   status:"approved",approver:"DL",paidAt:null},
+  {id:"SAL-004",who:"TU",period:"2026-06",
+   base:16000000,otHrs:4,otAmt:500000,allowance:1000000,bonus:1000000,
+   gross:18500000,bhxh:1280000,bhyt:240000,pit:900000,
+   net:16080000,workDays:22,leaveDays:0,
+   status:"processing",approver:null,paidAt:null},
+  {id:"SAL-005",who:"DL",period:"2026-06",
+   base:25000000,otHrs:0,otAmt:0,allowance:2000000,bonus:0,
+   gross:27000000,bhxh:2000000,bhyt:375000,pit:2400000,
+   net:22225000,workDays:22,leaveDays:0,
+   status:"draft",approver:null,paidAt:null}
+];
+
+var CHART_DATA = [62,65,63,67,70,76]; /* triệu đồng, T1-T6 */
+
+var selStatus = "all";
+var checkedIds = new Set();
+var openSalId = null;
+
+/* ── UTILS ── */
+function fmt(n){
+  if(n>=1000000) return (n/1000000).toFixed(1).replace(".0","")+"tr";
+  if(n>=1000) return (n/1000).toFixed(0)+"k";
+  return n.toLocaleString("vi-VN");
+}
+function fmtFull(n){return n.toLocaleString("vi-VN")+"đ";}
+function mn(v){var m=MEMBERS.find(function(x){return x.v===v;});return m?m.l:v;}
+function mr(v){var m=MEMBERS.find(function(x){return x.v===v;});return m?m.role:"";}
+function statusLabel(s){return {paid:"Đã trả",approved:"Đã duyệt",processing:"Đang xử lý",draft:"Nháp"}[s]||s;}
+function filtered(){
+  if(selStatus==="all") return PAYROLL;
+  return PAYROLL.filter(function(p){return p.status===selStatus;});
+}
+
+/* ── KPI CARDS ── */
+function renderKPIs(){
+  var totalNet=PAYROLL.reduce(function(a,p){return a+p.net;},0);
+  var paid=PAYROLL.filter(function(p){return p.status==="paid";});
+  var paidAmt=paid.reduce(function(a,p){return a+p.net;},0);
+  var pending=PAYROLL.filter(function(p){return p.status==="approved";}).length;
+  var draft=PAYROLL.filter(function(p){return p.status==="draft"||p.status==="processing";}).length;
+  var totalGross=PAYROLL.reduce(function(a,p){return a+p.gross;},0);
+
+  document.getElementById("totalFund").textContent=fmt(totalNet);
+
+  var cards=[
+    {ico:'<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+     lab:"Quỹ lương (net)",val:fmt(totalNet),chg:"tổng thực lĩnh",cls:"flat"},
+    {ico:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+     lab:"Đã thanh toán",val:fmt(paidAmt),chg:paid.length+" người",cls:"up"},
+    {ico:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round" stroke-linejoin="round"/>',
+     lab:"Chờ thanh toán",val:pending,chg:"đã duyệt, chưa trả",cls:pending>0?"warn":"flat"},
+    {ico:'<path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/>',
+     lab:"Gross tháng này",val:fmt(totalGross),chg:"trước khấu trừ",cls:"flat"}
+  ];
+  document.getElementById("kpiRow").innerHTML=cards.map(function(k){
+    return '<div class="kpi"><div class="kt"><span class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+k.ico+'</svg></span>'+k.lab+'</div><div class="kv">'+k.val+'</div><div class="kc '+k.cls+'">'+k.chg+'</div></div>';
+  }).join("");
+}
+
+/* ── STATUS TABS ── */
+function renderTabs(){
+  var counts={all:PAYROLL.length,paid:0,approved:0,processing:0,draft:0};
+  PAYROLL.forEach(function(p){if(counts[p.status]!==undefined)counts[p.status]++;});
+  var tabs=[{k:"all",l:"Tất cả"},{k:"paid",l:"Đã trả"},{k:"approved",l:"Đã duyệt"},{k:"processing",l:"Đang xử lý"},{k:"draft",l:"Nháp"}];
+  document.getElementById("salTabs").innerHTML=tabs.map(function(t){
+    return '<button class="sal-tab'+(selStatus===t.k?" on":"")+'" data-s="'+t.k+'">'+t.l+'<span class="tcnt">'+counts[t.k]+'</span></button>';
+  }).join("");
+}
+
+/* ── CHART ── */
+function renderChart(){
+  var max=Math.max.apply(null,CHART_DATA);
+  document.getElementById("salChart").innerHTML=CHART_DATA.map(function(v,i){
+    var pct=Math.round(v/max*100);
+    var isActive=i===5;
+    return '<div class="sc-col">'+
+      '<div class="sc-bar'+(isActive?" active":"")+'" style="height:'+pct+'%;background:'+(isActive?"":v>=70?"rgba(74,222,128,.25)":"rgba(59,91,219,.2)")+'"  title="'+v+'tr"></div>'+
+    '</div>';
+  }).join("");
+}
+
+/* ── RENDER TABLE ── */
+function renderTable(){
+  var list=filtered();
+  var body=document.getElementById("salBody");
+
+  if(!list.length){
+    body.innerHTML='<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--text-3)">Không có dữ liệu.</td></tr>';
+    return;
+  }
+
+  body.innerHTML=list.map(function(s){
+    var checked=checkedIds.has(s.id);
+    var deduct=s.bhxh+s.bhyt+s.pit;
+    return '<tr data-id="'+s.id+'">'+
+      '<td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" data-id="'+s.id+'" '+(checked?"checked":"")+' style="accent-color:var(--accent);cursor:pointer"/></td>'+
+      '<td><div style="display:flex;align-items:center;gap:8px">'+
+        '<span class="av-sm" style="width:26px;height:26px;font-size:.66rem;flex-shrink:0">'+s.who+'</span>'+
+        '<div><div style="font-size:.87rem;font-weight:600;color:var(--text)">'+mn(s.who)+'</div>'+
+          '<div style="font-size:.72rem;color:var(--text-3);font-family:var(--font-mono)">'+mr(s.who)+'</div>'+
+        '</div>'+
+      '</div></td>'+
+      '<td class="money base">'+fmt(s.base)+'</td>'+
+      '<td class="money">'+(s.otAmt>0?'<span style="color:var(--warn)">+'+fmt(s.otAmt)+'</span>':'—')+'</td>'+
+      '<td class="money">'+fmt(s.allowance)+'</td>'+
+      '<td class="money bonus">'+(s.bonus>0?'+'+fmt(s.bonus):'—')+'</td>'+
+      '<td class="money" style="font-weight:600">'+fmt(s.gross)+'</td>'+
+      '<td class="money deduct">−'+fmt(deduct)+'</td>'+
+      '<td class="money net">'+fmt(s.net)+'</td>'+
+      '<td class="days-cell" style="text-align:center">'+s.workDays+'ngày'+(s.leaveDays>0?'<br><span style="color:var(--warn)">−'+s.leaveDays+'NP</span>':'')+'</td>'+
+      '<td><span class="sal-status '+s.status+'">'+statusLabel(s.status)+'</span></td>'+
+    '</tr>';
+  }).join("");
+
+  /* footer totals */
+  var totBase=list.reduce(function(a,s){return a+s.base;},0);
+  var totGross=list.reduce(function(a,s){return a+s.gross;},0);
+  var totDeduct=list.reduce(function(a,s){return a+s.bhxh+s.bhyt+s.pit;},0);
+  var totNet=list.reduce(function(a,s){return a+s.net;},0);
+  document.getElementById("salFoot").innerHTML=
+    '<td></td><td style="text-align:left;color:var(--text-3);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em">Tổng '+list.length+' người</td>'+
+    '<td>'+fmt(totBase)+'</td><td>—</td><td>—</td><td>—</td>'+
+    '<td style="color:var(--text)">'+fmt(totGross)+'</td>'+
+    '<td style="color:var(--danger)">−'+fmt(totDeduct)+'</td>'+
+    '<td style="color:var(--ok);font-size:.95rem">'+fmt(totNet)+'</td>'+
+    '<td></td><td></td>';
+}
+
+/* ── PAYSLIP DRAWER ── */
+function openDrawer(id){
+  var s=PAYROLL.find(function(x){return x.id===id;});
+  if(!s) return;
+  openSalId=id;
+  var deduct=s.bhxh+s.bhyt+s.pit;
+
+  document.getElementById("psAv").textContent=s.who;
+  document.getElementById("psName").textContent=mn(s.who);
+  document.getElementById("psMeta").textContent=mr(s.who)+" · Tháng 6/2026 · "+s.id;
+
+  var actionHtml="";
+  if(s.status==="processing"){
+    actionHtml='<div class="ps-actions">'+
+      '<button class="abtn primary" id="psApprove" style="gap:7px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M5 12l5 5L20 6"/></svg>Phê duyệt</button>'+
+      '<button class="abtn ghost" id="psReject" style="color:var(--danger);border-color:rgba(255,107,107,.3)">Từ chối</button>'+
+    '</div>';
+  } else if(s.status==="approved"){
+    actionHtml='<div class="ps-actions">'+
+      '<button class="abtn primary" id="psPay" style="gap:7px;background:var(--ok);box-shadow:0 6px 16px rgba(74,222,128,.3)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Thanh toán ngay</button>'+
+      '<button class="abtn ghost" id="psExport">📄 Xuất payslip</button>'+
+    '</div>';
+  } else if(s.status==="paid"){
+    actionHtml='<div class="ps-actions">'+
+      '<button class="abtn ghost" id="psExport">📄 Xuất payslip PDF</button>'+
+      '<div style="font-size:.78rem;color:var(--ok);font-family:var(--font-mono);display:flex;align-items:center;gap:5px">'+
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M5 12l5 5L20 6"/></svg>'+
+        'Đã thanh toán '+s.paidAt+
+      '</div>'+
+    '</div>';
+  }
+
+  document.getElementById("psBody").innerHTML=
+    '<div class="payslip-card">'+
+      '<div class="pc-header">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between">'+
+          '<div>'+
+            '<h3>Phiếu lương · Tháng 6/2026</h3>'+
+            '<div class="pch-sub">jobihome.vn · '+mn(s.who)+' · '+mr(s.who)+'</div>'+
+          '</div>'+
+          '<span class="sal-status '+s.status+'" style="background:rgba(255,255,255,.2);color:#fff">'+statusLabel(s.status)+'</span>'+
+        '</div>'+
+        '<div class="pch-net">'+fmtFull(s.net)+'</div>'+
+        '<div class="pch-netlbl">Thực lĩnh (sau khấu trừ)</div>'+
+      '</div>'+
+      '<div class="ps-section-head"><span>Thu nhập</span></div>'+
+      '<div class="ps-row"><span class="prl"><span class="dot" style="background:var(--accent-ink)"></span>Lương cơ bản</span><span class="prv">'+fmtFull(s.base)+'</span></div>'+
+      (s.otAmt>0?'<div class="ps-row"><span class="prl"><span class="dot" style="background:var(--warn)"></span>Làm thêm giờ ('+s.otHrs+'h)</span><span class="prv" style="color:var(--warn)">+'+fmtFull(s.otAmt)+'</span></div>':'')+
+      '<div class="ps-row"><span class="prl"><span class="dot" style="background:var(--text-3)"></span>Phụ cấp (đi lại, điện thoại)</span><span class="prv">+'+fmtFull(s.allowance)+'</span></div>'+
+      (s.bonus>0?'<div class="ps-row"><span class="prl"><span class="dot" style="background:var(--ok)"></span>Thưởng Q2</span><span class="prv" style="color:var(--ok)">+'+fmtFull(s.bonus)+'</span></div>':'')+
+      '<div class="ps-total-row"><span class="ptl">Tổng thu nhập (Gross)</span><span class="ptv">'+fmtFull(s.gross)+'</span></div>'+
+      '<div class="ps-section-head"><span>Khấu trừ</span></div>'+
+      '<div class="ps-row"><span class="prl"><span class="dot" style="background:var(--danger)"></span>BHXH (8%)</span><span class="prv" style="color:rgba(255,107,107,.8)">−'+fmtFull(s.bhxh)+'</span></div>'+
+      '<div class="ps-row"><span class="prl"><span class="dot" style="background:var(--danger)"></span>BHYT (1.5%)</span><span class="prv" style="color:rgba(255,107,107,.8)">−'+fmtFull(s.bhyt)+'</span></div>'+
+      '<div class="ps-row"><span class="prl"><span class="dot" style="background:var(--danger)"></span>Thuế TNCN</span><span class="prv" style="color:rgba(255,107,107,.8)">−'+fmtFull(s.pit)+'</span></div>'+
+      '<div class="ps-total-row"><span class="ptl">Tổng khấu trừ</span><span class="ptv" style="color:var(--danger)">−'+fmtFull(deduct)+'</span></div>'+
+      '<div style="padding:16px 18px;background:linear-gradient(90deg,rgba(59,91,219,.08),transparent);border-top:2px solid var(--accent-soft-2)">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between">'+
+          '<span style="font-size:1rem;font-weight:800;color:var(--text)">Thực lĩnh</span>'+
+          '<span style="font-family:var(--font-mono);font-size:1.3rem;font-weight:800;color:var(--ok)">'+fmtFull(s.net)+'</span>'+
+        '</div>'+
+        '<div style="display:flex;gap:16px;margin-top:10px;font-family:var(--font-mono);font-size:.72rem;color:var(--text-3)">'+
+          '<span>Ngày làm: <b style="color:var(--text)">'+s.workDays+' ngày</b></span>'+
+          (s.leaveDays>0?'<span>Nghỉ phép: <b style="color:var(--warn)">'+s.leaveDays+' ngày</b></span>':'')+
+          (s.paidAt?'<span>Ngày trả: <b style="color:var(--ok)">'+s.paidAt+'</b></span>':'')+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    actionHtml;
+
+  /* action events */
+  requestAnimationFrame(function(){
+    var ap=document.getElementById("psApprove");
+    if(ap) ap.addEventListener("click",function(){
+      var idx=PAYROLL.findIndex(function(x){return x.id===openSalId;});
+      if(idx!==-1){PAYROLL[idx].status="approved";PAYROLL[idx].approver="DL";}
+      closeDrawer();renderAll();showToast("Đã phê duyệt lương "+mn(s.who)+" ✓","ok");
+    });
+    var pay=document.getElementById("psPay");
+    if(pay) pay.addEventListener("click",function(){
+      var idx=PAYROLL.findIndex(function(x){return x.id===openSalId;});
+      if(idx!==-1){PAYROLL[idx].status="paid";PAYROLL[idx].paidAt="25/06/2026";}
+      closeDrawer();renderAll();showToast("Đã thanh toán cho "+mn(s.who)+" ✓","ok");
+    });
+    var rej=document.getElementById("psReject");
+    if(rej) rej.addEventListener("click",function(){
+      var idx=PAYROLL.findIndex(function(x){return x.id===openSalId;});
+      if(idx!==-1){PAYROLL[idx].status="draft";}
+      closeDrawer();renderAll();showToast("Đã từ chối, trả về nháp","warn");
+    });
+    var ex=document.getElementById("psExport");
+    if(ex) ex.addEventListener("click",function(){showToast("Đang tạo PDF payslip…","ok");});
+  });
+
+  document.getElementById("psBack").classList.add("open");
+  document.getElementById("psDrawer").classList.add("open");
+}
+
+function closeDrawer(){
+  document.getElementById("psBack").classList.remove("open");
+  document.getElementById("psDrawer").classList.remove("open");
+  openSalId=null;
+}
+
+/* ── CHECKBOX LOGIC ── */
+function updateBulkBar(){
+  var bar=document.getElementById("bulkBar");
+  bar.style.display=checkedIds.size>0?"flex":"none";
+  document.getElementById("bulkCount").textContent=checkedIds.size;
+}
+
+document.getElementById("checkAll").addEventListener("change",function(){
+  var checked=this.checked;
+  filtered().forEach(function(s){checked?checkedIds.add(s.id):checkedIds.delete(s.id);});
+  renderTable();updateBulkBar();
+});
+
+/* ── EVENTS ── */
+document.getElementById("salBody").addEventListener("click",function(e){
+  var cb=e.target.closest(".row-check");
+  if(cb){
+    e.stopPropagation();
+    var id=cb.dataset.id;
+    cb.checked?checkedIds.add(id):checkedIds.delete(id);
+    updateBulkBar();return;
+  }
+  var row=e.target.closest("tr[data-id]");
+  if(row) openDrawer(row.dataset.id);
+});
+
+document.getElementById("salTabs").addEventListener("click",function(e){
+  var b=e.target.closest(".sal-tab[data-s]");if(!b)return;
+  selStatus=b.dataset.s;checkedIds.clear();renderTabs();renderTable();updateBulkBar();
+});
+
+document.getElementById("psBack").addEventListener("click",closeDrawer);
+document.getElementById("psClose").addEventListener("click",closeDrawer);
+
+document.getElementById("prevMonth").addEventListener("click",function(){showToast("Đang xem Tháng 5/2026 (demo)","warn");});
+document.getElementById("nextMonth").addEventListener("click",function(){showToast("Chưa có dữ liệu Tháng 7/2026","warn");});
+document.getElementById("exportBtn").addEventListener("click",function(){showToast("Đang xuất file Excel…","ok");});
+document.getElementById("runPayrollBtn").addEventListener("click",function(){
+  var drafts=PAYROLL.filter(function(p){return p.status==="draft";});
+  if(!drafts.length){showToast("Không có bản ghi nháp để chạy","warn");return;}
+  drafts.forEach(function(p){p.status="processing";});
+  renderAll();showToast("Đã chạy bảng lương cho "+drafts.length+" nhân sự","ok");
+});
+
+document.getElementById("bulkApprove").addEventListener("click",function(){
+  checkedIds.forEach(function(id){
+    var idx=PAYROLL.findIndex(function(x){return x.id===id;});
+    if(idx!==-1&&PAYROLL[idx].status==="processing"){PAYROLL[idx].status="approved";PAYROLL[idx].approver="DL";}
+  });
+  checkedIds.clear();renderAll();showToast("Đã duyệt hàng loạt ✓","ok");
+});
+document.getElementById("bulkPay").addEventListener("click",function(){
+  checkedIds.forEach(function(id){
+    var idx=PAYROLL.findIndex(function(x){return x.id===id;});
+    if(idx!==-1&&PAYROLL[idx].status==="approved"){PAYROLL[idx].status="paid";PAYROLL[idx].paidAt="25/06/2026";}
+  });
+  checkedIds.clear();renderAll();showToast("Đã thanh toán hàng loạt ✓","ok");
+});
+
+/* ── TOAST ── */
+function showToast(msg,type){
+  var t=document.getElementById("toast");
+  t.textContent=msg;t.className="toast "+(type||"ok");
+  t.classList.add("show");
+  setTimeout(function(){t.classList.remove("show");},2800);
+}
+
+/* ── RENDER ALL ── */
+function renderAll(){renderKPIs();renderTabs();renderChart();renderTable();}
+renderAll();
+
+})();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

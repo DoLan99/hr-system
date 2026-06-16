@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans, Be_Vietnam_Pro } from "next/font/google";
 import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
@@ -8,6 +8,7 @@ import { LOCALE_COOKIE, isValidLocale, DEFAULT_LOCALE } from "@/lib/i18n";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400","500","600","700","800"], variable: "--font-plus-jakarta" });
+const beVietnamPro = Be_Vietnam_Pro({ subsets: ["latin", "vietnamese"], weight: ["300","400","500","600","700","800"], variable: "--font-be-vietnam" });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://jobihome.vn";
 const SITE_NAME = "jobihome.vn";
@@ -91,7 +92,7 @@ export default async function RootLayout({
         <head>
           <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         </head>
-        <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
+        <body className={`${inter.variable} ${plusJakarta.variable} ${beVietnamPro.variable} font-sans antialiased`}>
           <Providers locale={locale}>{children}</Providers>
         </body>
       </html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Settings — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css"/>
+<style>
+/* ── Settings layout ── */
+.st-layout{display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start}
+.st-nav{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;position:sticky;top:calc(var(--nav-h,66px)+20px)}
+.st-nav-head{padding:13px 15px;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:700;color:var(--text-3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em}
+.st-nav-item{display:flex;align-items:center;gap:10px;padding:10px 15px;cursor:pointer;font-size:.86rem;font-weight:500;color:var(--text-2);transition:background .12s,color .12s;border-bottom:1px solid var(--border);position:relative}
+.st-nav-item:last-child{border-bottom:none}
+.st-nav-item:hover{background:var(--content);color:var(--text)}
+.st-nav-item.active{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.st-nav-item.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:0 3px 3px 0}
+.st-nav-item svg{width:15px;height:15px;flex-shrink:0}
+.st-nav-item.danger{color:var(--danger)}
+.st-nav-item.danger:hover{background:var(--danger-soft)}
+.st-nav-item.danger.active{background:var(--danger-soft);color:var(--danger)}
+.st-nav-item.danger.active::before{background:var(--danger)}
+
+/* main panes */
+.st-main{display:flex;flex-direction:column;gap:16px}
+.st-pane{display:none}
+.st-pane.on{display:flex;flex-direction:column;gap:16px}
+
+/* section card */
+.ss{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.ss-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.ss-head h3{font-size:.9rem;font-weight:700}
+.ss-body{padding:0}
+
+/* row */
+.sr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);gap:20px}
+.sr:last-child{border-bottom:none}
+.sr-info .si-t{font-size:.88rem;font-weight:600;color:var(--text)}
+.sr-info .si-s{font-size:.78rem;color:var(--text-3);margin-top:2px;max-width:480px;line-height:1.45}
+.sr-ctrl{flex-shrink:0;display:flex;align-items:center;gap:10px}
+
+/* toggle */
+.tog{position:relative;width:40px;height:22px;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0;position:absolute}
+.tog .tk{position:absolute;inset:0;border-radius:99px;background:var(--border-2);cursor:pointer;transition:background .2s}
+.tog .th{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.tog input:checked~.tk{background:var(--accent)}
+.tog input:checked~.th{transform:translateX(18px)}
+
+/* input/select in settings */
+.sf-input,.sf-select{background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:8px 12px;font-family:inherit;font-size:.88rem;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;min-width:180px}
+.sf-input:focus,.sf-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.sf-input::placeholder{color:var(--text-3)}
+
+/* avatar upload */
+.av-upload{display:flex;align-items:center;gap:16px;padding:18px}
+.av-preview{width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,var(--accent-2),var(--accent));display:grid;place-items:center;font-size:1.6rem;font-weight:800;color:#fff;flex-shrink:0;position:relative}
+.av-preview .av-edit{position:absolute;bottom:-4px;right:-4px;width:24px;height:24px;border-radius:7px;background:var(--elev);border:2px solid var(--border);display:grid;place-items:center;color:var(--text-2)}
+.av-edit svg{width:11px;height:11px}
+.av-info{display:flex;flex-direction:column;gap:8px}
+.av-info p{font-size:.78rem;color:var(--text-3)}
+
+/* color theme swatches */
+.theme-pick{display:flex;gap:8px;flex-wrap:wrap}
+.theme-sw{width:32px;height:32px;border-radius:9px;cursor:pointer;border:2.5px solid transparent;transition:transform .14s,border-color .14s}
+.theme-sw:hover{transform:scale(1.1)}
+.theme-sw.on{border-color:var(--text)}
+
+/* language radio */
+.radio-group{display:flex;gap:8px;flex-wrap:wrap}
+.radio-item{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:9px;border:1.5px solid var(--border-2);background:var(--content);cursor:pointer;font-size:.84rem;font-weight:500;color:var(--text-2);transition:all .15s;user-select:none}
+.radio-item:hover{border-color:var(--accent);color:var(--accent-ink)}
+.radio-item.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.radio-item input{display:none}
+
+/* notification checkboxes */
+.notif-grid{display:grid;grid-template-columns:1fr 80px 80px 80px;gap:0;font-size:.84rem}
+.ng-header{display:contents}
+.ng-header>span{padding:9px 14px;font-family:var(--font-mono);font-size:.68rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);border-bottom:1px solid var(--border);background:var(--content);text-align:center}
+.ng-header>span:first-child{text-align:left}
+.ng-row{display:contents}
+.ng-row>span,.ng-row>label{padding:12px 14px;border-bottom:1px dashed var(--border)}
+.ng-row>label{display:flex;align-items:center;justify-content:center}
+.ng-row>span{font-size:.84rem;color:var(--text)}
+.ng-row input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+
+/* api key */
+.api-key-row{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--content);border-radius:10px;font-family:var(--font-mono);font-size:.78rem;color:var(--text-2)}
+.api-val{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.api-mask{letter-spacing:.08em}
+
+/* session table */
+.sess-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.sess-table th{text-align:left;padding:9px 14px;font-family:var(--font-mono);font-size:.68rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);border-bottom:1px solid var(--border);background:var(--content)}
+.sess-table td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text-2)}
+.sess-table tbody tr:last-child td{border-bottom:none}
+.curr-sess{font-family:var(--font-mono);font-size:.68rem;background:var(--ok-soft);color:var(--ok);border-radius:99px;padding:2px 8px;font-weight:600}
+
+/* danger zone */
+.danger-action{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:16px 18px;border-bottom:1px solid var(--border-2)}
+.danger-action:last-child{border-bottom:none}
+.da-t{font-size:.88rem;font-weight:600;color:var(--text)}
+.da-s{font-size:.78rem;color:var(--text-3);margin-top:3px}
+
+/* webhook row */
+.wh-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.wh-row:last-child{border-bottom:none}
+.wh-url{font-family:var(--font-mono);font-size:.76rem;flex:1;min-width:0;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wh-evt{font-size:.72rem;padding:2px 7px;border-radius:99px;background:var(--accent-soft);color:var(--accent-ink);font-family:var(--font-mono)}
+.wh-st{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* save bar */
+.save-bar{position:fixed;bottom:0;left:var(--side-w,264px);right:0;background:color-mix(in srgb,var(--content) 94%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;justify-content:flex-end;gap:10px;z-index:50}
+.content-inner{padding-bottom:74px}
+
+@media(max-width:900px){.st-layout{grid-template-columns:1fr}.st-nav{position:static;display:flex;flex-wrap:wrap;gap:0}.st-nav-head{display:none}.st-nav-item{flex:none;padding:8px 13px;font-size:.8rem;border-bottom:none;border-right:1px solid var(--border)}.notif-grid{grid-template-columns:1fr 52px 52px 52px}}
+</style>
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="app">
+
+  <aside class="side">
+    <div class="side-brand"><span class="lm">j</span><div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div></div>
+    <nav class="side-nav scroll" id="sideNav"></nav>
+    <div class="side-foot"><div class="side-user"><span class="av">DL</span><div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span></div></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="tb-icon menu-btn" id="menuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div><div class="tb-title">Settings</div></div>
+      <div class="tb-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input type="text" placeholder="Tìm cài đặt…"/><kbd>⌘K</kbd></div>
+      <div class="tb-right">
+        <button class="tb-icon" id="themeToggle">
+          <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+          <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+        </button>
+        <button class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+      </div>
+    </header>
+
+    <main class="content scroll">
+      <div class="content-inner">
+        <div class="page-head"><h1>Settings</h1><p>Cấu hình workspace, tài khoản và tích hợp hệ thống.</p></div>
+
+        <div class="st-layout">
+          <!-- nav -->
+          <div class="st-nav" id="stNav"></div>
+          <!-- panes -->
+          <div class="st-main" id="stMain"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Save bar -->
+<div class="save-bar">
+  <span style="font-size:.82rem;color:var(--text-3)">Thay đổi chưa được lưu</span>
+  <button class="abtn ghost" style="height:36px" id="discardBtn">Huỷ</button>
+  <button class="abtn primary" style="height:36px" id="saveBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="14" height="14"><path d="M5 12l5 5L20 6"/></svg>Lưu thay đổi</button>
+</div>
+
+<script>
+/* ── Nav items ── */
+var NAV=[
+  {id:"workspace",label:"Workspace",svg:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'},
+  {id:"profile",label:"Hồ sơ cá nhân",svg:'<circle cx="12" cy="8" r="4"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke-linecap="round"/>'},
+  {id:"appearance",label:"Giao diện",svg:'<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>'},
+  {id:"notifications",label:"Thông báo",svg:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>'},
+  {id:"security",label:"Bảo mật",svg:'<path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/>'},
+  {id:"integrations",label:"Tích hợp",svg:'<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="9" r="2.5"/><path d="M6 8.5v7M18 11.5c0 3-3 3.5-6 3.5" stroke-linecap="round"/>'},
+  {id:"danger",label:"Danger Zone",svg:'<path d="M10.3 3.9l-7 12A2 2 0 0 0 5 19h14a2 2 0 0 0 1.7-3l-7-12a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01" stroke-linecap="round"/>',danger:true}
+];
+
+var active="workspace";
+
+function renderNav(){
+  document.getElementById("stNav").innerHTML='<div class="st-nav-head">Cài đặt</div>'+NAV.map(function(n){
+    return '<div class="st-nav-item'+(active===n.id?" active":"")+(n.danger?" danger":"")+'" data-nid="'+n.id+'">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">'+n.svg+'</svg>'+n.label+'</div>';
+  }).join("");
+  document.querySelectorAll(".st-nav-item[data-nid]").forEach(function(it){
+    it.addEventListener("click",function(){active=it.getAttribute("data-nid");renderNav();renderPane();});
+  });
+}
+
+function tog(checked,id){return '<label class="tog"><input type="checkbox" id="'+(id||"")+'"'+(checked?" checked":"")+'/><span class="tk"></span><span class="th"></span></label>';}
+function inp(val,ph,id,width){return '<input class="sf-input" id="'+(id||"")+'" value="'+(val||"")+'" placeholder="'+(ph||"")+'" style="width:'+(width||"220px")+'">';}
+function sel(opts,cur,id){return '<select class="sf-select" id="'+(id||"")+'">'+opts.map(function(o){return '<option'+(o===cur?" selected":"")+'>'+o+'</option>';}).join("")+'</select>';}
+function row(title,sub,ctrl){return '<div class="sr"><div class="sr-info"><div class="si-t">'+title+'</div>'+(sub?'<div class="si-s">'+sub+'</div>':'')+'</div><div class="sr-ctrl">'+ctrl+'</div></div>';}
+
+function PANES(){return {
+  workspace:
+    '<div class="ss"><div class="ss-head"><h3>Thông tin workspace</h3></div><div class="ss-body">'+
+      '<div class="av-upload">'+
+        '<div class="av-preview">JH<div class="av-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></div></div>'+
+        '<div class="av-info"><button class="abtn ghost" style="height:32px;font-size:.8rem">Tải logo lên</button><p>PNG, JPG tối đa 2MB · 400×400px</p></div>'+
+      '</div>'+
+      row("Tên workspace","Hiển thị trong sidebar và email hệ thống",inp("Do thi Lan's Workspace","Tên workspace","wsName","280px"))+
+      row("Tên miền tùy chỉnh","Workspace URL của bạn",inp("dothilan","","wsSlug","160px")+ '<span style="font-size:.82rem;color:var(--text-3)">.jobihome.vn</span>')+
+      row("Múi giờ","Áp dụng cho toàn bộ timestamps và báo cáo",sel(["Asia/Ho_Chi_Minh","Asia/Bangkok","Asia/Singapore","UTC"],"Asia/Ho_Chi_Minh","wsTz"))+
+      row("Ngôn ngữ hệ thống","Ngôn ngữ giao diện mặc định cho tất cả thành viên",'<div class="radio-group" id="wsLang"><div class="radio-item on" data-l="vi">🇻🇳 Tiếng Việt</div><div class="radio-item" data-l="en">🇺🇸 English</div></div>')+
+    '</div></div>'+
+    '<div class="ss"><div class="ss-head"><h3>Cài đặt chung</h3></div><div class="ss-body">'+
+      row("Yêu cầu duyệt task trước khi Done","Manager phải review trước khi task được đánh dấu hoàn thành",tog(true,"reqReview"))+
+      row("Nhân viên tự xem lương của mình","Cho phép Member truy cập payslip cá nhân",tog(true,"selfSalary"))+
+      row("Hiển thị KPI công khai","Tất cả thành viên có thể xem điểm KPI của nhau",tog(false,"publicKPI"))+
+      row("Tự động gửi báo cáo tuần","Email tóm tắt hoạt động gửi vào sáng thứ Hai",tog(true,"weeklyReport"))+
+      row("Ngày bắt đầu tuần","Ảnh hưởng đến Office Time và biểu đồ năng suất",sel(["Thứ Hai","Chủ Nhật"],"Thứ Hai","weekStart"))+
+    '</div></div>',
+
+  profile:
+    '<div class="ss"><div class="ss-head"><h3>Thông tin cá nhân</h3></div><div class="ss-body">'+
+      '<div class="av-upload">'+
+        '<div class="av-preview" style="font-size:1.3rem">DL<div class="av-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></div></div>'+
+        '<div class="av-info"><button class="abtn ghost" style="height:32px;font-size:.8rem">Thay đổi ảnh</button><p>PNG, JPG tối đa 2MB · 400×400px</p></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 18px">'+
+        '<div><label style="font-size:.8rem;font-weight:600;color:var(--text-2);display:block;margin-bottom:5px">Họ và tên</label>'+inp("Đỗ Thị Lan","","profName","100%")+'</div>'+
+        '<div><label style="font-size:.8rem;font-weight:600;color:var(--text-2);display:block;margin-bottom:5px">Email</label>'+inp("dolan@jh.vn","","profEmail","100%")+'</div>'+
+        '<div><label style="font-size:.8rem;font-weight:600;color:var(--text-2);display:block;margin-bottom:5px">Số điện thoại</label>'+inp("0900 000 001","","profPhone","100%")+'</div>'+
+        '<div><label style="font-size:.8rem;font-weight:600;color:var(--text-2);display:block;margin-bottom:5px">Chức vụ</label>'+inp("HR Manager","","profRole","100%")+'</div>'+
+      '</div>'+
+      row("Giới thiệu bản thân","Hiển thị trong hồ sơ nhân viên",'<textarea class="sf-input" style="width:300px;height:auto;resize:none;min-height:64px" placeholder="Mô tả ngắn về bản thân…">HR Manager với 5 năm kinh nghiệm trong lĩnh vực công nghệ</textarea>')+
+    '</div></div>'+
+    '<div class="ss"><div class="ss-head"><h3>Đổi mật khẩu</h3></div><div class="ss-body">'+
+      row("Mật khẩu hiện tại","",inp("","Nhập mật khẩu hiện tại","curPwd","220px",'type="password"'))+
+      row("Mật khẩu mới","Tối thiểu 8 ký tự, bao gồm chữ hoa, số",inp("","Mật khẩu mới","newPwd","220px"))+
+      row("Xác nhận mật khẩu mới","",inp("","Nhập lại mật khẩu","cfmPwd","220px"))+
+    '</div></div>',
+
+  appearance:
+    '<div class="ss"><div class="ss-head"><h3>Giao diện</h3></div><div class="ss-body">'+
+      row("Chế độ màu","Chọn giao diện sáng hoặc tối",'<div class="radio-group"><div class="radio-item" data-th="light">☀️ Sáng</div><div class="radio-item on" data-th="dark">🌙 Tối</div><div class="radio-item" data-th="system">💻 Theo hệ thống</div></div>')+
+      row("Màu nhấn (Accent color)","Màu chủ đạo của giao diện",'<div class="theme-pick"><span class="theme-sw on" style="background:#3B5BDB" data-c="#3B5BDB"></span><span class="theme-sw" style="background:#7c3aed" data-c="#7c3aed"></span><span class="theme-sw" style="background:#059669" data-c="#059669"></span><span class="theme-sw" style="background:#dc2626" data-c="#dc2626"></span><span class="theme-sw" style="background:#d97706" data-c="#d97706"></span><span class="theme-sw" style="background:#0891b2" data-c="#0891b2"></span></div>')+
+      row("Font chữ","Font sử dụng trong giao diện",sel(["Be Vietnam Pro","Inter","Roboto","System UI"],"Be Vietnam Pro","appFont"))+
+      row("Mật độ giao diện","Compact thu gọn hàng, tăng thông tin hiển thị",sel(["Comfortable (mặc định)","Compact","Spacious"],"Comfortable (mặc định)","appDensity"))+
+      row("Hoạt ảnh giao diện","Tắt để giảm chuyển động nếu cần",tog(true,"appAnim"))+
+      row("Hiển thị sidebar thu gọn","Ẩn tên menu, chỉ hiện icon",tog(false,"sideCompact"))+
+    '</div></div>',
+
+  notifications:
+    '<div class="ss"><div class="ss-head"><h3>Cài đặt thông báo</h3></div><div class="ss-body">'+
+      '<div class="notif-grid">'+
+        '<div class="ng-header"><span>Sự kiện</span><span>Email</span><span>In-app</span><span>Push</span></div>'+
+        [["Được giao task mới",true,true,false],["Task của tôi được duyệt",true,true,false],["Hết hạn task hôm nay",true,true,true],["Bình luận mới trên task",false,true,false],["Đơn nghỉ phép được duyệt",true,true,false],["Bảng lương sẵn sàng",true,true,true],["Cảnh báo bất thường",true,true,true],["Có review mới từ manager",true,true,false],["Sắp hết hạn gói dịch vụ",true,false,false]].map(function(r){
+          return '<div class="ng-row">'+
+            '<span>'+r[0]+'</span>'+
+            '<label><input type="checkbox"'+(r[1]?" checked":"")+'></label>'+
+            '<label><input type="checkbox"'+(r[2]?" checked":"")+'></label>'+
+            '<label><input type="checkbox"'+(r[3]?" checked":"")+'></label>'+
+          '</div>';
+        }).join("")+
+      '</div>'+
+    '</div></div>'+
+    '<div class="ss"><div class="ss-head"><h3>Kênh thông báo</h3></div><div class="ss-body">'+
+      row("Email thông báo","Địa chỉ nhận email cảnh báo và báo cáo",inp("dolan@jh.vn","","notifEmail","260px"))+
+      row("Webhook URL","Gửi sự kiện sang Slack, Telegram hoặc custom endpoint",inp("","https://hooks.slack.com/…","notifWebhook","280px"))+
+      row("Tần suất báo cáo email","Tổng hợp hoạt động workspace gửi định kỳ",sel(["Hàng ngày","Hàng tuần (Thứ Hai)","Hàng tháng","Tắt"],"Hàng tuần (Thứ Hai)","notifFreq"))+
+    '</div></div>',
+
+  security:
+    '<div class="ss"><div class="ss-head"><h3>Xác thực & Phiên đăng nhập</h3></div><div class="ss-body">'+
+      row("Xác thực 2 bước (2FA)","Bảo vệ tài khoản bằng OTP khi đăng nhập từ thiết bị mới",tog(true,"sec2FA"))+
+      row("SSO / Single Sign-On","Đăng nhập bằng Google Workspace hoặc Microsoft 365",tog(false,"secSSO"))+
+      row("Thời gian hết phiên","Tự động đăng xuất sau khoảng thời gian không hoạt động",sel(["1 giờ","4 giờ","8 giờ","24 giờ","7 ngày","Không giới hạn"],"8 giờ","secTimeout"))+
+      row("IP whitelist","Chỉ cho phép đăng nhập từ các IP trong danh sách",'<div style="display:flex;gap:8px;align-items:center">'+tog(false,"secIP")+'<span style="font-size:.8rem;color:var(--text-3)">Cấu hình sau khi bật</span></div>')+
+    '</div></div>'+
+    '<div class="ss"><div class="ss-head"><h3>Phiên đang hoạt động</h3><button class="abtn ghost" style="height:28px;font-size:.78rem" id="killAllBtn">Đăng xuất tất cả</button></div>'+
+      '<table class="sess-table"><thead><tr><th>Thiết bị</th><th>Địa điểm / IP</th><th>Hoạt động lần cuối</th><th></th></tr></thead><tbody>'+
+        [["MacBook Pro · Chrome 124","TP.HCM · 27.68.x.x","Ngay bây giờ",true],["iPhone 15 · Safari Mobile","TP.HCM · 27.68.x.x","2 giờ trước",false],["Windows PC · Firefox","Hà Nội · 103.x.x.x","Hôm qua 14:30",false]].map(function(s){
+          return '<tr><td style="color:var(--text);font-weight:500">'+s[0]+(s[3]?'<span class="curr-sess" style="margin-left:7px">Phiên này</span>':'')+'</td><td style="font-family:var(--font-mono);font-size:.76rem">'+s[1]+'</td><td>'+s[2]+'</td><td>'+(s[3]?"":' <button class="abtn ghost" style="height:26px;font-size:.76rem">Đăng xuất</button>')+'</td></tr>';
+        }).join("")+
+      '</tbody></table>'+
+    '</div>'+
+    '<div class="ss"><div class="ss-head"><h3>API Keys</h3><button class="abtn primary" style="height:28px;font-size:.78rem" id="genKeyBtn">Tạo key mới</button></div><div class="ss-body" style="display:flex;flex-direction:column;gap:10px">'+
+      [["sk_live_jh_MA9f3KsxWzPq…","Full access · Tạo 2026-05-01"],["sk_readonly_jh_BnKq2…","Read-only · Tạo 2026-03-14"]].map(function(k){
+        return '<div class="api-key-row"><span class="api-mask">••••••••••••'+k[0].slice(-6)+'</span><span style="font-size:.74rem;color:var(--text-3);flex:1;margin-left:8px">'+k[1]+'</span><button class="cf-btn" title="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="abtn ghost" style="height:26px;font-size:.74rem;color:var(--danger);border-color:var(--danger-soft)">Xóa</button></div>';
+      }).join("")+
+    '</div></div>',
+
+  integrations:
+    '<div class="ss"><div class="ss-head"><h3>Tích hợp đã kết nối</h3></div><div class="ss-body" style="display:flex;flex-direction:column;gap:12px;padding:14px 18px">'+
+      [["Clerk","Auth & quản lý người dùng, multi-tenant","#3B5BDB",true],["Google Drive","Đồng bộ tài liệu và link file",  "#059669",true],["Git Webhook","Nhận commit/PR vào activity log","#1d4ed8",false],["Vercel Cron","Anomaly detection & đóng session","#000",false],["Slack","Thông báo task và cảnh báo","#4A154B",false],["SendGrid","Email giao dịch và thông báo","#1A82E2",false]].map(function(i){
+        return '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--content);border:1px solid var(--border);border-radius:11px">'+
+          '<span style="width:38px;height:38px;border-radius:10px;background:'+i[2]+'22;color:'+i[2]+';display:grid;place-items:center;flex-shrink:0;font-size:.72rem;font-weight:800;font-family:var(--font-mono)">'+i[0].slice(0,2).toUpperCase()+'</span>'+
+          '<div style="flex:1"><div style="font-weight:600;font-size:.88rem">'+i[0]+'</div><div style="font-size:.76rem;color:var(--text-3);margin-top:2px">'+i[1]+'</div></div>'+
+          (i[3]?'<span style="font-family:var(--font-mono);font-size:.68rem;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--ok-soft);color:var(--ok)">✓ Đã kết nối</span><button class="abtn ghost" style="height:28px;font-size:.76rem">Ngắt kết nối</button>':'<button class="abtn primary" style="height:28px;font-size:.76rem">Kết nối</button>')+
+        '</div>';
+      }).join("")+
+    '</div></div>'+
+    '<div class="ss"><div class="ss-head"><h3>Webhooks</h3><button class="abtn primary" style="height:28px;font-size:.78rem" id="addWebhookBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="12" height="12"><path d="M12 5v14M5 12h14"/></svg>Thêm</button></div>'+
+      [["https://hooks.slack.com/T0…/B0…/xyz","task.create, task.done",true],["https://myapp.vn/webhook/jh","salary.approved",false]].map(function(w){
+        return '<div class="wh-row"><span class="wh-st" style="background:'+(w[2]?"var(--ok)":"var(--danger)")+'"></span><span class="wh-url">'+w[0]+'</span><span class="wh-evt">'+w[1]+'</span><button class="abtn ghost" style="height:26px;font-size:.74rem">Sửa</button><button class="abtn ghost" style="height:26px;font-size:.74px;color:var(--danger);border-color:var(--danger-soft)">Xóa</button></div>';
+      }).join("")+
+    '</div>',
+
+  danger:
+    '<div class="ss" style="border-color:rgba(239,68,68,.35)"><div class="ss-head"><h3 style="color:var(--danger)">⚠ Danger Zone</h3></div><div class="ss-body">'+
+      '<div class="danger-action"><div><div class="da-t">Xóa tất cả task đã hoàn thành</div><div class="da-s">Xóa vĩnh viễn tất cả task có trạng thái Done. Hành động này không thể hoàn tác.</div></div><button class="abtn ghost" style="height:32px;font-size:.8rem;color:var(--danger);border-color:rgba(239,68,68,.35);white-space:nowrap">Xóa task Done</button></div>'+
+      '<div class="danger-action"><div><div class="da-t">Reset bảng lương kỳ hiện tại</div><div class="da-s">Xóa toàn bộ dữ liệu tính lương của kỳ đang mở để tính lại từ đầu.</div></div><button class="abtn ghost" style="height:32px;font-size:.8rem;color:var(--danger);border-color:rgba(239,68,68,.35);white-space:nowrap">Reset lương</button></div>'+
+      '<div class="danger-action"><div><div class="da-t">Xóa toàn bộ audit log</div><div class="da-s">Xóa tất cả log lịch sử hệ thống. Chỉ dành cho mục đích tuân thủ pháp lý.</div></div><button class="abtn ghost" style="height:32px;font-size:.8rem;color:var(--danger);border-color:rgba(239,68,68,.35);white-space:nowrap">Xóa audit log</button></div>'+
+      '<div class="danger-action"><div><div class="da-t">Xóa workspace vĩnh viễn</div><div class="da-s">Toàn bộ dữ liệu, thành viên, task, lương và tài liệu sẽ bị xóa không thể khôi phục. Cần nhập tên workspace để xác nhận.</div></div><button class="abtn ghost" style="height:32px;font-size:.8rem;color:var(--danger);border-color:rgba(239,68,68,.35);white-space:nowrap;background:var(--danger-soft)" id="delWsBtn">Xóa workspace</button></div>'+
+    '</div></div>'
+};}
+
+function renderPane(){
+  var p=PANES()[active]||"";
+  document.getElementById("stMain").innerHTML='<div class="st-pane on">'+p+'</div>';
+  /* radio groups */
+  document.querySelectorAll(".radio-group[id],.radio-group").forEach(function(rg){
+    rg.querySelectorAll(".radio-item").forEach(function(ri){
+      ri.addEventListener("click",function(){rg.querySelectorAll(".radio-item").forEach(function(x){x.classList.remove("on");});ri.classList.add("on");});
+    });
+  });
+  /* theme swatch */
+  document.querySelectorAll(".theme-sw").forEach(function(sw){
+    sw.addEventListener("click",function(){document.querySelectorAll(".theme-sw").forEach(function(x){x.classList.remove("on");});sw.classList.add("on");});
+  });
+  /* delete workspace */
+  var d=document.getElementById("delWsBtn");
+  if(d)d.addEventListener("click",function(){var n=prompt('Nhập tên workspace để xác nhận xóa:');if(n==="Do thi Lan\'s Workspace")alert("Workspace đã được yêu cầu xóa. Chúng tôi sẽ xử lý trong 24 giờ.");else if(n!==null)alert("Tên workspace không khớp.");});
+  var ka=document.getElementById("killAllBtn");
+  if(ka)ka.addEventListener("click",function(){if(confirm("Đăng xuất tất cả phiên trừ phiên hiện tại?"))alert("Đã đăng xuất tất cả phiên khác.");});
+}
+
+document.getElementById("saveBtn").addEventListener("click",function(){this.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="14" height="14"><path d="M5 12l5 5L20 6"/></svg>Đã lưu!'; var btn=this; setTimeout(function(){btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="14" height="14"><path d="M5 12l5 5L20 6"/></svg>Lưu thay đổi';},1800);});
+
+renderNav();
+renderPane();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

@@ -96,6 +96,7 @@ export function withContext<TReq extends Request, TCtx extends RouteContext>(
       response = await runWithContext(context, () => Promise.resolve(handler(req, ctx)));
     } catch (err) {
       errorMessage = err instanceof Error ? err.message : String(err);
+      console.error(`[withContext] ${method} ${endpoint} failed:`, err);
       void writeApiAccessLog({
         employeeId: actorId,
         sessionId: clerkSessionId,

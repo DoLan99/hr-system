@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Leave — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css"/>
+<style>
+/* ── Leave page ── */
+
+/* layout: requests left, balance/calendar right */
+.lv-layout{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+@media(max-width:1050px){.lv-layout{grid-template-columns:1fr}}
+
+/* leave type colors */
+.lt-annual{--c:#3B5BDB;--cs:rgba(59,91,219,.13)}
+.lt-sick{--c:#fbbf24;--cs:rgba(251,191,36,.13)}
+.lt-unpaid{--c:#94a3b8;--cs:rgba(148,163,184,.14)}
+.lt-personal{--c:#a78bfa;--cs:rgba(167,139,250,.14)}
+.lt-wfh{--c:#4ADE80;--cs:rgba(74,222,128,.13)}
+
+/* toolbar */
+.lv-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.lv-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.lv-tab{height:34px;padding:0 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--elev);font-size:.82rem;font-weight:600;color:var(--text-2);cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.lv-tab:hover{border-color:var(--border-2);color:var(--text)}
+.lv-tab.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+.lv-tab .tcnt{font-family:var(--font-mono);font-size:.64rem;padding:1px 6px;border-radius:99px;background:rgba(255,255,255,.07)}
+.lv-tab.on .tcnt{background:var(--accent-soft-2)}
+
+/* request card */
+.req-list{display:flex;flex-direction:column;gap:12px}
+.req-card{background:var(--elev);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:0;overflow:hidden;transition:border-color .18s var(--ease),box-shadow .15s;position:relative}
+.req-card:hover{border-color:var(--border-2);box-shadow:0 6px 20px rgba(0,0,30,.25)}
+.req-card.pending{border-left:3px solid var(--warn)}
+.req-card-body{padding:16px 18px;display:flex;align-items:flex-start;gap:14px}
+.req-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#8b7bff,#4f7aff);display:grid;place-items:center;color:#fff;font-size:.88rem;font-weight:700;flex-shrink:0}
+.req-main{flex:1;min-width:0}
+.req-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:5px}
+.req-name{font-size:.92rem;font-weight:700;color:var(--text)}
+.lt-badge{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--cs);color:var(--c)}
+.lt-badge .ld{width:7px;height:7px;border-radius:50%;background:var(--c)}
+.req-dates{display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--text);font-weight:600;margin-bottom:4px;flex-wrap:wrap}
+.req-dates svg{width:15px;height:15px;color:var(--text-3);flex-shrink:0}
+.req-dates .dur-pill{font-family:var(--font-mono);font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--content);border:1px solid var(--border);color:var(--text-2);white-space:nowrap}
+.req-reason{font-size:.82rem;color:var(--text-3);line-height:1.5;margin-top:4px}
+.req-meta{display:flex;align-items:center;gap:14px;margin-top:10px;font-size:.74rem;color:var(--text-3);font-family:var(--font-mono);flex-wrap:wrap}
+.req-meta span{display:inline-flex;align-items:center;gap:5px}
+.req-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0}
+.lv-status{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:.68rem;font-weight:700;padding:4px 11px;border-radius:99px;white-space:nowrap}
+.lv-status.approved{background:var(--ok-soft);color:var(--ok)}
+.lv-status.pending{background:var(--warn-soft);color:var(--warn)}
+.lv-status.rejected{background:var(--danger-soft);color:var(--danger)}
+.lv-status.cancelled{background:var(--border);color:var(--text-3)}
+.req-actions{display:flex;gap:7px}
+.req-btn{height:30px;padding:0 12px;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;border:1px solid transparent;display:inline-flex;align-items:center;gap:5px}
+.req-btn.approve{background:var(--ok-soft);color:var(--ok);border-color:rgba(74,222,128,.25)}
+.req-btn.approve:hover{background:rgba(74,222,128,.22);transform:translateY(-1px)}
+.req-btn.reject{background:var(--danger-soft);color:var(--danger);border-color:rgba(255,107,107,.2)}
+.req-btn.reject:hover{background:rgba(255,107,107,.2);transform:translateY(-1px)}
+
+.req-empty{text-align:center;padding:50px 20px;color:var(--text-3);background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg)}
+.req-empty svg{width:46px;height:46px;margin:0 auto 14px;opacity:.3}
+
+/* right side */
+.lv-right{display:flex;flex-direction:column;gap:16px}
+.side-card{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.side-card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+.side-card-h h3{font-size:.88rem;font-weight:700}
+.side-card-h .sub{font-size:.72rem;color:var(--text-3);font-family:var(--font-mono)}
+.side-card-b{padding:14px 16px}
+
+/* balance rings per member */
+.bal-member{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border)}
+.bal-member:last-child{border-bottom:none}
+.bal-member .bm-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#8b7bff,#4f7aff);display:grid;place-items:center;color:#fff;font-size:.72rem;font-weight:700;flex-shrink:0}
+.bal-member .bm-info{flex:1;min-width:0}
+.bal-member .bm-name{font-size:.83rem;font-weight:600;color:var(--text)}
+.bal-member .bm-bar{height:6px;border-radius:99px;background:var(--border);overflow:hidden;margin-top:5px}
+.bal-member .bm-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.bal-member .bm-bar i.low{background:linear-gradient(90deg,#d97706,var(--warn))}
+.bal-member .bm-num{font-family:var(--font-mono);font-size:.78rem;font-weight:700;color:var(--text);flex-shrink:0;text-align:right;min-width:54px}
+.bal-member .bm-num span{font-size:.66rem;color:var(--text-3);font-weight:400}
+
+/* upcoming / who's out */
+.who-out{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.who-out:last-child{border-bottom:none}
+.who-out .wo-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#8b7bff,#4f7aff);display:grid;place-items:center;color:#fff;font-size:.68rem;font-weight:700;flex-shrink:0;position:relative}
+.who-out .wo-dot{position:absolute;bottom:-1px;right:-1px;width:11px;height:11px;border-radius:50%;border:2px solid var(--elev)}
+.who-out .wo-info{flex:1;min-width:0}
+.who-out .wo-name{font-size:.83rem;font-weight:600;color:var(--text)}
+.who-out .wo-when{font-size:.72rem;color:var(--text-3);font-family:var(--font-mono)}
+.who-out .wo-tag{font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:99px;flex-shrink:0}
+
+/* legend */
+.lt-legend{display:flex;flex-wrap:wrap;gap:8px}
+.ltl{display:inline-flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-3)}
+.ltl .ld{width:10px;height:10px;border-radius:50%}
+
+/* drawer (request detail + approve) */
+.rd-back{position:fixed;inset:0;background:rgba(4,8,18,.6);backdrop-filter:blur(3px);z-index:100;opacity:0;transition:opacity .22s;pointer-events:none}
+.rd-back.open{opacity:1;pointer-events:auto}
+.rd-drawer{position:fixed;top:0;right:0;height:100vh;width:480px;max-width:95vw;background:var(--elev);border-left:1px solid var(--border-2);box-shadow:-30px 0 60px rgba(0,0,0,.45);z-index:101;transform:translateX(100%);transition:transform .28s var(--ease);display:flex;flex-direction:column;overflow:hidden}
+.rd-drawer.open{transform:translateX(0)}
+.rd-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--border);flex-shrink:0}
+.rd-close{margin-left:auto;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);cursor:pointer;font-family:inherit;border:none;background:none}
+.rd-close:hover{background:var(--content);color:var(--text)}
+.rd-close svg{width:17px;height:17px}
+.rd-body{flex:1;overflow-y:auto;padding:22px}
+.rd-foot{flex-shrink:0;border-top:1px solid var(--border);padding:16px 22px;display:flex;gap:10px}
+.dsec{font-family:var(--font-mono);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.dcard{background:var(--content);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.drow{display:flex;align-items:flex-start;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border)}
+.drow:last-child{border-bottom:none}
+.drow .dl{font-size:.8rem;color:var(--text-3);min-width:100px;flex-shrink:0;padding-top:1px}
+.drow .dv{font-size:.88rem;color:var(--text);flex:1;font-weight:500}
+
+/* modal */
+.lm-modal{width:100%;max-width:500px;max-height:92vh;background:var(--elev);border:1px solid var(--border-2);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}
+.lm-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--border);flex-shrink:0}
+.lm-head .ico{width:32px;height:32px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex-shrink:0}
+.lm-head .ico svg{width:17px;height:17px;color:#fff}
+.lm-head h3{font-size:1rem;font-weight:700}
+.lm-head .x{margin-left:auto;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);cursor:pointer;font-family:inherit;border:none;background:none}
+.lm-head .x:hover{background:var(--content);color:var(--text)}
+.lm-head .x svg{width:17px;height:17px}
+.lm-body{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:16px}
+.lm-foot{flex-shrink:0;display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--border)}
+.lm-field{display:flex;flex-direction:column;gap:6px}
+.lm-field label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)}
+.lm-field input,.lm-field select,.lm-field textarea{font-family:inherit;font-size:.9rem;color:var(--text);background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:9px 12px;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.lm-field input:focus,.lm-field select:focus,.lm-field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.lm-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.lm-row{grid-template-columns:1fr}}
+.lt-pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.lt-opt{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:9px;border:2px solid var(--border);background:var(--content);cursor:pointer;font-family:inherit;font-size:.84rem;font-weight:500;color:var(--text-2);transition:all .15s}
+.lt-opt .ld{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.lt-opt.on{border-color:var(--c);background:var(--cs);color:var(--text)}
+.dur-preview{font-family:var(--font-mono);font-size:.82rem;color:var(--accent-ink);padding:9px 12px;background:var(--accent-soft);border-radius:8px;text-align:center;font-weight:700}
+
+/* toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--elev);border:1px solid var(--border-2);border-radius:10px;padding:12px 22px;font-size:.86rem;font-weight:500;color:var(--text);box-shadow:var(--shadow-lg);z-index:500;opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-left:3px solid var(--ok)}
+.toast.warn{border-left:3px solid var(--warn)}
+.toast.err{border-left:3px solid var(--danger)}
+</style>
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="app">
+<aside class="side">
+  <div class="side-brand"><span class="lm">j</span><div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div></div>
+  <nav class="side-nav scroll" id="sideNav"></nav>
+  <div class="side-foot"><div class="side-user"><span class="av">DL</span><div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span></div></div>
+</aside>
+<div class="main">
+  <header class="topbar">
+    <button class="tb-icon menu-btn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div><div class="tb-title">Leave</div></div>
+    <div class="tb-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input type="text" placeholder="Tìm đơn nghỉ phép…"/><kbd>⌘K</kbd></div>
+    <div class="tb-right">
+      <button class="tb-icon" id="themeToggle" aria-label="Sáng/Tối">
+        <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+        <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+      </button>
+      <button class="tb-icon" aria-label="Thông báo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+    </div>
+  </header>
+
+  <main class="content scroll">
+    <div class="content-inner">
+
+      <div class="page-head" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px">
+        <div>
+          <h1>Leave</h1>
+          <p>Quản lý nghỉ phép · <b id="pendingHead">—</b> đơn chờ duyệt · Tháng 6/2026</p>
+        </div>
+        <button class="abtn primary" id="newReqBtn" style="gap:7px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>
+          Tạo đơn nghỉ
+        </button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpis" id="kpiRow"></div>
+
+      <!-- Layout -->
+      <div class="lv-layout">
+        <!-- LEFT: requests -->
+        <div>
+          <div class="lv-bar">
+            <div class="lv-tabs" id="lvTabs"></div>
+          </div>
+          <div class="req-list" id="reqList"></div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="lv-right">
+          <!-- who's out -->
+          <div class="side-card">
+            <div class="side-card-h"><h3>Đang &amp; sắp nghỉ</h3><span class="sub" id="outCount">—</span></div>
+            <div class="side-card-b"><div id="whoOut"></div></div>
+          </div>
+          <!-- balance -->
+          <div class="side-card">
+            <div class="side-card-h"><h3>Quỹ phép năm 2026</h3><span class="sub">12 ngày/người</span></div>
+            <div class="side-card-b"><div id="balanceList"></div></div>
+          </div>
+          <!-- legend -->
+          <div class="side-card">
+            <div class="side-card-h"><h3>Loại nghỉ</h3></div>
+            <div class="side-card-b"><div class="lt-legend" id="ltLegend"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- Drawer -->
+<div class="rd-back" id="rdBack"></div>
+<div class="rd-drawer" id="rdDrawer">
+  <div class="rd-head">
+    <div class="req-av" id="rdAv" style="width:38px;height:38px">—</div>
+    <div style="flex:1;min-width:0">
+      <div id="rdName" style="font-size:.98rem;font-weight:700;color:var(--text)"></div>
+      <div id="rdSub" style="font-size:.74rem;color:var(--text-3);font-family:var(--font-mono);margin-top:2px"></div>
+    </div>
+    <button class="rd-close" id="rdClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="rd-body" id="rdBody"></div>
+  <div class="rd-foot" id="rdFoot"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ── LEAVE TYPES ── */
+var TYPES = {
+  annual:  {l:"Nghỉ phép năm", cls:"lt-annual",  c:"#3B5BDB", paid:true},
+  sick:    {l:"Nghỉ ốm",       cls:"lt-sick",    c:"#fbbf24", paid:true},
+  personal:{l:"Việc riêng",    cls:"lt-personal",c:"#a78bfa", paid:true},
+  wfh:     {l:"Làm từ xa",     cls:"lt-wfh",     c:"#4ADE80", paid:true},
+  unpaid:  {l:"Không lương",   cls:"lt-unpaid",  c:"#94a3b8", paid:false}
+};
+
+var MEMBERS = [
+  {v:"MA",l:"Minh Anh",role:"Frontend Lead",quota:12,used:4},
+  {v:"HG",l:"Hoàng",role:"Backend Dev",quota:12,used:7},
+  {v:"LN",l:"Lan",role:"UI/UX Designer",quota:12,used:2},
+  {v:"TU",l:"Tú",role:"Backend Dev",quota:12,used:5}
+];
+
+var nextId = 30;
+var REQUESTS = [
+  {id:"LV-0021",who:"LN",type:"annual",from:"2026-06-18",to:"2026-06-20",days:3,reason:"Về quê dự đám cưới người thân.",status:"pending",createdAt:"2026-06-14"},
+  {id:"LV-0022",who:"HG",type:"sick",from:"2026-06-16",to:"2026-06-16",days:1,reason:"Sốt cao, có giấy khám của bệnh viện.",status:"pending",createdAt:"2026-06-15"},
+  {id:"LV-0023",who:"MA",type:"wfh",from:"2026-06-17",to:"2026-06-17",days:1,reason:"Thợ sửa điện đến nhà, xin làm từ xa.",status:"pending",createdAt:"2026-06-15"},
+  {id:"LV-0020",who:"TU",type:"annual",from:"2026-06-12",to:"2026-06-13",days:2,reason:"Nghỉ phép cá nhân cuối tuần dài.",status:"approved",approver:"DL",createdAt:"2026-06-08"},
+  {id:"LV-0019",who:"MA",type:"personal",from:"2026-06-10",to:"2026-06-10",days:1,reason:"Đi làm thủ tục hành chính.",status:"approved",approver:"DL",createdAt:"2026-06-05"},
+  {id:"LV-0018",who:"HG",type:"annual",from:"2026-06-05",to:"2026-06-06",days:2,reason:"Du lịch gia đình.",status:"approved",approver:"DL",createdAt:"2026-05-30"},
+  {id:"LV-0017",who:"LN",type:"sick",from:"2026-06-03",to:"2026-06-03",days:1,reason:"Khám sức khỏe định kỳ.",status:"approved",approver:"DL",createdAt:"2026-06-01"},
+  {id:"LV-0016",who:"TU",type:"unpaid",from:"2026-05-28",to:"2026-05-30",days:3,reason:"Việc gia đình đột xuất.",status:"rejected",approver:"DL",rejectReason:"Trùng deadline sprint quan trọng, đề nghị dời lịch.",createdAt:"2026-05-25"}
+];
+
+var TODAY = "2026-06-15";
+
+/* ── STATE ── */
+var selTab="pending", openId=null;
+
+/* ── UTILS ── */
+function mn(v){var m=MEMBERS.find(function(x){return x.v===v;});return m?m.l:v;}
+function mrole(v){var m=MEMBERS.find(function(x){return x.v===v;});return m?m.role:"";}
+function viDate(d){var p=d.split("-");return p[2]+"/"+p[1];}
+function viDateFull(d){var p=d.split("-");return p[2]+"/"+p[1]+"/"+p[0];}
+function statusLabel(s){return {approved:"Đã duyệt",pending:"Chờ duyệt",rejected:"Từ chối",cancelled:"Đã hủy"}[s]||s;}
+function isActive(r){return r.status==="approved"&&r.from<=TODAY&&r.to>=TODAY;}
+function isUpcoming(r){return r.status==="approved"&&r.from>TODAY;}
+
+function filtered(){
+  if(selTab==="all") return REQUESTS;
+  return REQUESTS.filter(function(r){return r.status===selTab;});
+}
+
+/* ── KPIs ── */
+function renderKPIs(){
+  var pending=REQUESTS.filter(function(r){return r.status==="pending";}).length;
+  var approvedMonth=REQUESTS.filter(function(r){return r.status==="approved"&&r.from.startsWith("2026-06");});
+  var daysUsed=approvedMonth.reduce(function(a,r){return a+r.days;},0);
+  var outToday=REQUESTS.filter(isActive).length;
+  var totalQuota=MEMBERS.reduce(function(a,m){return a+m.quota;},0);
+  var totalUsed=MEMBERS.reduce(function(a,m){return a+m.used;},0);
+
+  document.getElementById("pendingHead").textContent=pending;
+
+  var cards=[
+    {ico:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M12 14v3M10.5 15.5h3" stroke-linecap="round" stroke-linejoin="round"/>',
+     lab:"Chờ duyệt",val:pending,chg:"cần xử lý",cls:pending>0?"warn":"flat"},
+    {ico:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+     lab:"Duyệt tháng này",val:daysUsed+" ngày",chg:approvedMonth.length+" đơn",cls:"up"},
+    {ico:'<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>',
+     lab:"Đang nghỉ hôm nay",val:outToday,chg:"thành viên",cls:outToday>0?"warn":"flat"},
+    {ico:'<path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z"/>',
+     lab:"Quỹ phép đã dùng",val:totalUsed+"/"+totalQuota,chg:Math.round(totalUsed/totalQuota*100)+"% cả năm",cls:"flat"}
+  ];
+  document.getElementById("kpiRow").innerHTML=cards.map(function(k){
+    return '<div class="kpi"><div class="kt"><span class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+k.ico+'</svg></span>'+k.lab+'</div><div class="kv">'+k.val+'</div><div class="kc '+k.cls+'">'+k.chg+'</div></div>';
+  }).join("");
+}
+
+/* ── TABS ── */
+function renderTabs(){
+  var counts={
+    pending:REQUESTS.filter(function(r){return r.status==="pending";}).length,
+    approved:REQUESTS.filter(function(r){return r.status==="approved";}).length,
+    rejected:REQUESTS.filter(function(r){return r.status==="rejected";}).length,
+    all:REQUESTS.length
+  };
+  var tabs=[{k:"pending",l:"Chờ duyệt"},{k:"approved",l:"Đã duyệt"},{k:"rejected",l:"Từ chối"},{k:"all",l:"Tất cả"}];
+  document.getElementById("lvTabs").innerHTML=tabs.map(function(t){
+    return '<button class="lv-tab'+(selTab===t.k?" on":"")+'" data-k="'+t.k+'">'+t.l+'<span class="tcnt">'+counts[t.k]+'</span></button>';
+  }).join("");
+}
+
+/* ── REQUEST LIST ── */
+function renderRequests(){
+  var list=filtered().sort(function(a,b){
+    if(a.status==="pending"&&b.status!=="pending")return -1;
+    if(b.status==="pending"&&a.status!=="pending")return 1;
+    return b.from.localeCompare(a.from);
+  });
+  var el=document.getElementById("reqList");
+  if(!list.length){
+    el.innerHTML='<div class="req-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg><p style="font-size:.92rem;font-weight:600;color:var(--text-2)">Không có đơn nào</p><span style="font-size:.83rem">Mọi đơn nghỉ phép đã được xử lý.</span></div>';
+    return;
+  }
+  el.innerHTML=list.map(function(r){
+    var t=TYPES[r.type];
+    var dateRange=r.from===r.to?viDateFull(r.from):viDate(r.from)+" → "+viDateFull(r.to);
+    var actHtml="";
+    if(r.status==="pending"){
+      actHtml='<div class="req-actions">'+
+        '<button class="req-btn approve" data-act="approve" data-id="'+r.id+'">✓ Duyệt</button>'+
+        '<button class="req-btn reject" data-act="reject" data-id="'+r.id+'">✗ Từ chối</button>'+
+      '</div>';
+    }
+    var activeTag=isActive(r)?'<span class="lt-badge" style="background:var(--ok-soft);color:var(--ok)"><span class="ld" style="background:var(--ok)"></span>Đang nghỉ</span>':isUpcoming(r)?'<span style="font-family:var(--font-mono);font-size:.68rem;color:var(--accent-ink)">sắp tới</span>':'';
+    return '<div class="req-card '+(r.status==="pending"?"pending":"")+' '+t.cls+'" data-id="'+r.id+'">'+
+      '<div class="req-card-body">'+
+        '<div class="req-av">'+r.who+'</div>'+
+        '<div class="req-main">'+
+          '<div class="req-top">'+
+            '<span class="req-name">'+mn(r.who)+'</span>'+
+            '<span class="lt-badge"><span class="ld"></span>'+t.l+'</span>'+
+            activeTag+
+          '</div>'+
+          '<div class="req-dates">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'+
+            dateRange+
+            '<span class="dur-pill">'+r.days+' ngày</span>'+
+          '</div>'+
+          '<div class="req-reason">'+r.reason+'</div>'+
+          '<div class="req-meta">'+
+            '<span>'+r.id+'</span>'+
+            '<span>· gửi '+viDateFull(r.createdAt)+'</span>'+
+            (r.approver?'<span>· duyệt bởi '+mn(r.approver)+'</span>':'')+
+          '</div>'+
+        '</div>'+
+        '<div class="req-side">'+
+          '<span class="lv-status '+r.status+'">'+statusLabel(r.status)+'</span>'+
+          actHtml+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+}
+
+/* ── WHO'S OUT ── */
+function renderWhoOut(){
+  var active=REQUESTS.filter(isActive);
+  var upcoming=REQUESTS.filter(isUpcoming).sort(function(a,b){return a.from.localeCompare(b.from);});
+  var list=active.concat(upcoming).slice(0,5);
+  document.getElementById("outCount").textContent=active.length+" đang · "+upcoming.length+" sắp tới";
+  if(!list.length){
+    document.getElementById("whoOut").innerHTML='<div style="font-size:.82rem;color:var(--text-3);text-align:center;padding:8px 0">Không có ai nghỉ.</div>';
+    return;
+  }
+  document.getElementById("whoOut").innerHTML=list.map(function(r){
+    var t=TYPES[r.type];
+    var act=isActive(r);
+    return '<div class="who-out">'+
+      '<div class="wo-av">'+r.who+'<span class="wo-dot" style="background:'+(act?"var(--warn)":"var(--accent)")+'"></span></div>'+
+      '<div class="wo-info"><div class="wo-name">'+mn(r.who)+'</div>'+
+        '<div class="wo-when">'+(r.from===r.to?viDateFull(r.from):viDate(r.from)+"–"+viDate(r.to))+(act?" · đang nghỉ":"")+'</div>'+
+      '</div>'+
+      '<span class="lt-badge '+t.cls+'" style="font-size:.64rem;padding:2px 8px"><span class="ld"></span>'+t.l+'</span>'+
+    '</div>';
+  }).join("");
+}
+
+/* ── BALANCE ── */
+function renderBalance(){
+  document.getElementById("balanceList").innerHTML=MEMBERS.map(function(m){
+    var remain=m.quota-m.used;
+    var pct=m.used/m.quota*100;
+    var low=remain<=3;
+    return '<div class="bal-member">'+
+      '<div class="bm-av">'+m.v+'</div>'+
+      '<div class="bm-info"><div class="bm-name">'+m.l+'</div>'+
+        '<div class="bm-bar"><i class="'+(low?"low":"")+'" style="width:'+pct+'%"></i></div>'+
+      '</div>'+
+      '<div class="bm-num" style="'+(low?"color:var(--warn)":"")+'">'+remain+'<span>/'+m.quota+'</span></div>'+
+    '</div>';
+  }).join("");
+}
+
+/* ── LEGEND ── */
+function renderLegend(){
+  document.getElementById("ltLegend").innerHTML=Object.keys(TYPES).map(function(k){
+    var t=TYPES[k];
+    return '<span class="ltl"><span class="ld" style="background:'+t.c+'"></span>'+t.l+(t.paid?'':' <span style="opacity:.6">(KL)</span>')+'</span>';
+  }).join("");
+}
+
+/* ── DRAWER ── */
+function openDrawer(id){
+  var r=REQUESTS.find(function(x){return x.id===id;});
+  if(!r) return;
+  openId=id;
+  var t=TYPES[r.type], m=MEMBERS.find(function(x){return x.v===r.who;});
+  document.getElementById("rdAv").textContent=r.who;
+  document.getElementById("rdName").textContent=mn(r.who);
+  document.getElementById("rdSub").textContent=r.id+" · "+mrole(r.who);
+
+  var remain=m?m.quota-m.used:0;
+  document.getElementById("rdBody").innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--content);border:1px solid var(--border);border-radius:12px;margin-bottom:20px" class="'+t.cls+'">'+
+      '<span class="lt-badge" style="font-size:.8rem;padding:6px 14px"><span class="ld"></span>'+t.l+'</span>'+
+      '<div style="margin-left:auto;text-align:right"><div style="font-family:var(--font-mono);font-size:1.4rem;font-weight:800;line-height:1">'+r.days+' ngày</div><div style="font-size:.72rem;color:var(--text-3)">'+(t.paid?"có lương":"không lương")+'</div></div>'+
+    '</div>'+
+    '<div class="dsec">Chi tiết đơn</div>'+
+    '<div class="dcard">'+
+      '<div class="drow"><span class="dl">Từ ngày</span><span class="dv">'+viDateFull(r.from)+'</span></div>'+
+      '<div class="drow"><span class="dl">Đến ngày</span><span class="dv">'+viDateFull(r.to)+'</span></div>'+
+      '<div class="drow"><span class="dl">Số ngày</span><span class="dv" style="font-family:var(--font-mono);font-weight:700">'+r.days+' ngày làm việc</span></div>'+
+      '<div class="drow"><span class="dl">Trạng thái</span><span class="dv"><span class="lv-status '+r.status+'">'+statusLabel(r.status)+'</span></span></div>'+
+      '<div class="drow"><span class="dl">Ngày gửi</span><span class="dv">'+viDateFull(r.createdAt)+'</span></div>'+
+      (r.approver?'<div class="drow"><span class="dl">Người duyệt</span><span class="dv"><span class="req-av" style="width:22px;height:22px;font-size:.6rem;display:inline-grid">'+r.approver+'</span> '+mn(r.approver)+'</span></div>':'')+
+    '</div>'+
+    '<div class="dsec">Lý do</div>'+
+    '<div style="font-size:.88rem;color:var(--text-2);line-height:1.6;padding:14px;background:var(--content);border:1px solid var(--border);border-radius:10px;margin-bottom:'+(r.rejectReason?"16px":"20px")+'">'+r.reason+'</div>'+
+    (r.rejectReason?'<div class="dsec">Lý do từ chối</div><div style="font-size:.86rem;color:var(--danger);line-height:1.6;padding:14px;background:var(--danger-soft);border-radius:10px;margin-bottom:20px">'+r.rejectReason+'</div>':'')+
+    '<div class="dsec">Quỹ phép còn lại của '+mn(r.who)+'</div>'+
+    '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--content);border:1px solid var(--border);border-radius:12px">'+
+      '<div style="flex:1"><div style="height:8px;border-radius:99px;background:var(--border);overflow:hidden"><i style="display:block;height:100%;width:'+(m?m.used/m.quota*100:0)+'%;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:99px"></i></div></div>'+
+      '<div style="font-family:var(--font-mono);font-size:.92rem;font-weight:700">'+remain+' <span style="font-size:.72rem;color:var(--text-3)">/ '+(m?m.quota:0)+' ngày</span></div>'+
+    '</div>';
+
+  var foot=document.getElementById("rdFoot");
+  if(r.status==="pending"){
+    foot.style.display="flex";
+    foot.innerHTML='<button class="abtn ghost" data-act="reject" style="flex:1;color:var(--danger);border-color:rgba(255,107,107,.3)">✗ Từ chối</button><button class="abtn primary" data-act="approve" style="flex:1">✓ Phê duyệt</button>';
+  } else {
+    foot.style.display="none";foot.innerHTML="";
+  }
+  document.getElementById("rdBack").classList.add("open");
+  document.getElementById("rdDrawer").classList.add("open");
+}
+function closeDrawer(){
+  document.getElementById("rdBack").classList.remove("open");
+  document.getElementById("rdDrawer").classList.remove("open");
+  openId=null;
+}
+
+/* ── APPROVE / REJECT ── */
+function doApprove(id){
+  var idx=REQUESTS.findIndex(function(x){return x.id===id;});
+  if(idx===-1)return;
+  var r=REQUESTS[idx];
+  r.status="approved";r.approver="DL";
+  /* deduct from balance if paid annual/personal */
+  var m=MEMBERS.find(function(x){return x.v===r.who;});
+  if(m&&(r.type==="annual"||r.type==="personal")){m.used=Math.min(m.quota,m.used+r.days);}
+  renderAll();showToast("Đã duyệt đơn của "+mn(r.who)+" ✓","ok");
+}
+function doReject(id){
+  if(document.getElementById("rejModal"))return;
+  var r=REQUESTS.find(function(x){return x.id===id;});
+  if(!r)return;
+  var back=document.createElement("div");back.className="modal-back";back.id="rejModal";
+  back.innerHTML='<div class="lm-modal" style="max-width:420px">'+
+    '<div class="lm-head"><div class="ico" style="background:var(--danger-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></div><h3>Từ chối đơn nghỉ</h3><button class="x" id="rjClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>'+
+    '<div class="lm-body"><div style="font-size:.86rem;color:var(--text-2)">Từ chối đơn <b style="color:var(--text)">'+r.id+'</b> của <b style="color:var(--text)">'+mn(r.who)+'</b>?</div>'+
+      '<div class="lm-field"><label>Lý do từ chối *</label><textarea id="rjReason" placeholder="Nhập lý do để thông báo cho nhân viên…" style="min-height:80px"></textarea></div>'+
+    '</div>'+
+    '<div class="lm-foot"><button class="abtn ghost" id="rjCancel">Hủy</button><button class="abtn primary" id="rjConfirm" style="background:var(--danger)">Xác nhận từ chối</button></div>'+
+  '</div>';
+  document.body.appendChild(back);
+  function close(){var m=document.getElementById("rejModal");if(m)m.remove();}
+  back.addEventListener("click",function(e){if(e.target===back)close();});
+  document.getElementById("rjClose").addEventListener("click",close);
+  document.getElementById("rjCancel").addEventListener("click",close);
+  document.getElementById("rjConfirm").addEventListener("click",function(){
+    var reason=document.getElementById("rjReason").value.trim();
+    if(!reason){showToast("Vui lòng nhập lý do","err");return;}
+    var idx=REQUESTS.findIndex(function(x){return x.id===id;});
+    if(idx!==-1){REQUESTS[idx].status="rejected";REQUESTS[idx].approver="DL";REQUESTS[idx].rejectReason=reason;}
+    close();closeDrawer();renderAll();showToast("Đã từ chối đơn","warn");
+  });
+  requestAnimationFrame(function(){document.getElementById("rjReason").focus();});
+}
+
+/* ── CREATE MODAL ── */
+function openModal(){
+  if(document.getElementById("reqModal"))return;
+  var type="annual";
+  var back=document.createElement("div");back.className="modal-back";back.id="reqModal";
+  back.innerHTML='<div class="lm-modal">'+
+    '<div class="lm-head"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M12 14v3M10.5 15.5h3"/></svg></div><h3>Tạo đơn nghỉ phép</h3><button class="x" id="rmClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>'+
+    '<div class="lm-body">'+
+      '<div class="lm-field"><label>Nhân viên</label><select id="rmWho">'+MEMBERS.map(function(m){return '<option value="'+m.v+'">'+m.l+' — còn '+(m.quota-m.used)+' ngày phép</option>';}).join("")+'</select></div>'+
+      '<div class="lm-field"><label>Loại nghỉ</label><div class="lt-pick" id="rmTypes">'+
+        Object.keys(TYPES).map(function(k){var t=TYPES[k];return '<button class="lt-opt '+t.cls+(k==="annual"?" on":"")+'" data-t="'+k+'"><span class="ld" style="background:'+t.c+'"></span>'+t.l+'</button>';}).join("")+
+      '</div></div>'+
+      '<div class="lm-row">'+
+        '<div class="lm-field"><label>Từ ngày *</label><input type="date" id="rmFrom" value="2026-06-16"/></div>'+
+        '<div class="lm-field"><label>Đến ngày *</label><input type="date" id="rmTo" value="2026-06-16"/></div>'+
+      '</div>'+
+      '<div class="dur-preview" id="rmDur">📅 1 ngày làm việc</div>'+
+      '<div class="lm-field"><label>Lý do *</label><textarea id="rmReason" placeholder="Mô tả lý do xin nghỉ…" style="min-height:70px"></textarea></div>'+
+    '</div>'+
+    '<div class="lm-foot"><button class="abtn ghost" id="rmCancel">Hủy</button><button class="abtn primary" id="rmSave">Gửi đơn</button></div>'+
+  '</div>';
+  document.body.appendChild(back);
+
+  function calcDays(){
+    var f=document.getElementById("rmFrom").value, tt=document.getElementById("rmTo").value;
+    if(!f||!tt)return 0;
+    var d1=new Date(f), d2=new Date(tt);
+    if(d2<d1)return -1;
+    return Math.round((d2-d1)/86400000)+1;
+  }
+  function updateDur(){
+    var d=calcDays();
+    var el=document.getElementById("rmDur");
+    if(d<0){el.innerHTML='<span style="color:var(--danger)">Ngày kết thúc phải sau ngày bắt đầu</span>';el.style.background="var(--danger-soft)";}
+    else{el.innerHTML="📅 "+d+" ngày làm việc";el.style.background="var(--accent-soft)";}
+  }
+  document.getElementById("rmFrom").addEventListener("input",updateDur);
+  document.getElementById("rmTo").addEventListener("input",updateDur);
+  document.getElementById("rmTypes").addEventListener("click",function(e){
+    var b=e.target.closest(".lt-opt");if(!b)return;
+    type=b.dataset.t;
+    document.querySelectorAll(".lt-opt").forEach(function(x){x.classList.remove("on");});
+    b.classList.add("on");
+  });
+
+  function close(){var m=document.getElementById("reqModal");if(m)m.remove();}
+  back.addEventListener("click",function(e){if(e.target===back)close();});
+  document.getElementById("rmClose").addEventListener("click",close);
+  document.getElementById("rmCancel").addEventListener("click",close);
+  document.getElementById("rmSave").addEventListener("click",function(){
+    var who=document.getElementById("rmWho").value;
+    var from=document.getElementById("rmFrom").value;
+    var to=document.getElementById("rmTo").value;
+    var reason=document.getElementById("rmReason").value.trim();
+    var days=calcDays();
+    if(!from||!to||days<0){showToast("Kiểm tra lại ngày nghỉ","err");return;}
+    if(!reason){showToast("Vui lòng nhập lý do","err");return;}
+    var id="LV-"+String(nextId++).padStart(4,"0");
+    REQUESTS.unshift({id:id,who:who,type:type,from:from,to:to,days:days,reason:reason,status:"pending",createdAt:TODAY});
+    close();selTab="pending";renderAll();showToast("Đã gửi đơn nghỉ "+id+" ✓","ok");
+  });
+}
+
+/* ── EVENTS ── */
+document.getElementById("reqList").addEventListener("click",function(e){
+  var ab=e.target.closest("[data-act]");
+  if(ab){
+    e.stopPropagation();
+    if(ab.dataset.act==="approve")doApprove(ab.dataset.id);
+    else if(ab.dataset.act==="reject")doReject(ab.dataset.id);
+    return;
+  }
+  var card=e.target.closest(".req-card[data-id]");
+  if(card)openDrawer(card.dataset.id);
+});
+document.getElementById("lvTabs").addEventListener("click",function(e){
+  var b=e.target.closest(".lv-tab");if(!b)return;
+  selTab=b.dataset.k;renderTabs();renderRequests();
+});
+document.getElementById("rdFoot").addEventListener("click",function(e){
+  var b=e.target.closest("[data-act]");if(!b||!openId)return;
+  if(b.dataset.act==="approve"){doApprove(openId);closeDrawer();}
+  else if(b.dataset.act==="reject")doReject(openId);
+});
+document.getElementById("rdBack").addEventListener("click",closeDrawer);
+document.getElementById("rdClose").addEventListener("click",closeDrawer);
+document.getElementById("newReqBtn").addEventListener("click",openModal);
+
+/* ── TOAST ── */
+function showToast(msg,type){
+  var t=document.getElementById("toast");
+  t.textContent=msg;t.className="toast "+(type||"ok");
+  t.classList.add("show");
+  setTimeout(function(){t.classList.remove("show");},2800);
+}
+
+/* ── RENDER ── */
+function renderAll(){renderKPIs();renderTabs();renderRequests();renderWhoOut();renderBalance();renderLegend();}
+renderAll();
+
+})();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

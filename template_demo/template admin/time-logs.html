@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Time Logs — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css"/>
+<style>
+/* ── Time Logs page ── */
+.tl-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:22px}
+.range-seg{display:inline-flex;background:var(--elev);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.range-seg button{height:30px;padding:0 14px;border-radius:7px;font-family:inherit;font-size:0.82rem;font-weight:600;color:var(--text-3);transition:background .15s,color .15s}
+.range-seg button.on{background:var(--accent-soft);color:var(--accent-ink)}
+.mf-wrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mf-chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:99px;border:1.5px solid var(--border);background:var(--elev);font-size:0.8rem;font-weight:500;color:var(--text-2);transition:border-color .15s,background .15s,color .15s;cursor:pointer;font-family:inherit}
+.mf-chip:hover{border-color:var(--border-2);color:var(--text)}
+.mf-chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.mf-av{width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8b7bff,#4f7aff);display:grid;place-items:center;color:#fff;font-size:0.58rem;font-weight:700;flex-shrink:0}
+
+.tl-search{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;background:var(--elev);border:1px solid var(--border);border-radius:9px;color:var(--text-3);min-width:180px}
+.tl-search svg{width:14px;height:14px;flex-shrink:0}
+.tl-search input{background:none;border:none;outline:none;font-family:inherit;font-size:0.82rem;color:var(--text);width:100%}
+.tl-search input::placeholder{color:var(--text-3)}
+
+.tl-groups{display:flex;flex-direction:column;gap:16px}
+.tl-group-head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--elev);border:1px solid var(--border);border-radius:var(--r) var(--r) 0 0;cursor:pointer;user-select:none;transition:background .15s}
+.tl-group-head:hover{background:var(--elev-2)}
+.tl-group.collapsed .tl-group-head{border-radius:var(--r)}
+.tl-date-badge{font-weight:700;font-size:0.88rem;color:var(--text)}
+.tl-day-label{font-size:0.74rem;color:var(--text-3);font-family:var(--font-mono)}
+.tl-day-total{margin-left:auto;font-family:var(--font-mono);font-size:0.84rem;font-weight:700;color:var(--accent-ink)}
+.tl-day-cnt{font-size:0.72rem;color:var(--text-3);margin-right:2px}
+.tl-chev{width:20px;height:20px;display:grid;place-items:center;color:var(--text-3);transition:transform .2s var(--ease);flex-shrink:0}
+.tl-chev svg{width:15px;height:15px}
+.tl-group.collapsed .tl-chev{transform:rotate(-90deg)}
+.tl-group.collapsed .tl-table-wrap{display:none}
+
+.tl-table-wrap{border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);overflow-x:auto}
+.tl-table{width:100%;border-collapse:collapse;min-width:680px}
+.tl-table th{text-align:left;padding:9px 14px;font-family:var(--font-mono);font-size:0.66rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);font-weight:600;background:var(--content);border-bottom:1px solid var(--border);white-space:nowrap}
+.tl-table td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tl-table tbody tr:last-child td{border-bottom:none}
+.tl-table tbody tr:hover{background:var(--content)}
+.tl-table tbody tr{transition:background .12s}
+
+.tl-task-id{font-family:var(--font-mono);font-size:0.72rem;color:var(--accent-ink);display:block}
+.tl-task-name{font-size:0.86rem;font-weight:500;color:var(--text);display:block;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-time{font-family:var(--font-mono);font-size:0.82rem;color:var(--text-2);white-space:nowrap}
+.tl-dur{font-family:var(--font-mono);font-size:0.84rem;font-weight:700;color:var(--text);white-space:nowrap}
+.tl-dur.live{color:var(--ok);animation:durpulse 1.5s ease-in-out infinite}
+@keyframes durpulse{0%,100%{opacity:1}50%{opacity:.65}}
+.tl-note-cell{font-size:0.82rem;color:var(--text-3);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.tl-table tbody tr:hover .tl-actions{opacity:1}
+.tl-act-btn{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--text-3);border:1px solid transparent;transition:background .15s,color .15s,border-color .15s;cursor:pointer;font-family:inherit;flex-shrink:0}
+.tl-act-btn:hover{background:var(--elev-2);color:var(--text);border-color:var(--border)}
+.tl-act-btn.del:hover{color:var(--danger);border-color:rgba(255,107,107,0.3);background:var(--danger-soft)}
+.tl-act-btn svg{width:14px;height:14px}
+
+/* topbar timer pill */
+.timer-pill{display:inline-flex;align-items:center;gap:7px;background:var(--ok-soft);border:1px solid rgba(74,222,128,.25);color:var(--ok);font-family:var(--font-mono);font-size:0.78rem;font-weight:700;padding:5px 12px;border-radius:99px;animation:tpulse 2s ease-in-out infinite}
+@keyframes tpulse{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}50%{box-shadow:0 0 0 4px rgba(74,222,128,.12)}}
+.timer-pill .tdot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);flex-shrink:0}
+.timer-pill .ttask{font-size:0.7rem;color:rgba(74,222,128,.75);font-weight:500}
+.timer-pill .tstop{background:none;border:none;color:var(--ok);cursor:pointer;display:grid;place-items:center;padding:0 2px;opacity:.8}
+.timer-pill .tstop:hover{opacity:1}
+.timer-pill .tstop svg{width:12px;height:12px}
+
+/* modal */
+.ltm{width:100%;max-width:540px;background:var(--elev);border:1px solid var(--border-2);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden}
+.ltm-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--border)}
+.ltm-head .ico{width:32px;height:32px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex-shrink:0}
+.ltm-head .ico svg{width:17px;height:17px;color:#fff}
+.ltm-head h3{font-size:1.02rem;font-weight:700}
+.ltm-head .x{margin-left:auto;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);cursor:pointer;font-family:inherit;border:none;background:none}
+.ltm-head .x:hover{background:var(--content);color:var(--text)}
+.ltm-head .x svg{width:17px;height:17px}
+.ltm-body{padding:22px;display:flex;flex-direction:column;gap:16px}
+.ltm-field{display:flex;flex-direction:column;gap:6px}
+.ltm-field label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)}
+.ltm-field input,.ltm-field select,.ltm-field textarea{font-family:inherit;font-size:0.9rem;color:var(--text);background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:9px 12px;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.ltm-field input:focus,.ltm-field select:focus,.ltm-field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.ltm-field textarea{resize:vertical;min-height:72px}
+.ltm-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ltm-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--border)}
+.dur-preview{font-family:var(--font-mono);font-size:0.82rem;color:var(--accent-ink);padding:8px 12px;background:var(--accent-soft);border-radius:8px;text-align:center;font-weight:700}
+
+/* empty state */
+.tl-empty{text-align:center;padding:56px 20px;color:var(--text-3)}
+.tl-empty svg{width:48px;height:48px;margin:0 auto 16px;opacity:.3}
+.tl-empty p{font-size:.95rem;font-weight:500;color:var(--text-2)}
+.tl-empty span{font-size:.83rem;margin-top:6px;display:block}
+
+/* toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--elev);border:1px solid var(--border-2);border-radius:10px;padding:12px 22px;font-size:.86rem;font-weight:500;color:var(--text);box-shadow:var(--shadow-lg);z-index:500;opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;white-space:nowrap;display:flex;align-items:center;gap:10px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-left:3px solid var(--ok)}
+.toast.err{border-left:3px solid var(--danger)}
+
+/* summary footer bar */
+.tl-summary{display:flex;align-items:center;justify-content:flex-end;gap:20px;padding:12px 16px;background:var(--elev);border:1px solid var(--border);border-radius:var(--r);margin-top:8px}
+.tl-summary .sl{font-size:.8rem;color:var(--text-3)}
+.tl-summary .sv{font-family:var(--font-mono);font-size:.88rem;font-weight:700;color:var(--text)}
+
+@media(max-width:900px){.tl-bar{flex-wrap:wrap}.board{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="side">
+  <div class="side-brand">
+    <span class="lm">j</span>
+    <div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div>
+  </div>
+  <nav class="side-nav scroll" id="sideNav"></nav>
+  <div class="side-foot">
+    <div class="side-user">
+      <span class="av">DL</span>
+      <div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div>
+      <span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <button class="tb-icon menu-btn" id="menuBtn" aria-label="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div><div class="tb-title">Time Logs</div></div>
+    <div class="tb-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <input type="text" placeholder="Tìm task, thành viên…"/>
+      <kbd>⌘K</kbd>
+    </div>
+    <div class="tb-right">
+      <!-- live timer pill -->
+      <div class="timer-pill" id="timerPill">
+        <span class="tdot"></span>
+        <span id="timerDisplay">01:24:08</span>
+        <span class="ttask">JH-233</span>
+        <button class="tstop" id="timerStopBtn" title="Dừng &amp; lưu">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        </button>
+      </div>
+      <button class="tb-icon" id="themeToggle" aria-label="Sáng/Tối" title="Sáng/Tối">
+        <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+        <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+      </button>
+      <button class="tb-icon" aria-label="Trợ giúp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3"/><path d="M12 17h.01"/></svg>
+      </button>
+      <button class="tb-icon" aria-label="Thông báo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        <span class="dot"></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="content scroll">
+    <div class="content-inner">
+
+      <!-- Page head -->
+      <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px">
+        <div>
+          <h1>Time Logs</h1>
+          <p>Tổng <b id="summaryTotal">—</b> · sprint 14 đang chạy · cập nhật <b>vừa xong</b></p>
+        </div>
+        <button class="abtn primary" id="logTimeBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Log Time
+        </button>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="kpis" id="kpiRow"></div>
+
+      <!-- Toolbar -->
+      <div class="tl-bar">
+        <div class="range-seg" id="rangeSeg">
+          <button class="on" data-range="week">Tuần này</button>
+          <button data-range="last7">7 ngày qua</button>
+          <button data-range="month">Tháng 6</button>
+        </div>
+        <div class="mf-wrap" id="memberFilter"></div>
+        <div style="flex:1"></div>
+        <div class="tl-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <input type="text" id="filterInput" placeholder="Lọc nhanh task, thành viên…"/>
+        </div>
+      </div>
+
+      <!-- Groups -->
+      <div class="tl-groups" id="logGroups"></div>
+
+      <!-- Summary footer -->
+      <div class="tl-summary" id="logSummary" style="display:none">
+        <span class="sl">Tổng logs hiển thị:</span>
+        <span class="sv" id="summaryCount">—</span>
+        <span class="sl">Tổng thời gian:</span>
+        <span class="sv" id="summaryTime">—</span>
+      </div>
+    </div>
+  </main>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ── DATA ── */
+var MEMBERS = [
+  {v:"MA",l:"Minh Anh",dept:"Frontend"},
+  {v:"HG",l:"Hoàng",dept:"Backend"},
+  {v:"LN",l:"Lan",dept:"Design"},
+  {v:"TU",l:"Tú",dept:"Backend"},
+  {v:"DL",l:"Do thi Lan",dept:"GM"}
+];
+
+var TASKS = [
+  {id:"JH-233",title:"API endpoint chấm công (Office Time)"},
+  {id:"JH-238",title:"Migrate Prisma schema sang multi-tenant"},
+  {id:"JH-241",title:"Thiết kế lại onboarding flow cho user mới"},
+  {id:"JH-242",title:"Dashboard KPI cards + biểu đồ năng suất"},
+  {id:"JH-245",title:"Viết tài liệu API webhook Git"},
+  {id:"JH-250",title:"Audit log UI — bộ lọc theo hành động"},
+  {id:"JH-253",title:"Tích hợp Slack notification cho task"},
+  {id:"JH-224",title:"Setup CI/CD pipeline trên Vercel"},
+  {id:"JH-226",title:"Viết test cho salary module"},
+  {id:"JH-219",title:"Review PR #284 — refactor auth"}
+];
+
+var nextId = 200;
+var LOGS = [
+  /* Jun 15 — Hôm nay */
+  {id:"TL-101",taskId:"JH-233",who:"HG",date:"2026-06-15",start:"08:30",end:"10:00",dur:90,note:"Implement POST /api/attendance, test với Postman"},
+  {id:"TL-102",taskId:"JH-238",who:"TU",date:"2026-06-15",start:"09:00",end:"12:30",dur:210,note:"Schema migration v3 + seed 4 tenants"},
+  {id:"TL-103",taskId:"JH-242",who:"MA",date:"2026-06-15",start:"08:45",end:"11:15",dur:150,note:"Wireframe KPI cards + layout"},
+  {id:"TL-104",taskId:"JH-241",who:"LN",date:"2026-06-15",start:"09:30",end:"12:00",dur:150,note:"User flow v2 onboarding screens"},
+  {id:"TL-105",taskId:"JH-242",who:"MA",date:"2026-06-15",start:"13:00",end:"17:00",dur:240,note:"Implement bar chart React component"},
+  {id:"TL-106",taskId:"JH-238",who:"TU",date:"2026-06-15",start:"14:00",end:"16:30",dur:150,note:"Prisma migrations cho staging thành công"},
+  /* Jun 14 — Hôm qua */
+  {id:"TL-107",taskId:"JH-250",who:"MA",date:"2026-06-14",start:"09:00",end:"12:00",dur:180,note:"Build filter UI components cho audit log"},
+  {id:"TL-108",taskId:"JH-245",who:"TU",date:"2026-06-14",start:"10:00",end:"13:00",dur:180,note:"Viết docs cho 3 endpoints chính"},
+  {id:"TL-109",taskId:"JH-241",who:"LN",date:"2026-06-14",start:"08:30",end:"11:30",dur:180,note:"Thiết kế màn hình welcome + onboarding step 1"},
+  {id:"TL-110",taskId:"JH-253",who:"HG",date:"2026-06-14",start:"14:00",end:"17:30",dur:210,note:"Integrate Slack webhook API, test channel notification"},
+  {id:"TL-111",taskId:"JH-242",who:"MA",date:"2026-06-14",start:"13:30",end:"17:00",dur:210,note:"Fix responsive layout dashboard trên mobile"},
+  /* Jun 13 — T7 */
+  {id:"TL-112",taskId:"JH-224",who:"TU",date:"2026-06-13",start:"09:00",end:"11:30",dur:150,note:"Setup Vercel deployment + env vars"},
+  {id:"TL-113",taskId:"JH-226",who:"HG",date:"2026-06-13",start:"10:00",end:"12:30",dur:150,note:"Unit tests salary calculator module"},
+  {id:"TL-114",taskId:"JH-241",who:"LN",date:"2026-06-13",start:"14:00",end:"17:00",dur:180,note:"Prototype mobile screens figma"},
+  {id:"TL-115",taskId:"JH-219",who:"MA",date:"2026-06-13",start:"09:30",end:"12:00",dur:150,note:"Review auth refactor PR, comment 8 điểm"},
+  /* Jun 12 — T6 */
+  {id:"TL-116",taskId:"JH-233",who:"HG",date:"2026-06-12",start:"08:30",end:"13:00",dur:270,note:"Design DB schema cho attendance module"},
+  {id:"TL-117",taskId:"JH-242",who:"MA",date:"2026-06-12",start:"09:00",end:"12:30",dur:210,note:"Prototype dashboard layout v1"},
+  {id:"TL-118",taskId:"JH-238",who:"TU",date:"2026-06-12",start:"10:00",end:"16:00",dur:360,note:"Research multi-tenant Prisma patterns"},
+  {id:"TL-119",taskId:"JH-241",who:"LN",date:"2026-06-12",start:"14:00",end:"17:00",dur:180,note:"Review API docs structure với team"}
+];
+
+/* ── STATE ── */
+var range = "week";
+var member = "ALL";
+var search = "";
+var timerSec = 84 * 60 + 8;
+var timerRunning = true;
+var timerInt = null;
+
+/* ── UTILS ── */
+function fmtDur(m){
+  if(!m) return "—";
+  var h=Math.floor(m/60),min=m%60;
+  return h ? h+"h"+(min?" "+min+"ph":"") : min+"ph";
+}
+function fmtTime(s){
+  var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;
+  return [h,m,ss].map(function(v){return String(v).padStart(2,"0");}).join(":");
+}
+function member2name(v){var m=MEMBERS.find(function(x){return x.v===v;});return m?m.l:v;}
+function task2name(id){var t=TASKS.find(function(x){return x.id===id;});return t?t.title:id;}
+function viDate(d){var p=d.split("-");return p[2]+"/"+p[1]+"/"+p[0];}
+function dayLabel(d){
+  var map={"2026-06-15":"Hôm nay","2026-06-14":"Hôm qua","2026-06-13":"T7, 13/06","2026-06-12":"T6, 12/06","2026-06-11":"T5, 11/06","2026-06-10":"T4, 10/06","2026-06-09":"T3, 09/06"};
+  return map[d]||d;
+}
+function inRange(d){
+  if(range==="week") return d==="2026-06-15";
+  if(range==="last7") return d>="2026-06-09" && d<="2026-06-15";
+  if(range==="month") return d.startsWith("2026-06");
+  return true;
+}
+
+function filtered(){
+  return LOGS.filter(function(l){
+    if(!inRange(l.date)) return false;
+    if(member!=="ALL" && l.who!==member) return false;
+    if(search){
+      var q=search.toLowerCase();
+      var tn=task2name(l.taskId).toLowerCase();
+      if(l.taskId.toLowerCase().indexOf(q)===-1 && tn.indexOf(q)===-1 &&
+         member2name(l.who).toLowerCase().indexOf(q)===-1 && (l.note||"").toLowerCase().indexOf(q)===-1) return false;
+    }
+    return true;
+  });
+}
+
+/* ── KPI CARDS ── */
+function renderKPIs(){
+  var week=LOGS.filter(function(l){return l.date==="2026-06-15";});
+  var month=LOGS.filter(function(l){return l.date.startsWith("2026-06");});
+  var wMin=week.reduce(function(a,l){return a+l.dur;},0);
+  var mMin=month.reduce(function(a,l){return a+l.dur;},0);
+  var tasks=[...new Set(week.map(function(l){return l.taskId;}))].length;
+  var membs=[...new Set(week.map(function(l){return l.who;}))].length;
+  var avgDay=Math.round(mMin/4);
+
+  document.getElementById("summaryTotal").textContent=fmtDur(wMin)+" hôm nay";
+
+  var cards=[
+    {ico:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round" stroke-linejoin="round"/>',
+     lab:"Giờ hôm nay",val:fmtDur(wMin),chg:"▲ timer đang chạy",cls:"up"},
+    {ico:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+     lab:"Tasks đang track",val:tasks,chg:"tuần này",cls:"flat"},
+    {ico:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke-linecap="round"/><path d="M16 4a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-5" stroke-linecap="round"/>',
+     lab:"Thành viên active",val:membs,chg:"hôm nay",cls:"flat"},
+    {ico:'<path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/>',
+     lab:"TB giờ / ngày",val:fmtDur(avgDay),chg:"tháng 6/2026",cls:"flat"}
+  ];
+  document.getElementById("kpiRow").innerHTML=cards.map(function(k){
+    return '<div class="kpi"><div class="kt"><span class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+k.ico+'</svg></span>'+k.lab+'</div><div class="kv">'+k.val+'</div><div class="kc '+k.cls+'">'+k.chg+'</div></div>';
+  }).join("");
+}
+
+/* ── MEMBER CHIPS ── */
+function renderMemberFilter(){
+  var opts=[{v:"ALL",l:"Tất cả"}].concat(MEMBERS.filter(function(m){return m.v!=="DL";}));
+  document.getElementById("memberFilter").innerHTML=opts.map(function(m){
+    var av=m.v!=="ALL"?'<span class="mf-av">'+m.v+'</span>':'';
+    return '<button class="mf-chip'+(member===m.v?" on":"")+'" data-m="'+m.v+'">'+av+m.l+'</button>';
+  }).join("");
+}
+
+/* ── RENDER GROUPS ── */
+function renderGroups(){
+  var logs=filtered();
+  var container=document.getElementById("logGroups");
+  var summary=document.getElementById("logSummary");
+
+  if(!logs.length){
+    container.innerHTML='<div class="tl-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg><p>Không có time log nào</p><span>Thay đổi bộ lọc hoặc bấm "Log Time" để thêm mới.</span></div>';
+    summary.style.display="none";
+    return;
+  }
+
+  /* group by date desc */
+  var grouped={};
+  logs.forEach(function(l){if(!grouped[l.date])grouped[l.date]=[];grouped[l.date].push(l);});
+  var dates=Object.keys(grouped).sort(function(a,b){return b.localeCompare(a);});
+
+  container.innerHTML=dates.map(function(date){
+    var grp=grouped[date];
+    var dayMins=grp.reduce(function(a,l){return a+l.dur;},0);
+    var isToday=date==="2026-06-15";
+    var rows=grp.map(function(l){
+      var taskN=task2name(l.taskId);
+      var mname=member2name(l.who);
+      return '<tr data-lid="'+l.id+'">'+
+        '<td><span class="tl-task-id">'+l.taskId+'</span><span class="tl-task-name" title="'+taskN+'">'+taskN+'</span></td>'+
+        '<td><div style="display:flex;align-items:center;gap:7px">'+
+          '<span class="av-sm" style="width:24px;height:24px;font-size:0.66rem">'+l.who+'</span>'+
+          '<span style="font-size:.84rem;color:var(--text-2)">'+mname+'</span>'+
+        '</div></td>'+
+        '<td class="tl-time">'+l.start+'</td>'+
+        '<td class="tl-time">'+l.end+'</td>'+
+        '<td><span class="tl-dur">'+fmtDur(l.dur)+'</span></td>'+
+        '<td class="tl-note-cell" title="'+(l.note||"")+'">'+(l.note||'<span style="color:var(--border-2)">—</span>')+'</td>'+
+        '<td><div class="tl-actions">'+
+          '<button class="tl-act-btn edit" data-lid="'+l.id+'" title="Sửa">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>'+
+          '</button>'+
+          '<button class="tl-act-btn del" data-lid="'+l.id+'" title="Xóa">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>'+
+          '</button>'+
+        '</div></td>'+
+      '</tr>';
+    }).join("");
+
+    return '<div class="tl-group" data-date="'+date+'">'+
+      '<div class="tl-group-head">'+
+        '<span class="tl-date-badge">'+viDate(date)+'</span>'+
+        '<span class="tl-day-label">'+dayLabel(date)+'</span>'+
+        (isToday?'<span style="font-family:var(--font-mono);font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--ok-soft);color:var(--ok);margin-left:4px">LIVE ▶</span>':'')+
+        '<span class="tl-day-cnt" style="margin-left:auto">'+grp.length+' mục ·</span>'+
+        '<span class="tl-day-total">'+fmtDur(dayMins)+'</span>'+
+        '<span class="tl-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>'+
+      '</div>'+
+      '<div class="tl-table-wrap">'+
+        '<table class="tl-table">'+
+          '<thead><tr><th>Task</th><th>Thành viên</th><th>Bắt đầu</th><th>Kết thúc</th><th>Thời gian</th><th>Ghi chú</th><th style="width:70px"></th></tr></thead>'+
+          '<tbody>'+rows+'</tbody>'+
+        '</table>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+
+  /* summary bar */
+  var total=logs.reduce(function(a,l){return a+l.dur;},0);
+  document.getElementById("summaryCount").textContent=logs.length+" log";
+  document.getElementById("summaryTime").textContent=fmtDur(total);
+  summary.style.display="flex";
+}
+
+/* ── TIMER ── */
+function startTimer(){
+  var pill=document.getElementById("timerPill");
+  var disp=document.getElementById("timerDisplay");
+  pill.style.display="inline-flex";
+  clearInterval(timerInt);
+  timerInt=setInterval(function(){timerSec++;disp.textContent=fmtTime(timerSec);},1000);
+}
+document.getElementById("timerStopBtn").addEventListener("click",function(){
+  clearInterval(timerInt);
+  timerRunning=false;
+  document.getElementById("timerPill").style.display="none";
+  /* create log entry */
+  var mins=Math.round(timerSec/60);
+  var now=new Date("2026-06-15T"+fmtTime(timerSec > 0 ? 8*3600 : 0)); /* approx */
+  LOGS.unshift({id:"TL-"+(nextId++),taskId:"JH-233",who:"HG",date:"2026-06-15",start:"08:30",end:"10:30",dur:mins,note:"Auto-saved từ timer — API endpoint chấm công"});
+  timerSec=0;
+  renderGroups();renderKPIs();
+  showToast("Timer dừng — đã lưu log ✓","ok");
+});
+
+/* ── LOG TIME MODAL ── */
+function openModal(log){
+  var isEdit=!!log;
+  if(document.getElementById("ltModal")) return;
+
+  function calcDurPreview(){
+    var s=document.getElementById("lt-start").value;
+    var e=document.getElementById("lt-end").value;
+    if(!s||!e) return "—";
+    var sm=parseInt(s.split(":")[0])*60+parseInt(s.split(":")[1]);
+    var em=parseInt(e.split(":")[0])*60+parseInt(e.split(":")[1]);
+    var d=em-sm;
+    return d>0?fmtDur(d):'<span style="color:var(--danger)">Giờ kết thúc phải sau bắt đầu</span>';
+  }
+
+  var back=document.createElement("div");back.className="modal-back";back.id="ltModal";
+  back.innerHTML='<div class="ltm">'+
+    '<div class="ltm-head">'+
+      '<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'+
+      '<h3>'+(isEdit?"Sửa time log":"Log Time")+'</h3>'+
+      '<button class="x" id="ltClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'+
+    '</div>'+
+    '<div class="ltm-body">'+
+      '<div class="ltm-field">'+
+        '<label>Task <span style="color:var(--danger)">*</span></label>'+
+        '<select id="lt-task">'+TASKS.map(function(t){return '<option value="'+t.id+'"'+(isEdit&&log.taskId===t.id?' selected':'')+'>'+t.id+' — '+t.title+'</option>';}).join("")+'</select>'+
+      '</div>'+
+      '<div class="ltm-row">'+
+        '<div class="ltm-field"><label>Thành viên</label>'+
+          '<select id="lt-who">'+MEMBERS.map(function(m){return '<option value="'+m.v+'"'+(isEdit?log.who===m.v?' selected':'':m.v==="DL"?' selected':'')+'>'+m.l+'</option>';}).join("")+'</select>'+
+        '</div>'+
+        '<div class="ltm-field"><label>Ngày <span style="color:var(--danger)">*</span></label>'+
+          '<input type="date" id="lt-date" value="'+(isEdit?log.date:"2026-06-15")+'"/>'+
+        '</div>'+
+      '</div>'+
+      '<div class="ltm-row">'+
+        '<div class="ltm-field"><label>Bắt đầu <span style="color:var(--danger)">*</span></label><input type="time" id="lt-start" value="'+(isEdit?log.start:"09:00")+'"/></div>'+
+        '<div class="ltm-field"><label>Kết thúc <span style="color:var(--danger)">*</span></label><input type="time" id="lt-end" value="'+(isEdit?log.end:"10:00")+'"/></div>'+
+      '</div>'+
+      '<div class="dur-preview" id="durPreview">⏱ '+(isEdit?fmtDur(log.dur):"1h 0ph")+'</div>'+
+      '<div class="ltm-field">'+
+        '<label>Ghi chú</label>'+
+        '<textarea id="lt-note" placeholder="Tóm tắt công việc đã làm trong khoảng thời gian này…">'+(isEdit?(log.note||""):"")+'</textarea>'+
+      '</div>'+
+    '</div>'+
+    '<div class="ltm-foot">'+
+      '<button class="abtn ghost" id="ltCancel">Hủy</button>'+
+      '<button class="abtn primary" id="ltSave">'+(isEdit?"Lưu thay đổi":"Lưu log")+'</button>'+
+    '</div>'+
+  '</div>';
+  document.body.appendChild(back);
+
+  function updatePreview(){
+    document.getElementById("durPreview").innerHTML="⏱ "+calcDurPreview();
+  }
+  document.getElementById("lt-start").addEventListener("input",updatePreview);
+  document.getElementById("lt-end").addEventListener("input",updatePreview);
+
+  function close(){var m=document.getElementById("ltModal");if(m)m.remove();}
+  back.addEventListener("click",function(e){if(e.target===back)close();});
+  document.getElementById("ltClose").addEventListener("click",close);
+  document.getElementById("ltCancel").addEventListener("click",close);
+
+  document.getElementById("ltSave").addEventListener("click",function(){
+    var taskId=document.getElementById("lt-task").value;
+    var who=document.getElementById("lt-who").value;
+    var date=document.getElementById("lt-date").value;
+    var start=document.getElementById("lt-start").value;
+    var end=document.getElementById("lt-end").value;
+    var note=document.getElementById("lt-note").value.trim();
+    if(!taskId||!date||!start||!end){showToast("Vui lòng điền đầy đủ thông tin *","err");return;}
+    var sm=parseInt(start.split(":")[0])*60+parseInt(start.split(":")[1]);
+    var em=parseInt(end.split(":")[0])*60+parseInt(end.split(":")[1]);
+    var dur=em-sm;
+    if(dur<=0){showToast("Giờ kết thúc phải sau giờ bắt đầu","err");return;}
+    if(isEdit){
+      var idx=LOGS.findIndex(function(l){return l.id===log.id;});
+      if(idx!==-1)LOGS[idx]={id:log.id,taskId:taskId,who:who,date:date,start:start,end:end,dur:dur,note:note};
+      showToast("Đã cập nhật log ✓","ok");
+    } else {
+      LOGS.unshift({id:"TL-"+(nextId++),taskId:taskId,who:who,date:date,start:start,end:end,dur:dur,note:note});
+      showToast("Đã lưu time log ✓","ok");
+    }
+    close();renderGroups();renderKPIs();
+  });
+}
+
+/* ── EVENTS ── */
+document.getElementById("logTimeBtn").addEventListener("click",function(){openModal(null);});
+
+document.getElementById("logGroups").addEventListener("click",function(e){
+  /* collapse */
+  var gh=e.target.closest(".tl-group-head");
+  if(gh&&!e.target.closest("button")){gh.parentElement.classList.toggle("collapsed");return;}
+  /* edit */
+  var eb=e.target.closest(".tl-act-btn.edit");
+  if(eb){var l=LOGS.find(function(x){return x.id===eb.dataset.lid;});if(l)openModal(l);return;}
+  /* delete */
+  var db=e.target.closest(".tl-act-btn.del");
+  if(db){
+    var idx=LOGS.findIndex(function(x){return x.id===db.dataset.lid;});
+    if(idx!==-1){LOGS.splice(idx,1);renderGroups();renderKPIs();showToast("Đã xóa time log","ok");}
+    return;
+  }
+});
+
+document.getElementById("rangeSeg").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-range]");if(!b)return;
+  range=b.dataset.range;
+  document.querySelectorAll("#rangeSeg button").forEach(function(x){x.classList.remove("on");});
+  b.classList.add("on");
+  renderGroups();renderKPIs();
+});
+
+document.getElementById("memberFilter").addEventListener("click",function(e){
+  var c=e.target.closest(".mf-chip");if(!c)return;
+  member=c.dataset.m;renderMemberFilter();renderGroups();
+});
+
+document.getElementById("filterInput").addEventListener("input",function(e){
+  search=e.target.value.trim();renderGroups();
+});
+
+/* ── TOAST ── */
+function showToast(msg,type){
+  var t=document.getElementById("toast");
+  t.textContent=msg;t.className="toast "+(type||"ok");
+  t.classList.add("show");
+  setTimeout(function(){t.classList.remove("show");},2800);
+}
+
+/* ── INIT ── */
+renderKPIs();
+renderMemberFilter();
+renderGroups();
+startTimer();
+
+})();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

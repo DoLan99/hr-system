@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
 import { useLocale } from "@/lib/i18n/context";
 import { RichTextEditor } from "@/components/shared/rich-text-editor";
 
@@ -25,33 +24,25 @@ type Props = {
   onSaved: () => void;
 };
 
-const STATUSES  = ["BACKLOG", "IN_PROGRESS", "BLOCKED", "REVIEW", "DONE"];
-const PRIORITIES = ["CRITICAL", "HIGH", "NORMAL", "LOW"];
-const TASK_TYPES = ["NORMAL", "LEARNING", "NEW_RESEARCH", "MEETING", "ADMIN", "BILLABLE_CLIENT", "INTERNAL"];
+const STATUSES = ["BACKLOG", "IN_PROGRESS", "BLOCKED", "REVIEW", "DONE"];
+const PRIORITIES: { value: string; cls: "hi" | "md" | "lo" }[] = [
+  { value: "CRITICAL", cls: "hi" },
+  { value: "HIGH", cls: "hi" },
+  { value: "NORMAL", cls: "md" },
+  { value: "LOW", cls: "lo" },
+];
+const TASK_TYPES: { value: string; color: string }[] = [
+  { value: "NORMAL", color: "#3B5BDB" },
+  { value: "LEARNING", color: "#8b5cf6" },
+  { value: "NEW_RESEARCH", color: "#06b6d4" },
+  { value: "MEETING", color: "#f59e0b" },
+  { value: "ADMIN", color: "#94a3b8" },
+  { value: "BILLABLE_CLIENT", color: "#22c55e" },
+  { value: "INTERNAL", color: "#64748b" },
+];
 
-const STATUS_STYLE: Record<string, string> = {
-  BACKLOG:     "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200",
-  IN_PROGRESS: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200",
-  BLOCKED:     "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200",
-  REVIEW:      "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200",
-  DONE:        "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200",
-};
-
-function SideLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-[11px] text-slate-400 dark:text-slate-500 w-24 flex-shrink-0 pt-0.5 font-medium uppercase tracking-wide">
-      {children}
-    </span>
-  );
-}
-
-function SideRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start gap-2 py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
-      <SideLabel>{label}</SideLabel>
-      <div className="flex-1 min-w-0 text-xs text-slate-700">{children}</div>
-    </div>
-  );
+function prioCls(p: string) {
+  return PRIORITIES.find((x) => x.value === p)?.cls ?? "md";
 }
 
 const DEFAULT_FORM = (userId: number, status: string) => ({
@@ -63,6 +54,7 @@ const DEFAULT_FORM = (userId: number, status: string) => ({
   estimatedTime: "",
   templateId: "",
   assignedToId: String(userId),
+  supportId: "",
   customerId: "",
   billable: false,
   requiresVideo: false,
@@ -72,7 +64,7 @@ const DEFAULT_FORM = (userId: number, status: string) => ({
 
 export function TaskCreateDrawer({
   open, onClose, employees, customers, templates,
-  currentUserId, isManager, initialStatus = "IN_PROGRESS", onSaved,
+  currentUserId, isManager, initialStatus = "BACKLOG", onSaved,
 }: Props) {
   const { t } = useLocale();
   const [form, setForm] = useState(DEFAULT_FORM(currentUserId, initialStatus));
@@ -89,7 +81,7 @@ export function TaskCreateDrawer({
   if (!open && lastOpen) setLastOpen(false);
 
   function applyTemplate(tplId: string) {
-    const tpl = templates.find((t) => t.id.toString() === tplId);
+    const tpl = templates.find((tp) => tp.id.toString() === tplId);
     if (!tpl) { setForm({ ...form, templateId: "" }); return; }
     setForm({
       ...form,
@@ -116,6 +108,7 @@ export function TaskCreateDrawer({
         estimatedTime: form.estimatedTime ? Number(form.estimatedTime) : null,
         templateId: form.templateId ? Number(form.templateId) : null,
         assignedToId: Number(form.assignedToId),
+        supportId: form.supportId ? Number(form.supportId) : null,
         customerId: form.customerId ? Number(form.customerId) : null,
         billable: form.billable,
         requiresVideo: form.requiresVideo,
@@ -129,12 +122,16 @@ export function TaskCreateDrawer({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const json = await res.json();
+      const text = await res.text();
+      let json: any = null;
+      try { json = text ? JSON.parse(text) : null; } catch { /* not JSON */ }
       if (!res.ok) {
-        setError(typeof json.error === "string" ? json.error : JSON.stringify(json.error));
+        setError(json && typeof json.error === "string" ? json.error : (json ? JSON.stringify(json.error) : `Lỗi server (${res.status})`));
         return;
       }
       onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra, vui lòng thử lại");
     } finally {
       setSaving(false);
     }
@@ -143,238 +140,202 @@ export function TaskCreateDrawer({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-
-      <div className="relative z-10 w-full max-w-4xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col h-full animate-slide-in-right">
+    <div className="modal-back" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="jira-modal">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700 flex-shrink-0 bg-white">
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm font-semibold text-slate-700">{t("tasks.addTask")}</h2>
-            {templates.length > 0 && (
-              <select
-                value={form.templateId}
-                onChange={(e) => applyTemplate(e.target.value)}
-                className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 outline-none focus:ring-2 focus:ring-blue-200 max-w-[220px]"
-              >
-                <option value="">{t("tasks.selectTemplate")}</option>
-                {templates.map((tpl) => (
-                  <option key={tpl.id} value={tpl.id}>
-                    {tpl.code} · {tpl.title}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-          >
-            <X className="w-4 h-4" />
+        <div className="jm-head">
+          <span className="jm-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+          </span>
+          <h3>{t("tasks.addTask")}</h3>
+          {templates.length > 0 && (
+            <select
+              value={form.templateId}
+              onChange={(e) => applyTemplate(e.target.value)}
+              className="jm-proj"
+              style={{ cursor: "pointer", maxWidth: 200 }}
+            >
+              <option value="">{t("tasks.selectTemplate")}</option>
+              {templates.map((tpl) => (
+                <option key={tpl.id} value={tpl.id}>{tpl.code} · {tpl.title}</option>
+              ))}
+            </select>
+          )}
+          <button className="x" onClick={onClose} aria-label="Đóng" style={{ marginLeft: "auto" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* ── Main content ── */}
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 min-w-0">
-            {/* Title */}
+        <div className="jm-body">
+          {/* Left */}
+          <div className="jm-left">
             <div>
+              <div className="jm-label">{t("tasks.taskType")}</div>
+              <div className="itype-row">
+                {TASK_TYPES.map((tp) => (
+                  <button
+                    key={tp.value}
+                    type="button"
+                    className={`itype${form.taskType === tp.value ? " on" : ""}`}
+                    style={form.taskType === tp.value ? { borderColor: tp.color, background: tp.color + "18" } : undefined}
+                    onClick={() => setForm({ ...form, taskType: tp.value })}
+                  >
+                    <span className="it-dot" style={{ background: tp.color }} />
+                    {t(`taskType.${tp.value}`) || tp.value}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="jm-label">{t("common.title")} <span style={{ color: "var(--danger)" }}>*</span></div>
               <input
                 autoFocus
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-                placeholder={`${t("common.title")} *`}
-                className="w-full text-2xl font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-300 bg-transparent outline-none border-0 leading-tight"
+                placeholder="Tóm tắt ngắn gọn nhiệm vụ…"
+                className="jm-summary"
               />
-              <div className="h-px bg-slate-200 dark:bg-slate-700 mt-2" />
             </div>
 
-            {/* Description */}
             <div>
-              <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
-                {t("common.description")}
-              </h3>
+              <div className="jm-label">{t("common.description")}</div>
               <RichTextEditor
                 value={form.description}
                 onChange={(html) => setForm({ ...form, description: html })}
                 placeholder={t("tasks.addDescription")}
-                minHeight={200}
+                minHeight={280}
               />
             </div>
 
-            {/* Blocked reason */}
             {form.status === "BLOCKED" && (
               <div>
-                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
-                  {t("tasks.reasonNextAction")}
-                </h3>
+                <div className="jm-label" style={{ color: "var(--danger)" }}>{t("tasks.reasonNextAction")}</div>
                 <textarea
                   value={form.reasonNextAction}
                   onChange={(e) => setForm({ ...form, reasonNextAction: e.target.value })}
                   rows={3}
-                  className="w-full text-sm border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-red-200 resize-none placeholder:text-red-300 text-red-700"
+                  className="jm-desc"
+                  style={{ borderColor: "var(--danger)" }}
                   placeholder={t("tasks.reasonNextAction")}
                 />
               </div>
             )}
 
-            {/* Error */}
             {error && (
-              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-3 py-2 rounded-lg">
+              <div style={{ fontSize: "0.84rem", color: "var(--danger)", background: "var(--danger-soft)", border: "1px solid var(--danger)", padding: "8px 12px", borderRadius: 8 }}>
                 {error}
               </div>
             )}
           </div>
 
-          {/* ── Sidebar ── */}
-          <div className="w-[264px] flex-shrink-0 border-l border-slate-200 dark:border-slate-700 bg-slate-50/40 overflow-y-auto flex flex-col">
-            {/* Status */}
-            <div className="px-4 pt-4 pb-3 border-b border-slate-200">
-              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5">{t("common.status")}</p>
-              <select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className={`w-full text-sm font-semibold px-3 py-2 rounded-lg border cursor-pointer outline-none transition-colors ${STATUS_STYLE[form.status] ?? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200"}`}
-              >
+          {/* Right */}
+          <div className="jm-right">
+            <div className="jm-sec">Chi tiết</div>
+
+            <div className="jm-field">
+              <span className="jf-label">{t("common.status")}</span>
+              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                 {STATUSES.map((s) => (
                   <option key={s} value={s}>{t(`taskStatus.${s}`) || s}</option>
                 ))}
               </select>
             </div>
 
-            {/* Detail rows */}
-            <div className="px-4 py-2 flex-1">
-              {/* Priority */}
-              <SideRow label={t("common.priority")}>
-                <select
-                  value={form.priority}
-                  onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                  className="w-full bg-transparent text-xs outline-none cursor-pointer -ml-0.5"
-                >
+            <div className="jm-field">
+              <span className="jf-label">{t("common.priority")}</span>
+              <span className={`prio-sel ${prioCls(form.priority)}`}>
+                <i />
+                <span>{t(`taskPriority.${form.priority}`) || form.priority}</span>
+                <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
                   {PRIORITIES.map((p) => (
-                    <option key={p} value={p}>{t(`taskPriority.${p}`) || p}</option>
+                    <option key={p.value} value={p.value}>{t(`taskPriority.${p.value}`) || p.value}</option>
                   ))}
                 </select>
-              </SideRow>
-
-              {/* Task Type */}
-              <SideRow label={t("tasks.taskType")}>
-                <select
-                  value={form.taskType}
-                  onChange={(e) => setForm({ ...form, taskType: e.target.value })}
-                  className="w-full bg-transparent text-xs outline-none cursor-pointer -ml-0.5"
-                >
-                  {TASK_TYPES.map((tp) => (
-                    <option key={tp} value={tp}>{t(`taskType.${tp}`) || tp}</option>
-                  ))}
-                </select>
-              </SideRow>
-
-              {/* Assignee (manager only) */}
-              {isManager && employees.length > 0 && (
-                <SideRow label={t("common.assignedTo")}>
-                  <select
-                    value={form.assignedToId}
-                    onChange={(e) => setForm({ ...form, assignedToId: e.target.value })}
-                    className="w-full bg-transparent text-xs outline-none cursor-pointer -ml-0.5"
-                  >
-                    {employees.map((e) => (
-                      <option key={e.id} value={e.id}>{e.fullName}</option>
-                    ))}
-                  </select>
-                </SideRow>
-              )}
-
-              {/* Customer */}
-              <SideRow label={t("common.customer")}>
-                <select
-                  value={form.customerId}
-                  onChange={(e) => setForm({ ...form, customerId: e.target.value })}
-                  className="w-full bg-transparent text-xs outline-none cursor-pointer -ml-0.5"
-                >
-                  <option value="">{t("common.none")}</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>{c.businessName ?? c.customerName}</option>
-                  ))}
-                </select>
-              </SideRow>
-
-              {/* Due date */}
-              <SideRow label={t("tasks.dueDate")}>
-                <input
-                  type="date"
-                  value={form.dueDate}
-                  onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-                  className="w-full bg-transparent text-xs outline-none cursor-pointer -ml-0.5"
-                />
-              </SideRow>
-
-              {/* Estimated time */}
-              <SideRow label={t("tasks.estimatedTime")}>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    min={0}
-                    value={form.estimatedTime}
-                    onChange={(e) => setForm({ ...form, estimatedTime: e.target.value })}
-                    placeholder="min"
-                    className="w-20 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-blue-200"
-                  />
-                  <span className="text-slate-400 dark:text-slate-500 text-xs">{t("common.minute")}</span>
-                </div>
-              </SideRow>
-
-              {/* Billable */}
-              <SideRow label={t("tasks.billable")}>
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.billable}
-                    onChange={(e) => setForm({ ...form, billable: e.target.checked })}
-                    className="w-3.5 h-3.5 rounded"
-                  />
-                  <span className={form.billable ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-slate-400"}>
-                    {form.billable ? t("common.yes") : t("common.no")}
-                  </span>
-                </label>
-              </SideRow>
-
-              {/* Requires video */}
-              <SideRow label={t("tasks.requiresVideo")}>
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.requiresVideo}
-                    onChange={(e) => setForm({ ...form, requiresVideo: e.target.checked })}
-                    className="w-3.5 h-3.5 rounded"
-                  />
-                  <span className={form.requiresVideo ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-slate-400"}>
-                    {form.requiresVideo ? t("common.yes") : t("common.no")}
-                  </span>
-                </label>
-              </SideRow>
+              </span>
             </div>
 
-            {/* Create button — pinned to bottom */}
-            <div className="px-4 py-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col gap-2">
-              <button
-                onClick={submit}
-                disabled={saving || !form.title.trim()}
-                className="w-full py-2.5 text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-40 transition-colors shadow-sm"
-              >
-                {saving ? t("common.saving") : t("common.create")}
-              </button>
-              <button
-                onClick={onClose}
-                disabled={saving}
-                className="w-full py-2 text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
-              >
-                {t("common.cancel")}
-              </button>
+            {isManager && employees.length > 0 && (
+              <div className="jm-field">
+                <span className="jf-label">{t("common.assignedTo")}</span>
+                <select value={form.assignedToId} onChange={(e) => setForm({ ...form, assignedToId: e.target.value })}>
+                  {employees.map((e) => (
+                    <option key={e.id} value={e.id}>{e.fullName}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="jm-field">
+              <span className="jf-label">{t("tasks.support")}</span>
+              <select value={form.supportId} onChange={(e) => setForm({ ...form, supportId: e.target.value })}>
+                <option value="">— Chưa chọn —</option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>{e.fullName}</option>
+                ))}
+              </select>
             </div>
+
+            <div className="jm-field">
+              <span className="jf-label">{t("common.customer")}</span>
+              <select value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })}>
+                <option value="">{t("common.none")}</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>{c.businessName ?? c.customerName}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="jm-field">
+              <span className="jf-label">{t("tasks.dueDate")}</span>
+              <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+            </div>
+
+            <div className="jm-field">
+              <span className="jf-label">{t("tasks.estimatedTime")}</span>
+              <input
+                type="number"
+                min={0}
+                value={form.estimatedTime}
+                onChange={(e) => setForm({ ...form, estimatedTime: e.target.value })}
+                placeholder="phút"
+              />
+            </div>
+
+            <label className="jm-check">
+              <input
+                type="checkbox"
+                checked={form.billable}
+                onChange={(e) => setForm({ ...form, billable: e.target.checked })}
+              />
+              {t("tasks.billable")}
+            </label>
+
+            <label className="jm-check">
+              <input
+                type="checkbox"
+                checked={form.requiresVideo}
+                onChange={(e) => setForm({ ...form, requiresVideo: e.target.checked })}
+              />
+              {t("tasks.requiresVideo")}
+            </label>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="jm-foot">
+          <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
+            <button className="abtn ghost" onClick={onClose} disabled={saving}>{t("common.cancel")}</button>
+            <button className="abtn primary" onClick={submit} disabled={saving || !form.title.trim()}>
+              {saving ? t("common.saving") : t("common.create")}
+            </button>
           </div>
         </div>
       </div>

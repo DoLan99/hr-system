@@ -16,12 +16,25 @@ export function TrialBanner() {
 
   if (org.status === "SUSPENDED") {
     return (
-      <div className="bg-red-600 text-white text-sm px-4 py-2 flex items-center justify-between gap-3">
+      <div
+        className="flex items-center justify-between gap-3 px-4 py-2 text-sm flex-shrink-0"
+        style={{
+          background: "rgba(255,107,107,0.12)",
+          borderBottom: "1px solid rgba(255,107,107,0.25)",
+        }}
+      >
         <div className="flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span><strong>Workspace tạm khóa</strong> — quá hạn thanh toán. Vui lòng liên hệ admin để khôi phục.</span>
+          <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: "var(--dash-danger)" }} />
+          <span style={{ color: "var(--dash-text)" }}>
+            <strong>Workspace tạm khóa</strong>
+            <span style={{ color: "var(--dash-text-2)" }}> — quá hạn thanh toán. Vui lòng liên hệ admin.</span>
+          </span>
         </div>
-        <Link href="/billing" className="px-3 py-1 bg-white text-red-700 text-xs font-semibold rounded hover:bg-red-50">
+        <Link
+          href="/billing"
+          className="px-3 py-1 text-xs font-semibold rounded-lg flex-shrink-0 hover:opacity-80"
+          style={{ background: "var(--dash-danger)", color: "#fff" }}
+        >
           Xem billing
         </Link>
       </div>
@@ -30,17 +43,44 @@ export function TrialBanner() {
 
   if (org.status === "TRIAL") {
     const days = daysUntilDate(org.trialEndsAt);
+    const trialDays = 14;
+    const pct = Math.max(0, Math.min(100, ((trialDays - days) / trialDays) * 100));
     const isUrgent = days <= 3;
     return (
-      <div className={`text-sm px-4 py-2 flex items-center justify-between gap-3 ${isUrgent ? "bg-red-600 text-white" : "bg-amber-500 text-white"}`}>
-        <div className="flex items-center gap-2">
-          <Crown className="w-4 h-4 flex-shrink-0" />
-          <span>
-            <strong>Trial còn {days} ngày</strong> — upgrade trước khi hết hạn để tiếp tục sử dụng.
+      <div
+        className="flex items-center gap-3 px-4 py-2 text-sm flex-shrink-0"
+        style={{
+          background: isUrgent ? "rgba(255,107,107,0.10)" : "rgba(251,191,36,0.08)",
+          borderBottom: `1px solid ${isUrgent ? "rgba(255,107,107,0.22)" : "rgba(251,191,36,0.18)"}`,
+        }}
+      >
+        <Crown className="w-4 h-4 flex-shrink-0" style={{ color: isUrgent ? "var(--dash-danger)" : "var(--dash-warn)" }} />
+        <div className="flex-1 flex items-center gap-3 min-w-0">
+          <span style={{ color: "var(--dash-text)" }}>
+            <strong>Dùng thử còn {days} ngày</strong>
+            <span style={{ color: "var(--dash-text-2)" }}> — nâng cấp trước khi hết hạn.</span>
           </span>
+          <div className="hidden sm:flex items-center gap-2 max-w-[160px] flex-1">
+            <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--dash-border)" }}>
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${pct}%`,
+                  background: isUrgent ? "var(--dash-danger)" : "var(--dash-warn)",
+                }}
+              />
+            </div>
+          </div>
         </div>
-        <Link href="/billing" className={`px-3 py-1 text-xs font-semibold rounded hover:bg-white/20 ${isUrgent ? "bg-white text-red-700" : "bg-white text-amber-700"}`}>
-          Upgrade ngay
+        <Link
+          href="/billing"
+          className="px-3 py-1 text-xs font-semibold rounded-lg flex-shrink-0 hover:opacity-80"
+          style={{
+            background: isUrgent ? "var(--dash-danger)" : "var(--dash-warn)",
+            color: "#fff",
+          }}
+        >
+          Nâng cấp ngay
         </Link>
       </div>
     );
@@ -48,12 +88,25 @@ export function TrialBanner() {
 
   if (org.memberCount >= org.seatLimit && org.plan !== "TEAM") {
     return (
-      <div className="bg-orange-500 text-white text-sm px-4 py-2 flex items-center justify-between gap-3">
+      <div
+        className="flex items-center justify-between gap-3 px-4 py-2 text-sm flex-shrink-0"
+        style={{
+          background: "rgba(251,146,60,0.10)",
+          borderBottom: "1px solid rgba(251,146,60,0.22)",
+        }}
+      >
         <div className="flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span><strong>Đạt giới hạn {org.seatLimit} thành viên</strong> — upgrade lên gói cao hơn để thêm.</span>
+          <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: "var(--dash-warn)" }} />
+          <span style={{ color: "var(--dash-text)" }}>
+            <strong>Đạt giới hạn {org.seatLimit} thành viên</strong>
+            <span style={{ color: "var(--dash-text-2)" }}> — upgrade lên gói cao hơn để thêm.</span>
+          </span>
         </div>
-        <Link href="/billing" className="px-3 py-1 bg-white text-orange-700 text-xs font-semibold rounded hover:bg-orange-50">
+        <Link
+          href="/billing"
+          className="px-3 py-1 text-xs font-semibold rounded-lg flex-shrink-0 hover:opacity-80"
+          style={{ background: "var(--dash-warn)", color: "#fff" }}
+        >
           Upgrade
         </Link>
       </div>

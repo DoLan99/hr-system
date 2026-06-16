@@ -35,11 +35,11 @@
   /* [label, icon, href, badge] */
   var PINNED = ["Dashboard", "grid", "dashboard.html"];
   var GROUPS = [
-    ["Công việc", [["Tasks","task","tasks.html"],["Time Logs","clock","#"],["Office Time","office","#"],["Task Templates","layers","#"],["Task Reviews","review","#"],["Capacity","gauge","#"],["Đánh giá hiệu suất","perf","#"],["Skill & Career","skill","#"]]],
-    ["Lương & Phúc lợi", [["Salary Summary","bar","#"],["Payments","pay","#"],["Leave","leave","#"]]],
-    ["Khách hàng", [["Customers","users","#"],["Messages","msg","#","2"]]],
-    ["Phê duyệt", [["Hộp duyệt","inbox","#","4"],["Cấu hình Workflow","workflow","#"]]],
-    ["Tài nguyên", [["Tài liệu","folder","#"],["Quản lý Kho","box","#"]]],
+    ["Công việc", [["Tasks","task","tasks.html"],["Time Logs","clock","time-logs.html"],["Office Time","office","office-time.html"],["Task Templates","layers","task-templates.html"],["Task Reviews","review","task-reviews.html"],["Capacity","gauge","capacity.html"],["Đánh giá hiệu suất","perf","performance.html"],["Skill & Career","skill","skill-career.html"]]],
+    ["Lương & Phúc lợi", [["Salary Summary","bar","salary-summary.html"],["Payments","pay","payments.html"],["Leave","leave","leave.html"]]],
+    ["Khách hàng", [["Customers","users","customers.html"],["Messages","msg","messages.html","2"]]],
+    ["Phê duyệt", [["Hộp duyệt","inbox","approval-inbox.html","4"],["Cấu hình Workflow","workflow","workflow-config.html"]]],
+    ["Tài nguyên", [["Tài liệu","folder","documents.html"],["Quản lý Kho","box","#"]]],
     ["Hệ thống", [["Employees","users","#"],["Departments & Teams","sitemap","#"],["Roles","shield","#"],["Passwords","lock","#"],["Work Rules","book","#"],["System Labels","sliders","#"],["Activity Tracking","activity","#"],["Audit Log","audit","#"],["Anomaly Alerts","alert","#","1"],["Billing","billing","#"],["Settings","settings","#"]]]
   ];
 

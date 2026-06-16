@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cấu hình Workflow — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css"/>
+<style>
+/* ── Workflow Config ── */
+.wf-layout{display:grid;grid-template-columns:280px 1fr;gap:0;height:calc(100vh - 56px);overflow:hidden}
+@media(max-width:860px){.wf-layout{grid-template-columns:1fr;height:auto}}
+
+/* left: workflow list */
+.wf-list-pane{border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--side);overflow:hidden}
+.wf-list-head{padding:16px 16px 12px;flex-shrink:0;border-bottom:1px solid var(--border)}
+.wf-list-head h3{font-size:.95rem;font-weight:700;margin-bottom:8px}
+.wf-list{flex:1;overflow-y:auto}
+.wf-item{display:flex;align-items:center;gap:11px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s;position:relative}
+.wf-item:hover{background:var(--content)}
+.wf-item.on{background:var(--accent-soft)}
+.wf-item.on::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+.wf-item-ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.wf-item-ico svg{width:16px;height:16px}
+.wf-item-info{flex:1;min-width:0}
+.wf-item-name{font-size:.86rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wf-item-meta{font-size:.72rem;color:var(--text-3);font-family:var(--font-mono);margin-top:1px}
+.wf-item-status{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.wf-add-btn{margin:12px 16px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:9px;border:1.5px dashed var(--border-2);color:var(--text-3);font-size:.82rem;font-weight:500;cursor:pointer;transition:border-color .15s,color .15s;font-family:inherit;background:none}
+.wf-add-btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.wf-add-btn svg{width:15px;height:15px}
+
+/* right: workflow editor */
+.wf-editor{display:flex;flex-direction:column;overflow:hidden;background:var(--content)}
+.wf-editor-head{display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--elev)}
+.wf-editor-head h2{font-size:1rem;font-weight:700}
+.wf-head-meta{font-size:.74rem;color:var(--text-3);font-family:var(--font-mono)}
+.wf-actions{display:flex;gap:8px;margin-left:auto}
+.wf-toggle{display:inline-flex;align-items:center;gap:8px;font-size:.82rem;font-weight:600}
+.toggle-switch{width:36px;height:20px;border-radius:99px;background:var(--border);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;border:none}
+.toggle-switch.on{background:var(--ok)}
+.toggle-switch::after{content:"";width:14px;height:14px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle-switch.on::after{left:19px}
+
+.wf-body{flex:1;overflow-y:auto;padding:24px}
+
+/* trigger section */
+.wf-section{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:16px;overflow:hidden}
+.wf-section-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.wf-section-head h4{font-size:.88rem;font-weight:700}
+.wf-section-ico{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;flex-shrink:0}
+.wf-section-ico svg{width:15px;height:15px}
+.wf-section-tag{font-family:var(--font-mono);font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:auto}
+.wf-section-chev{width:20px;height:20px;display:grid;place-items:center;color:var(--text-3);transition:transform .2s;flex-shrink:0}
+.wf-section-chev svg{width:14px;height:14px}
+.wf-section.collapsed .wf-section-chev{transform:rotate(-90deg)}
+.wf-section.collapsed .wf-section-body{display:none}
+.wf-section-body{padding:18px}
+
+/* trigger pills */
+.trigger-list{display:flex;flex-wrap:wrap;gap:8px}
+.trigger-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;border:1.5px solid var(--border-2);background:var(--content);font-size:.82rem;font-weight:500;color:var(--text-2);transition:all .15s;cursor:pointer}
+.trigger-pill:hover{border-color:var(--border-2);color:var(--text)}
+.trigger-pill.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+.trigger-pill svg{width:14px;height:14px}
+
+/* approval steps */
+.step-flow{display:flex;flex-direction:column;gap:0}
+.step-connector{display:flex;justify-content:center;padding:4px 0}
+.step-connector i{width:2px;height:24px;background:var(--border);border-radius:1px}
+.step-connector.active i{background:linear-gradient(180deg,var(--accent),var(--ok))}
+.wf-step{background:var(--content);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;position:relative;transition:border-color .15s}
+.wf-step:hover{border-color:var(--border-2)}
+.wf-step.active{border-color:var(--accent)}
+.wf-step-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-family:var(--font-mono);font-size:.74rem;font-weight:800;flex-shrink:0}
+.step-name{font-size:.9rem;font-weight:700;color:var(--text);flex:1}
+.step-type-badge{font-family:var(--font-mono);font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent-ink)}
+.step-del{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:var(--text-3);cursor:pointer;font-family:inherit;border:none;background:none;transition:background .12s,color .12s}
+.step-del:hover{background:var(--danger-soft);color:var(--danger)}
+.step-del svg{width:13px;height:13px}
+.step-approvers{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px}
+.approver-chip{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:99px;background:var(--elev);border:1px solid var(--border-2);font-size:.78rem;color:var(--text-2);transition:border-color .15s}
+.approver-chip .ach-av{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#8b7bff,#4f7aff);display:grid;place-items:center;color:#fff;font-size:.58rem;font-weight:700;flex-shrink:0}
+.approver-chip .rm{cursor:pointer;color:var(--text-3);font-size:.8rem;margin-left:2px;line-height:1}
+.approver-chip .rm:hover{color:var(--danger)}
+.add-approver-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:99px;border:1.5px dashed var(--border-2);color:var(--text-3);font-size:.76rem;cursor:pointer;font-family:inherit;background:none;transition:border-color .15s,color .15s}
+.add-approver-btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.add-approver-btn svg{width:12px;height:12px}
+.step-opts{display:flex;gap:16px;font-size:.78rem;color:var(--text-3);flex-wrap:wrap}
+.step-opt{display:flex;align-items:center;gap:6px;cursor:pointer}
+.step-opt input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
+.add-step-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:2px dashed var(--border-2);color:var(--text-3);font-size:.84rem;font-weight:500;cursor:pointer;font-family:inherit;background:none;transition:border-color .15s,color .15s,background .15s;width:100%}
+.add-step-btn:hover{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
+.add-step-btn svg{width:16px;height:16px}
+
+/* conditions */
+.cond-list{display:flex;flex-direction:column;gap:8px}
+.cond-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cond-select{font-family:inherit;font-size:.82rem;color:var(--text);background:var(--content);border:1px solid var(--border-2);border-radius:8px;padding:6px 10px;outline:none;cursor:pointer;transition:border-color .15s}
+.cond-select:focus{border-color:var(--accent)}
+.cond-val{font-family:inherit;font-size:.82rem;color:var(--text);background:var(--content);border:1px solid var(--border-2);border-radius:8px;padding:6px 10px;outline:none;width:90px;transition:border-color .15s}
+.cond-val:focus{border-color:var(--accent)}
+.cond-rm{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:var(--text-3);cursor:pointer;border:none;background:none;transition:background .12s,color .12s}
+.cond-rm:hover{background:var(--danger-soft);color:var(--danger)}
+.cond-rm svg{width:13px;height:13px}
+.cond-add{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;color:var(--text-3);cursor:pointer;font-family:inherit;border:none;background:none;transition:color .15s;padding:0;margin-top:2px}
+.cond-add:hover{color:var(--accent-ink)}
+.cond-add svg{width:13px;height:13px}
+
+/* notification */
+.notif-list{display:flex;flex-direction:column;gap:8px}
+.notif-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--content);border:1px solid var(--border);border-radius:9px}
+.notif-row .nl{display:flex;align-items:center;gap:10px;font-size:.84rem;color:var(--text-2)}
+.notif-row .nl svg{width:16px;height:16px;color:var(--text-3)}
+
+/* deadline section */
+.deadline-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dl-input{display:flex;align-items:center;gap:8px;background:var(--content);border:1px solid var(--border-2);border-radius:9px;padding:8px 12px}
+.dl-input input[type=number]{width:52px;background:none;border:none;outline:none;font-family:var(--font-mono);font-size:.9rem;font-weight:700;color:var(--text);text-align:center}
+.dl-input span{font-size:.82rem;color:var(--text-3)}
+.dl-action{font-size:.82rem;color:var(--text-2)}
+.dl-action select{font-family:inherit;font-size:.82rem;color:var(--text);background:var(--content);border:1px solid var(--border-2);border-radius:8px;padding:7px 10px;outline:none;cursor:pointer}
+
+/* toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--elev);border:1px solid var(--border-2);border-radius:10px;padding:12px 22px;font-size:.86rem;font-weight:500;color:var(--text);box-shadow:var(--shadow-lg);z-index:500;opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-left:3px solid var(--ok)}
+.toast.warn{border-left:3px solid var(--warn)}
+</style>
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="app">
+<aside class="side">
+  <div class="side-brand"><span class="lm">j</span><div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div></div>
+  <nav class="side-nav scroll" id="sideNav"></nav>
+  <div class="side-foot"><div class="side-user"><span class="av">DL</span><div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span></div></div>
+</aside>
+<div class="main">
+  <header class="topbar">
+    <button class="tb-icon menu-btn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div><div class="tb-title">Cấu hình Workflow</div></div>
+    <div class="tb-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input type="text" placeholder="Tìm workflow…"/><kbd>⌘K</kbd></div>
+    <div class="tb-right">
+      <button class="tb-icon" id="themeToggle" aria-label="Sáng/Tối">
+        <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+        <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+      </button>
+      <button class="tb-icon" aria-label="Thông báo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+    </div>
+  </header>
+
+  <main class="content" style="overflow:hidden;padding:0">
+    <div class="wf-layout">
+
+      <!-- LEFT: workflow list -->
+      <div class="wf-list-pane">
+        <div class="wf-list-head">
+          <h3>Workflow</h3>
+          <div style="font-size:.76rem;color:var(--text-3)"><b id="wfCount">—</b> quy trình · <b id="wfActiveCount">—</b> đang bật</div>
+        </div>
+        <div class="wf-list" id="wfList"></div>
+        <button class="wf-add-btn" id="addWfBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Thêm workflow mới
+        </button>
+      </div>
+
+      <!-- RIGHT: editor -->
+      <div class="wf-editor" id="wfEditor"></div>
+
+    </div>
+  </main>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ── TYPE META ── */
+var WF_TYPES = {
+  leave:   {l:"Nghỉ phép",    color:"#fbbf24", bg:"rgba(251,191,36,.13)",  ico:'<path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M9 13h6" stroke-linecap="round" stroke-linejoin="round"/>'},
+  salary:  {l:"Bảng lương",   color:"#3B5BDB", bg:"rgba(59,91,219,.13)",   ico:'<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'},
+  expense: {l:"Chi phí",      color:"#a78bfa", bg:"rgba(167,139,250,.14)",  ico:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M7 15h4" stroke-linecap="round"/>'},
+  task:    {l:"Task Review",  color:"#4ADE80", bg:"rgba(74,222,128,.13)",   ico:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'},
+  payment: {l:"Thanh toán",   color:"#22d3ee", bg:"rgba(34,211,238,.13)",   ico:'<path d="M3 8l1-4h16l1 4M4 8v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8M9 12h6" stroke-linecap="round"/>'},
+  recruit: {l:"Tuyển dụng",   color:"#f472b6", bg:"rgba(244,114,182,.14)",  ico:'<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke-linecap="round"/><path d="M19 8v6M22 11h-6"/>'}
+};
+
+var MEMBERS = [
+  {v:"MA",l:"Minh Anh"},{v:"HG",l:"Hoàng"},{v:"LN",l:"Lan"},{v:"TU",l:"Tú"},{v:"DL",l:"Do thi Lan"}
+];
+
+var TRIGGERS = [
+  {k:"submit",l:"Khi nộp đơn",ico:'<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>'},
+  {k:"amount_over",l:"Số tiền > 5tr",ico:'<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'},
+  {k:"days_over",l:"Nghỉ > 3 ngày",ico:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'},
+  {k:"new_member",l:"Thành viên mới",ico:'<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke-linecap="round"/><path d="M19 8v6M22 11h-6"/>'}
+];
+
+/* ── DATA ── */
+var nextId = 10;
+var WORKFLOWS = [
+  {id:"WF-001",name:"Phê duyệt nghỉ phép",type:"leave",active:true,
+   triggers:["submit","days_over"],
+   steps:[
+     {id:"s1",name:"Trưởng nhóm",type:"any",approvers:["MA","HG"],notifyOnReject:true,deadline:24,auto:false},
+     {id:"s2",name:"HR / Quản lý",type:"all",approvers:["DL"],notifyOnReject:true,deadline:48,auto:false}
+   ],
+   conditions:[{field:"days",op:"gt",val:"3"}],
+   notifications:{onSubmit:true,onApprove:true,onReject:true,onDeadline:true}
+  },
+  {id:"WF-002",name:"Duyệt bảng lương",type:"salary",active:true,
+   triggers:["submit"],
+   steps:[
+     {id:"s3",name:"Kế toán kiểm tra",type:"any",approvers:["TU"],notifyOnReject:true,deadline:24,auto:false},
+     {id:"s4",name:"Giám đốc phê duyệt",type:"all",approvers:["DL"],notifyOnReject:true,deadline:72,auto:false}
+   ],
+   conditions:[],
+   notifications:{onSubmit:true,onApprove:true,onReject:true,onDeadline:true}
+  },
+  {id:"WF-003",name:"Hoàn ứng chi phí",type:"expense",active:true,
+   triggers:["submit","amount_over"],
+   steps:[
+     {id:"s5",name:"Trưởng bộ phận",type:"any",approvers:["MA"],notifyOnReject:false,deadline:48,auto:false},
+     {id:"s6",name:"Giám đốc (>5tr)",type:"any",approvers:["DL"],notifyOnReject:true,deadline:72,auto:false}
+   ],
+   conditions:[{field:"amount",op:"gt",val:"5000000"}],
+   notifications:{onSubmit:true,onApprove:true,onReject:true,onDeadline:false}
+  },
+  {id:"WF-004",name:"Thanh toán đối tác",type:"payment",active:false,
+   triggers:["submit"],
+   steps:[
+     {id:"s7",name:"Kế toán xác nhận",type:"any",approvers:["TU"],notifyOnReject:true,deadline:24,auto:false}
+   ],
+   conditions:[],
+   notifications:{onSubmit:true,onApprove:true,onReject:false,onDeadline:false}
+  },
+  {id:"WF-005",name:"Mở vị trí tuyển dụng",type:"recruit",active:true,
+   triggers:["submit"],
+   steps:[
+     {id:"s8",name:"Tech Lead / Trưởng nhóm",type:"any",approvers:["MA","HG"],notifyOnReject:true,deadline:48,auto:false},
+     {id:"s9",name:"Giám đốc phê duyệt JD",type:"all",approvers:["DL"],notifyOnReject:true,deadline:96,auto:false}
+   ],
+   conditions:[],
+   notifications:{onSubmit:true,onApprove:true,onReject:true,onDeadline:true}
+  }
+];
+
+/* ── STATE ── */
+var selId = "WF-001";
+
+/* ── UTILS ── */
+function sel(){return WORKFLOWS.find(function(w){return w.id===selId;});}
+function mn(v){var m=MEMBERS.find(function(x){return x.v===v;});return m?m.l:v;}
+function typeOf(t){return WF_TYPES[t]||WF_TYPES.leave;}
+
+/* ── LEFT LIST ── */
+function renderList(){
+  document.getElementById("wfCount").textContent=WORKFLOWS.length;
+  document.getElementById("wfActiveCount").textContent=WORKFLOWS.filter(function(w){return w.active;}).length;
+  document.getElementById("wfList").innerHTML=WORKFLOWS.map(function(w){
+    var t=typeOf(w.type);
+    return '<div class="wf-item'+(w.id===selId?" on":"")+'" data-id="'+w.id+'">'+
+      '<div class="wf-item-ico" style="background:'+t.bg+'"><svg viewBox="0 0 24 24" fill="none" stroke="'+t.color+'" stroke-width="2">'+t.ico+'</svg></div>'+
+      '<div class="wf-item-info"><div class="wf-item-name">'+w.name+'</div>'+
+        '<div class="wf-item-meta">'+t.l+' · '+w.steps.length+' bước</div>'+
+      '</div>'+
+      '<div class="wf-item-status" style="background:'+(w.active?"var(--ok)":"var(--border)")+'"></div>'+
+    '</div>';
+  }).join("");
+}
+
+/* ── EDITOR ── */
+function renderEditor(){
+  var w=sel();
+  if(!w){document.getElementById("wfEditor").innerHTML='<div style="flex:1;display:grid;place-items:center;color:var(--text-3)">Chọn workflow để chỉnh sửa</div>';return;}
+  var t=typeOf(w.type);
+
+  /* triggers */
+  var triggersHtml=TRIGGERS.map(function(tr){
+    var on=w.triggers.indexOf(tr.k)!==-1;
+    return '<button class="trigger-pill'+(on?" on":"")+'" data-tr="'+tr.k+'">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+tr.ico+'</svg>'+tr.l+'</button>';
+  }).join("");
+
+  /* steps */
+  var stepsHtml=w.steps.map(function(s,i){
+    var apChips=s.approvers.map(function(av,ai){
+      return '<span class="approver-chip"><span class="ach-av">'+av+'</span>'+mn(av)+'<span class="rm" data-si="'+s.id+'" data-ai="'+ai+'" title="Xóa">×</span></span>';
+    }).join("");
+    var addApBtn='<button class="add-approver-btn" data-si="'+s.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Thêm</button>';
+    return (i>0?'<div class="step-connector'+(true?" active":"")+'"><i></i></div>':'')+
+    '<div class="wf-step" data-si="'+s.id+'">'+
+      '<div class="wf-step-top">'+
+        '<div class="step-num">'+(i+1)+'</div>'+
+        '<div class="step-name">'+s.name+'</div>'+
+        '<span class="step-type-badge">'+(s.type==="all"?"Tất cả duyệt":"Bất kỳ duyệt")+'</span>'+
+        '<button class="step-del" data-del="'+s.id+'" title="Xóa bước">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>'+
+        '</button>'+
+      '</div>'+
+      '<div class="step-approvers">'+apChips+addApBtn+'</div>'+
+      '<div class="step-opts">'+
+        '<label class="step-opt"><input type="checkbox" data-opt="type" data-si="'+s.id+'"'+(s.type==="all"?" checked":"")+'/> Yêu cầu tất cả duyệt</label>'+
+        '<label class="step-opt"><input type="checkbox" data-opt="notif" data-si="'+s.id+'"'+(s.notifyOnReject?" checked":"")+'/> Thông báo khi từ chối</label>'+
+        '<span style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--text-3)">Deadline: '+
+          '<input type="number" min="1" max="168" value="'+s.deadline+'" data-opt="deadline" data-si="'+s.id+'" style="width:48px;font-family:var(--font-mono);font-size:.82rem;color:var(--text);background:var(--content);border:1px solid var(--border-2);border-radius:6px;padding:3px 6px;outline:none;text-align:center;"/>h'+
+        '</span>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+
+  /* conditions */
+  var condHtml=w.conditions.length?w.conditions.map(function(c,ci){
+    return '<div class="cond-row" data-ci="'+ci+'">'+
+      '<select class="cond-select" data-ci="'+ci+'" data-cf="field">'+
+        '<option value="days"'+(c.field==="days"?" selected":"")+'>Số ngày</option>'+
+        '<option value="amount"'+(c.field==="amount"?" selected":"")+'>Số tiền</option>'+
+        '<option value="dept"'+(c.field==="dept"?" selected":"")+'>Bộ phận</option>'+
+      '</select>'+
+      '<select class="cond-select" data-ci="'+ci+'" data-cf="op">'+
+        '<option value="gt"'+(c.op==="gt"?" selected":"")+'>></option>'+
+        '<option value="gte"'+(c.op==="gte"?" selected":'')+'>=</option>'+
+        '<option value="eq"'+(c.op==="eq"?" selected":"")+'>==</option>'+
+      '</select>'+
+      '<input class="cond-val" type="text" value="'+c.val+'" data-ci="'+ci+'" data-cf="val" placeholder="giá trị"/>'+
+      '<button class="cond-rm" data-delci="'+ci+'" title="Xóa điều kiện"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'+
+    '</div>';
+  }).join(""):'<div style="font-size:.82rem;color:var(--text-3)">Không có điều kiện — workflow áp dụng cho tất cả.</div>';
+
+  /* notifications */
+  var notifRows=[
+    {k:"onSubmit",l:"Khi nộp đơn",ico:'<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>'},
+    {k:"onApprove",l:"Khi được duyệt",ico:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'},
+    {k:"onReject",l:"Khi bị từ chối",ico:'<path d="M6 6l12 12M18 6L6 18"/>'},
+    {k:"onDeadline",l:"Nhắc khi sắp deadline",ico:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/>'}
+  ];
+  var notifHtml=notifRows.map(function(nr){
+    return '<div class="notif-row"><div class="nl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+nr.ico+'</svg>'+nr.l+'</div>'+
+      '<button class="toggle-switch'+(w.notifications[nr.k]?" on":"")+'" data-notif="'+nr.k+'"></button>'+
+    '</div>';
+  }).join("");
+
+  document.getElementById("wfEditor").innerHTML=
+    '<div class="wf-editor-head">'+
+      '<div class="wf-item-ico" style="background:'+t.bg+';width:36px;height:36px;border-radius:9px;display:grid;place-items:center;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="'+t.color+'" stroke-width="2">'+t.ico+'</svg></div>'+
+      '<div><h2>'+w.name+'</h2><div class="wf-head-meta">'+t.l+' · '+w.steps.length+' bước duyệt · Cập nhật vừa xong</div></div>'+
+      '<div class="wf-actions">'+
+        '<button class="abtn ghost" id="deleteWfBtn" style="color:var(--danger);border-color:rgba(255,107,107,.3);gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>Xóa</button>'+
+        '<div class="wf-toggle"><span style="font-size:.82rem;color:var(--text-2)">'+(w.active?"Đang bật":"Đã tắt")+'</span><button class="toggle-switch'+(w.active?" on":"")+'" id="mainToggle"></button></div>'+
+        '<button class="abtn primary" id="saveWfBtn" style="gap:7px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Lưu</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="wf-body">'+
+      /* triggers */
+      '<div class="wf-section" id="secTriggers">'+
+        '<div class="wf-section-head">'+
+          '<div class="wf-section-ico" style="background:rgba(59,91,219,.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>'+
+          '<h4>Điều kiện kích hoạt</h4>'+
+          '<span class="wf-section-tag" style="background:var(--accent-soft);color:var(--accent-ink)">'+w.triggers.length+' trigger</span>'+
+          '<span class="wf-section-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>'+
+        '</div>'+
+        '<div class="wf-section-body"><div class="trigger-list" id="triggerList">'+triggersHtml+'</div></div>'+
+      '</div>'+
+      /* steps */
+      '<div class="wf-section">'+
+        '<div class="wf-section-head">'+
+          '<div class="wf-section-ico" style="background:rgba(74,222,128,.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M3 20c0-4 3.6-7 8-7"/><circle cx="18" cy="18" r="3"/><path d="M20.8 15.5l-1.4 1.4M16.6 20.5l-1.4 1.4M21.5 20.8l-1.4-1.4M15.5 16.6l-1.4-1.4"/></svg></div>'+
+          '<h4>Các bước phê duyệt</h4>'+
+          '<span class="wf-section-tag" style="background:var(--ok-soft);color:var(--ok)">'+w.steps.length+' bước</span>'+
+          '<span class="wf-section-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>'+
+        '</div>'+
+        '<div class="wf-section-body">'+
+          '<div class="step-flow" id="stepFlow">'+stepsHtml+'</div>'+
+          '<div style="height:14px"></div>'+
+          '<button class="add-step-btn" id="addStepBtn">'+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'+
+            'Thêm bước phê duyệt'+
+          '</button>'+
+        '</div>'+
+      '</div>'+
+      /* conditions */
+      '<div class="wf-section" id="secConds">'+
+        '<div class="wf-section-head">'+
+          '<div class="wf-section-ico" style="background:rgba(251,191,36,.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="M22 4L12 14.01l-3-3"/></svg></div>'+
+          '<h4>Điều kiện lọc</h4>'+
+          '<span class="wf-section-tag" style="background:var(--warn-soft);color:var(--warn)">'+(w.conditions.length||"Tất cả")+'</span>'+
+          '<span class="wf-section-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>'+
+        '</div>'+
+        '<div class="wf-section-body">'+
+          '<div class="cond-list" id="condList">'+condHtml+'</div>'+
+          '<button class="cond-add" id="addCondBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Thêm điều kiện</button>'+
+        '</div>'+
+      '</div>'+
+      /* notifications */
+      '<div class="wf-section">'+
+        '<div class="wf-section-head">'+
+          '<div class="wf-section-ico" style="background:rgba(167,139,250,.12)"><svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>'+
+          '<h4>Thông báo tự động</h4>'+
+          '<span class="wf-section-tag" style="background:rgba(167,139,250,.14);color:#a78bfa">'+Object.values(w.notifications).filter(Boolean).length+'/4</span>'+
+          '<span class="wf-section-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>'+
+        '</div>'+
+        '<div class="wf-section-body"><div class="notif-list">'+notifHtml+'</div></div>'+
+      '</div>'+
+    '</div>';
+
+  wireEditor(w);
+}
+
+/* ── WIRE EDITOR EVENTS ── */
+function wireEditor(w){
+  /* main toggle */
+  var mt=document.getElementById("mainToggle");
+  if(mt)mt.addEventListener("click",function(){w.active=!w.active;this.classList.toggle("on",w.active);this.previousElementSibling.textContent=w.active?"Đang bật":"Đã tắt";renderList();showToast(w.active?"Workflow đã bật":"Workflow đã tắt","ok");});
+  /* save */
+  var sv=document.getElementById("saveWfBtn");
+  if(sv)sv.addEventListener("click",function(){renderList();showToast("Đã lưu cấu hình workflow ✓","ok");});
+  /* delete */
+  var dv=document.getElementById("deleteWfBtn");
+  if(dv)dv.addEventListener("click",function(){
+    if(confirm("Xóa workflow \""+w.name+"\"?")){
+      var idx=WORKFLOWS.findIndex(function(x){return x.id===w.id;});
+      if(idx!==-1)WORKFLOWS.splice(idx,1);
+      selId=WORKFLOWS.length?WORKFLOWS[0].id:"";
+      renderList();renderEditor();showToast("Đã xóa workflow","warn");
+    }
+  });
+  /* triggers */
+  var tl=document.getElementById("triggerList");
+  if(tl)tl.addEventListener("click",function(e){
+    var b=e.target.closest(".trigger-pill");if(!b)return;
+    var k=b.dataset.tr, idx=w.triggers.indexOf(k);
+    idx===-1?w.triggers.push(k):w.triggers.splice(idx,1);
+    b.classList.toggle("on");
+    document.querySelector("#secTriggers .wf-section-tag").textContent=w.triggers.length+" trigger";
+  });
+  /* section collapse */
+  document.querySelectorAll(".wf-section-head").forEach(function(h){
+    h.addEventListener("click",function(e){
+      if(e.target.closest("button,.trigger-pill"))return;
+      h.parentElement.classList.toggle("collapsed");
+    });
+  });
+  /* add step */
+  var as=document.getElementById("addStepBtn");
+  if(as)as.addEventListener("click",function(){
+    var newId="s-"+(Date.now());
+    w.steps.push({id:newId,name:"Bước "+(w.steps.length+1),type:"any",approvers:["DL"],notifyOnReject:true,deadline:48,auto:false});
+    renderEditor();showToast("Đã thêm bước phê duyệt","ok");
+  });
+  /* step delete */
+  document.querySelectorAll("[data-del]").forEach(function(b){
+    b.addEventListener("click",function(e){
+      e.stopPropagation();
+      if(w.steps.length<=1){showToast("Phải có ít nhất 1 bước duyệt","warn");return;}
+      w.steps=w.steps.filter(function(s){return s.id!==b.dataset.del;});
+      renderEditor();
+    });
+  });
+  /* step options */
+  document.querySelectorAll("[data-opt]").forEach(function(inp){
+    inp.addEventListener("change",function(){
+      var s=w.steps.find(function(x){return x.id===inp.dataset.si;});if(!s)return;
+      if(inp.dataset.opt==="type")s.type=inp.checked?"all":"any";
+      if(inp.dataset.opt==="notif")s.notifyOnReject=inp.checked;
+      if(inp.dataset.opt==="deadline")s.deadline=parseInt(inp.value)||24;
+      if(inp.dataset.opt==="type"){
+        inp.closest(".wf-step").querySelector(".step-type-badge").textContent=s.type==="all"?"Tất cả duyệt":"Bất kỳ duyệt";
+      }
+    });
+  });
+  /* remove approver */
+  document.querySelectorAll(".rm[data-si]").forEach(function(rm){
+    rm.addEventListener("click",function(e){
+      e.stopPropagation();
+      var s=w.steps.find(function(x){return x.id===rm.dataset.si;});if(!s)return;
+      if(s.approvers.length<=1){showToast("Phải có ít nhất 1 người duyệt","warn");return;}
+      s.approvers.splice(+rm.dataset.ai,1);renderEditor();
+    });
+  });
+  /* add approver */
+  document.querySelectorAll(".add-approver-btn[data-si]").forEach(function(btn){
+    btn.addEventListener("click",function(e){
+      e.stopPropagation();
+      var s=w.steps.find(function(x){return x.id===btn.dataset.si;});if(!s)return;
+      var avail=MEMBERS.filter(function(m){return s.approvers.indexOf(m.v)===-1;});
+      if(!avail.length){showToast("Đã thêm tất cả thành viên","warn");return;}
+      var m=avail[0];
+      s.approvers.push(m.v);renderEditor();showToast("Đã thêm "+m.l+" làm người duyệt","ok");
+    });
+  });
+  /* conditions */
+  document.querySelectorAll(".cond-select,.cond-val").forEach(function(el){
+    el.addEventListener("change",function(){
+      var ci=+el.dataset.ci,cf=el.dataset.cf;
+      if(w.conditions[ci])w.conditions[ci][cf]=el.value;
+    });
+  });
+  var ac=document.getElementById("addCondBtn");
+  if(ac)ac.addEventListener("click",function(){
+    w.conditions.push({field:"days",op:"gt",val:"3"});renderEditor();
+  });
+  document.querySelectorAll("[data-delci]").forEach(function(b){
+    b.addEventListener("click",function(){
+      w.conditions.splice(+b.dataset.delci,1);renderEditor();
+    });
+  });
+  /* notifications toggle */
+  document.querySelectorAll("[data-notif]").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var k=btn.dataset.notif;w.notifications[k]=!w.notifications[k];
+      btn.classList.toggle("on",w.notifications[k]);
+      document.querySelector("[data-notif='"+k+"']").classList.toggle("on",w.notifications[k]);
+    });
+  });
+}
+
+/* ── ADD WORKFLOW ── */
+document.getElementById("addWfBtn").addEventListener("click",function(){
+  var typeKeys=Object.keys(WF_TYPES);
+  var type=typeKeys[nextId%typeKeys.length];
+  var t=WF_TYPES[type];
+  var id="WF-"+(String(nextId++).padStart(3,"0"));
+  WORKFLOWS.push({id:id,name:t.l+" Workflow mới",type:type,active:false,triggers:["submit"],
+    steps:[{id:"s-new",name:"Người phê duyệt",type:"any",approvers:["DL"],notifyOnReject:true,deadline:48,auto:false}],
+    conditions:[],notifications:{onSubmit:true,onApprove:true,onReject:true,onDeadline:false}});
+  selId=id;renderList();renderEditor();
+  showToast("Đã tạo workflow mới","ok");
+});
+
+/* ── EVENTS ── */
+document.getElementById("wfList").addEventListener("click",function(e){
+  var item=e.target.closest(".wf-item[data-id]");if(!item)return;
+  selId=item.dataset.id;renderList();renderEditor();
+});
+
+/* ── TOAST ── */
+function showToast(msg,type){var t=document.getElementById("toast");t.textContent=msg;t.className="toast "+(type||"ok");t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2800);}
+
+/* ── INIT ── */
+renderList();renderEditor();
+
+})();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

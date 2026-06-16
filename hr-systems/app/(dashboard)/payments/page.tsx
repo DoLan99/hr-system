@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/current-user";
 import { MANAGER_ROLES } from "@/lib/api-auth";
-import { PaymentsClient } from "./_components/payments-client";
+import { PaymentsClient } from "./PaymentsClient";
 
 export const dynamic = "force-dynamic";
 
@@ -39,12 +39,23 @@ export default async function PaymentsPage() {
       : [],
   ]);
 
+  const totalIn = payments
+    .filter((p) => ["SALARY", "BONUS", "OTHER"].includes(p.type))
+    .reduce((s, p) => s + Number(p.amount), 0);
+  const totalOut = payments
+    .filter((p) => ["ADVANCE", "DEDUCTION"].includes(p.type))
+    .reduce((s, p) => s + Number(p.amount), 0);
+  const pendingCount = payments.filter((p) => (p as any).status === "PENDING").length;
+
   return (
     <PaymentsClient
       initialPayments={JSON.parse(JSON.stringify(payments))}
       initialMonth={month}
       initialYear={year}
       employees={employees}
+      totalIn={totalIn}
+      totalOut={totalOut}
+      pendingCount={pendingCount}
     />
   );
 }

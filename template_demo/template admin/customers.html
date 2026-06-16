@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Customers — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css"/>
+<style>
+/* ── Customers page ── */
+
+/* segment tabs */
+.cust-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.seg-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.seg-tab{height:34px;padding:0 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--elev);font-size:.82rem;font-weight:600;color:var(--text-2);cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.seg-tab:hover{border-color:var(--border-2);color:var(--text)}
+.seg-tab.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+.seg-tab .tcnt{font-family:var(--font-mono);font-size:.64rem;padding:1px 6px;border-radius:99px;background:rgba(255,255,255,.07)}
+.seg-tab.on .tcnt{background:var(--accent-soft-2)}
+.cust-search{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;background:var(--elev);border:1px solid var(--border);border-radius:9px;color:var(--text-3);min-width:200px}
+.cust-search svg{width:14px;height:14px;flex-shrink:0}
+.cust-search input{background:none;border:none;outline:none;font-family:inherit;font-size:.82rem;color:var(--text);width:100%}
+.cust-search input::placeholder{color:var(--text-3)}
+.view-toggle{display:inline-flex;background:var(--elev);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.view-toggle button{width:32px;height:30px;border-radius:6px;display:grid;place-items:center;color:var(--text-3);border:none;background:none;cursor:pointer;font-family:inherit;transition:background .15s,color .15s}
+.view-toggle button svg{width:16px;height:16px}
+.view-toggle button.on{background:var(--accent-soft);color:var(--accent-ink)}
+
+/* grid view */
+.cust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:1100px){.cust-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:680px){.cust-grid{grid-template-columns:1fr}}
+.cust-card{background:var(--elev);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:18px;cursor:pointer;transition:border-color .18s var(--ease),transform .18s var(--ease),box-shadow .15s;position:relative;overflow:hidden}
+.cust-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,50,.32)}
+.cust-card-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.cust-logo{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:1.1rem;color:#fff;flex-shrink:0}
+.cust-name{font-size:.95rem;font-weight:700;color:var(--text);line-height:1.3}
+.cust-ind{font-size:.74rem;color:var(--text-3);font-family:var(--font-mono);margin-top:2px}
+.plan-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:.66rem;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.plan-badge.enterprise{background:rgba(167,139,250,.15);color:#a78bfa}
+.plan-badge.pro{background:rgba(59,91,219,.14);color:var(--accent-ink)}
+.plan-badge.starter{background:var(--border);color:var(--text-2)}
+.plan-badge.trial{background:var(--warn-soft);color:var(--warn)}
+
+.cust-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.cust-stat{background:var(--content);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
+.cust-stat .cs-lbl{font-size:.68rem;color:var(--text-3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.04em}
+.cust-stat .cs-val{font-family:var(--font-mono);font-size:1.05rem;font-weight:800;color:var(--text);margin-top:3px;line-height:1}
+
+/* health meter */
+.health-row{display:flex;align-items:center;gap:10px;padding-top:12px;border-top:1px solid var(--border)}
+.health-bar{flex:1;height:6px;border-radius:99px;background:var(--border);overflow:hidden}
+.health-bar i{display:block;height:100%;border-radius:99px;transition:width .5s var(--ease)}
+.health-label{font-family:var(--font-mono);font-size:.74rem;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.health-dot{width:8px;height:8px;border-radius:50%}
+
+/* list view table */
+.cust-table-wrap{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow-x:auto}
+.cust-table{width:100%;border-collapse:collapse;min-width:820px}
+.cust-table th{text-align:left;padding:11px 16px;font-family:var(--font-mono);font-size:.64rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);font-weight:600;background:var(--content);border-bottom:1px solid var(--border);white-space:nowrap}
+.cust-table th.r,.cust-table td.r{text-align:right}
+.cust-table td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap}
+.cust-table tbody tr:last-child td{border-bottom:none}
+.cust-table tbody tr{transition:background .12s;cursor:pointer}
+.cust-table tbody tr:hover{background:var(--content)}
+.ct-mrr{font-family:var(--font-mono);font-size:.88rem;font-weight:800;color:var(--text)}
+
+/* drawer */
+.cd-back{position:fixed;inset:0;background:rgba(4,8,18,.6);backdrop-filter:blur(3px);z-index:100;opacity:0;transition:opacity .22s;pointer-events:none}
+.cd-back.open{opacity:1;pointer-events:auto}
+.cd-drawer{position:fixed;top:0;right:0;height:100vh;width:560px;max-width:97vw;background:var(--elev);border-left:1px solid var(--border-2);box-shadow:-30px 0 60px rgba(0,0,0,.45);z-index:101;transform:translateX(100%);transition:transform .28s var(--ease);display:flex;flex-direction:column;overflow:hidden}
+.cd-drawer.open{transform:translateX(0)}
+.cd-head{display:flex;align-items:center;gap:14px;padding:20px 22px;border-bottom:1px solid var(--border);flex-shrink:0}
+.cd-close{margin-left:auto;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);cursor:pointer;font-family:inherit;border:none;background:none;flex-shrink:0}
+.cd-close:hover{background:var(--content);color:var(--text)}
+.cd-close svg{width:17px;height:17px}
+.cd-body{flex:1;overflow-y:auto;padding:22px}
+.cd-foot{flex-shrink:0;border-top:1px solid var(--border);padding:16px 22px;display:flex;gap:10px}
+
+.dsec{font-family:var(--font-mono);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:14px;margin-top:6px}
+.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.metric{background:var(--content);border:1px solid var(--border);border-radius:11px;padding:14px}
+.metric .ml{font-size:.7rem;color:var(--text-3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.04em}
+.metric .mv{font-family:var(--font-mono);font-size:1.15rem;font-weight:800;margin-top:5px;line-height:1}
+.metric .mc{font-size:.7rem;margin-top:4px;font-weight:600}
+
+.dcard{background:var(--content);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.drow{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border)}
+.drow:last-child{border-bottom:none}
+.drow .dl{font-size:.8rem;color:var(--text-3);min-width:110px;flex-shrink:0}
+.drow .dv{font-size:.88rem;color:var(--text);flex:1;display:flex;align-items:center;gap:8px;font-weight:500}
+
+/* contacts */
+.contact-item{display:flex;align-items:center;gap:11px;padding:11px 14px;background:var(--content);border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+.contact-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#8b7bff,#4f7aff);display:grid;place-items:center;color:#fff;font-size:.78rem;font-weight:700;flex-shrink:0}
+.contact-info{flex:1;min-width:0}
+.contact-name{font-size:.86rem;font-weight:600;color:var(--text)}
+.contact-role{font-size:.74rem;color:var(--text-3)}
+.contact-actions{display:flex;gap:6px;flex-shrink:0}
+.contact-actions a{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);background:var(--elev);border:1px solid var(--border);transition:color .15s,border-color .15s}
+.contact-actions a:hover{color:var(--accent-ink);border-color:var(--accent)}
+.contact-actions a svg{width:14px;height:14px}
+.primary-tag{font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:99px;background:var(--accent-soft);color:var(--accent-ink)}
+
+/* activity feed */
+.act-feed{display:flex;flex-direction:column;gap:0}
+.act-row{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.act-row:last-child{border-bottom:none}
+.act-ico{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex-shrink:0}
+.act-ico svg{width:14px;height:14px}
+.act-txt{font-size:.84rem;color:var(--text-2);line-height:1.4}
+.act-txt b{color:var(--text);font-weight:600}
+.act-time{font-size:.72rem;color:var(--text-3);font-family:var(--font-mono);margin-top:2px}
+
+/* modal */
+.cm-modal{width:100%;max-width:520px;max-height:92vh;background:var(--elev);border:1px solid var(--border-2);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}
+.cm-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--border);flex-shrink:0}
+.cm-head .ico{width:32px;height:32px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex-shrink:0}
+.cm-head .ico svg{width:17px;height:17px;color:#fff}
+.cm-head h3{font-size:1rem;font-weight:700}
+.cm-head .x{margin-left:auto;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);cursor:pointer;font-family:inherit;border:none;background:none}
+.cm-head .x:hover{background:var(--content);color:var(--text)}
+.cm-head .x svg{width:17px;height:17px}
+.cm-body{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:16px}
+.cm-foot{flex-shrink:0;display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--border)}
+.cm-field{display:flex;flex-direction:column;gap:6px}
+.cm-field label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)}
+.cm-field input,.cm-field select,.cm-field textarea{font-family:inherit;font-size:.9rem;color:var(--text);background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:9px 12px;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.cm-field input:focus,.cm-field select:focus,.cm-field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.cm-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.cm-row{grid-template-columns:1fr}}
+
+/* toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--elev);border:1px solid var(--border-2);border-radius:10px;padding:12px 22px;font-size:.86rem;font-weight:500;color:var(--text);box-shadow:var(--shadow-lg);z-index:500;opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-left:3px solid var(--ok)}
+.toast.warn{border-left:3px solid var(--warn)}
+.toast.err{border-left:3px solid var(--danger)}
+</style>
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="app">
+<aside class="side">
+  <div class="side-brand"><span class="lm">j</span><div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div></div>
+  <nav class="side-nav scroll" id="sideNav"></nav>
+  <div class="side-foot"><div class="side-user"><span class="av">DL</span><div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span></div></div>
+</aside>
+<div class="main">
+  <header class="topbar">
+    <button class="tb-icon menu-btn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div><div class="tb-title">Customers</div></div>
+    <div class="tb-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input type="text" placeholder="Tìm khách hàng…"/><kbd>⌘K</kbd></div>
+    <div class="tb-right">
+      <button class="tb-icon" id="themeToggle" aria-label="Sáng/Tối">
+        <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+        <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+      </button>
+      <button class="tb-icon" aria-label="Thông báo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+    </div>
+  </header>
+
+  <main class="content scroll">
+    <div class="content-inner">
+
+      <div class="page-head" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px">
+        <div>
+          <h1>Customers</h1>
+          <p><b id="custCount">—</b> khách hàng · MRR <b id="mrrHead">—</b> · <b id="riskHead">—</b> tài khoản cần chú ý</p>
+        </div>
+        <button class="abtn primary" id="newCustBtn" style="gap:7px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>
+          Thêm khách hàng
+        </button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpis" id="kpiRow"></div>
+
+      <!-- Toolbar -->
+      <div class="cust-bar">
+        <div class="seg-tabs" id="segTabs"></div>
+        <div style="flex:1"></div>
+        <div class="cust-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <input type="text" id="custSearch" placeholder="Tìm công ty, ngành…"/>
+        </div>
+        <div class="view-toggle" id="viewToggle">
+          <button class="on" data-v="grid" title="Lưới"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
+          <button data-v="list" title="Danh sách"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+        </div>
+      </div>
+
+      <!-- Grid view -->
+      <div class="cust-grid" id="custGrid"></div>
+      <!-- List view -->
+      <div class="cust-table-wrap" id="custTableWrap" style="display:none">
+        <table class="cust-table">
+          <thead><tr><th>Khách hàng</th><th>Gói</th><th class="r">MRR</th><th class="r">Users</th><th>Health</th><th>CSM phụ trách</th><th>Trạng thái</th></tr></thead>
+          <tbody id="custBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- Drawer -->
+<div class="cd-back" id="cdBack"></div>
+<div class="cd-drawer" id="cdDrawer">
+  <div class="cd-head">
+    <div class="cust-logo" id="cdLogo" style="width:48px;height:48px">—</div>
+    <div style="flex:1;min-width:0">
+      <div id="cdName" style="font-size:1.05rem;font-weight:700;color:var(--text)"></div>
+      <div id="cdSub" style="font-size:.76rem;color:var(--text-3);font-family:var(--font-mono);margin-top:2px"></div>
+    </div>
+    <button class="cd-close" id="cdClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="cd-body" id="cdBody"></div>
+  <div class="cd-foot" id="cdFoot">
+    <button class="abtn ghost" id="cdMsgBtn" style="flex:1;gap:7px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Nhắn tin</button>
+    <button class="abtn primary" id="cdEditBtn" style="flex:1;gap:7px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Chỉnh sửa</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ── PLAN META ── */
+var PLANS={
+  enterprise:{l:"Enterprise",cls:"enterprise"},
+  pro:{l:"Pro",cls:"pro"},
+  starter:{l:"Starter",cls:"starter"},
+  trial:{l:"Dùng thử",cls:"trial"}
+};
+var CSM=[{v:"MA",l:"Minh Anh"},{v:"LN",l:"Lan"},{v:"DL",l:"Do thi Lan"}];
+
+/* logo gradient by index */
+var GRADS=["linear-gradient(135deg,#3B5BDB,#5275e6)","linear-gradient(135deg,#a78bfa,#8b5cf6)","linear-gradient(135deg,#4ADE80,#16a34a)","linear-gradient(135deg,#fbbf24,#d97706)","linear-gradient(135deg,#f472b6,#db2777)","linear-gradient(135deg,#22d3ee,#0891b2)"];
+
+/* ── DATA ── */
+var nextId=20;
+var CUSTOMERS=[
+  {id:"C-001",name:"Tập đoàn Bán lẻ Phương Nam",short:"PN",industry:"Bán lẻ · 500+ nhân sự",plan:"enterprise",mrr:18000000,users:120,health:92,csm:"DL",status:"active",since:"2024-03-01",renew:"2026-03-01",
+   contacts:[{name:"Trần Văn Hải",role:"Giám đốc Nhân sự",email:"hai.tran@phuongnam.vn",phone:"0901234567",primary:true},{name:"Nguyễn Thị Mai",role:"Trưởng phòng IT",email:"mai.nguyen@phuongnam.vn",phone:"0902345678"}],
+   activity:[{t:"Thanh toán hóa đơn INV-0225 — 200tr",time:"3 ngày trước",ic:"ok"},{t:"Gia hạn hợp đồng Enterprise +1 năm",time:"2 tuần trước",ic:"blue"},{t:"Onboarding 40 nhân sự mới",time:"1 tháng trước",ic:"blue"}]},
+  {id:"C-002",name:"Công ty CP Thương mại Sài Gòn",short:"SG",industry:"Thương mại · 200 nhân sự",plan:"pro",mrr:6000000,users:65,health:78,csm:"MA",status:"active",since:"2024-09-15",renew:"2026-09-15",
+   contacts:[{name:"Lê Quốc Bảo",role:"COO",email:"bao.le@saigontm.vn",phone:"0903456789",primary:true}],
+   activity:[{t:"Thanh toán đợt 2/3 hợp đồng — 120tr",time:"1 ngày trước",ic:"ok"},{t:"Yêu cầu tính năng báo cáo tùy chỉnh",time:"5 ngày trước",ic:"warn"}]},
+  {id:"C-003",name:"Startup EdTech Hà Nội",short:"ED",industry:"Giáo dục · 35 nhân sự",plan:"pro",mrr:3750000,users:35,health:85,csm:"LN",status:"active",since:"2025-01-10",renew:"2026-06-10",
+   contacts:[{name:"Phạm Thu Hà",role:"Founder & CEO",email:"ha.pham@edtech.vn",phone:"0904567890",primary:true}],
+   activity:[{t:"Nâng cấp lên gói Pro năm",time:"5 ngày trước",ic:"ok"},{t:"Hoàn thành onboarding",time:"3 tuần trước",ic:"blue"}]},
+  {id:"C-004",name:"Cửa hàng Hoa Mai",short:"HM",industry:"Bán lẻ · 8 nhân sự",plan:"trial",mrr:0,users:8,health:42,csm:"LN",status:"trial",since:"2026-06-01",renew:"2026-06-15",
+   contacts:[{name:"Vũ Thị Lan",role:"Chủ cửa hàng",email:"lan.vu@hoamai.vn",phone:"0905678901",primary:true}],
+   activity:[{t:"Yêu cầu hoàn tiền — đã hủy dùng thử",time:"10 ngày trước",ic:"warn"},{t:"Trial sắp hết hạn (15/06)",time:"hôm nay",ic:"warn"}]},
+  {id:"C-005",name:"Xưởng May Đồng Tâm",short:"DT",industry:"Sản xuất · 80 nhân sự",plan:"starter",mrr:1800000,users:22,health:68,csm:"MA",status:"active",since:"2025-05-20",renew:"2026-05-20",
+   contacts:[{name:"Đỗ Minh Quân",role:"Quản lý sản xuất",email:"quan.do@dongtam.vn",phone:"0906789012",primary:true}],
+   activity:[{t:"Thanh toán gói Starter tháng",time:"1 tuần trước",ic:"ok"},{t:"Liên hệ hỗ trợ kỹ thuật chấm công",time:"2 tuần trước",ic:"blue"}]},
+  {id:"C-006",name:"Phòng khám Đa khoa An Tâm",short:"AT",industry:"Y tế · 45 nhân sự",plan:"pro",mrr:5400000,users:45,health:88,csm:"DL",status:"active",since:"2024-11-05",renew:"2026-11-05",
+   contacts:[{name:"BS. Nguyễn Hoàng Long",role:"Giám đốc",email:"long.nguyen@antam.vn",phone:"0907890123",primary:true},{name:"Trần Thị Hương",role:"Kế toán trưởng",email:"huong.tran@antam.vn",phone:"0908901234"}],
+   activity:[{t:"Thanh toán gói Pro năm",time:"2 tuần trước",ic:"ok"},{t:"Tích hợp module bảng lương",time:"1 tháng trước",ic:"blue"}]},
+  {id:"C-007",name:"Công ty Logistics Việt Tín",short:"VT",industry:"Vận tải · 150 nhân sự",plan:"enterprise",mrr:14000000,users:98,health:55,csm:"MA",status:"at-risk",since:"2024-06-12",renew:"2026-06-30",
+   contacts:[{name:"Hoàng Đức Anh",role:"Phó TGĐ",email:"anh.hoang@viettin.vn",phone:"0909012345",primary:true}],
+   activity:[{t:"Phản hồi chậm 2 ticket hỗ trợ",time:"4 ngày trước",ic:"warn"},{t:"Usage giảm 30% so với tháng trước",time:"1 tuần trước",ic:"warn"},{t:"Hợp đồng sắp đến hạn gia hạn (30/06)",time:"2 tuần trước",ic:"warn"}]},
+  {id:"C-008",name:"Nhà hàng Sen Vàng",short:"SV",industry:"F&B · 28 nhân sự",plan:"starter",mrr:1800000,users:18,health:74,csm:"LN",status:"active",since:"2025-08-01",renew:"2026-08-01",
+   contacts:[{name:"Lý Thị Kim",role:"Quản lý",email:"kim.ly@senvang.vn",phone:"0910123456",primary:true}],
+   activity:[{t:"Thanh toán gói Starter tháng",time:"4 ngày trước",ic:"ok"}]},
+  {id:"C-009",name:"Agency Sáng Tạo Pixel",short:"PX",industry:"Marketing · 20 nhân sự",plan:"pro",mrr:3750000,users:20,health:81,csm:"LN",status:"active",since:"2025-03-18",renew:"2026-09-18",
+   contacts:[{name:"Bùi Thanh Tùng",role:"Creative Director",email:"tung.bui@pixel.vn",phone:"0911234567",primary:true}],
+   activity:[{t:"Mở rộng thêm 5 user",time:"1 tuần trước",ic:"ok"},{t:"Feedback tích cực về tính năng task",time:"3 tuần trước",ic:"blue"}]}
+];
+
+/* ── STATE ── */
+var selSeg="all", search="", view="grid", openId=null;
+
+/* ── UTILS ── */
+function fmt(n){if(n===0)return "0";if(n>=1000000)return (n/1000000).toFixed(n%1000000===0?0:1)+"tr";if(n>=1000)return Math.round(n/1000)+"k";return n.toLocaleString("vi-VN");}
+function fmtFull(n){return n.toLocaleString("vi-VN")+"đ";}
+function viDate(d){var p=d.split("-");return p[2]+"/"+p[1]+"/"+p[0];}
+function csmName(v){var c=CSM.find(function(x){return x.v===v;});return c?c.l:v;}
+function healthColor(h){if(h>=80)return "var(--ok)";if(h>=60)return "var(--accent)";if(h>=45)return "var(--warn)";return "var(--danger)";}
+function healthLabel(h){if(h>=80)return "Tốt";if(h>=60)return "Ổn định";if(h>=45)return "Cần chú ý";return "Rủi ro";}
+function gradFor(i){return GRADS[i%GRADS.length];}
+function statusLabel(s){return {active:"Đang dùng",trial:"Dùng thử","at-risk":"Rủi ro",churned:"Đã rời"}[s]||s;}
+
+function filtered(){
+  return CUSTOMERS.filter(function(c){
+    if(selSeg==="enterprise"&&c.plan!=="enterprise")return false;
+    if(selSeg==="pro"&&c.plan!=="pro")return false;
+    if(selSeg==="risk"&&!(c.status==="at-risk"||c.health<60))return false;
+    if(selSeg==="trial"&&c.status!=="trial")return false;
+    if(search){var q=search.toLowerCase();return c.name.toLowerCase().indexOf(q)!==-1||c.industry.toLowerCase().indexOf(q)!==-1;}
+    return true;
+  });
+}
+
+/* ── KPIs ── */
+function renderKPIs(){
+  var active=CUSTOMERS.filter(function(c){return c.status!=="churned";});
+  var totalMrr=CUSTOMERS.reduce(function(a,c){return a+c.mrr;},0);
+  var risk=CUSTOMERS.filter(function(c){return c.status==="at-risk"||c.health<60;}).length;
+  var avgHealth=Math.round(CUSTOMERS.reduce(function(a,c){return a+c.health;},0)/CUSTOMERS.length);
+  var trials=CUSTOMERS.filter(function(c){return c.status==="trial";}).length;
+
+  document.getElementById("custCount").textContent=active.length;
+  document.getElementById("mrrHead").textContent=fmt(totalMrr);
+  document.getElementById("riskHead").textContent=risk;
+
+  var cards=[
+    {ico:'<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke-linecap="round"/><path d="M16 4a3.5 3.5 0 0 1 0 7M22 20a5 5 0 0 0-4-5" stroke-linecap="round"/>',
+     lab:"Khách hàng",val:active.length,chg:trials+" đang dùng thử",cls:"flat"},
+    {ico:'<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+     lab:"MRR",val:fmt(totalMrr),chg:"▲ doanh thu định kỳ/tháng",cls:"up"},
+    {ico:'<path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z"/>',
+     lab:"Health TB",val:avgHealth,chg:"điểm sức khỏe TK",cls:avgHealth>=75?"up":"flat"},
+    {ico:'<path d="M10.3 3.9l-7 12A2 2 0 0 0 5 19h14a2 2 0 0 0 1.7-3l-7-12a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01" stroke-linecap="round"/>',
+     lab:"Cần chú ý",val:risk,chg:"tài khoản rủi ro",cls:risk>0?"warn":"flat"}
+  ];
+  document.getElementById("kpiRow").innerHTML=cards.map(function(k){
+    return '<div class="kpi"><div class="kt"><span class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+k.ico+'</svg></span>'+k.lab+'</div><div class="kv">'+k.val+'</div><div class="kc '+k.cls+'">'+k.chg+'</div></div>';
+  }).join("");
+}
+
+/* ── SEGMENT TABS ── */
+function renderSegTabs(){
+  var counts={
+    all:CUSTOMERS.length,
+    enterprise:CUSTOMERS.filter(function(c){return c.plan==="enterprise";}).length,
+    pro:CUSTOMERS.filter(function(c){return c.plan==="pro";}).length,
+    trial:CUSTOMERS.filter(function(c){return c.status==="trial";}).length,
+    risk:CUSTOMERS.filter(function(c){return c.status==="at-risk"||c.health<60;}).length
+  };
+  var tabs=[{k:"all",l:"Tất cả"},{k:"enterprise",l:"Enterprise"},{k:"pro",l:"Pro"},{k:"trial",l:"Dùng thử"},{k:"risk",l:"⚠ Cần chú ý"}];
+  document.getElementById("segTabs").innerHTML=tabs.map(function(t){
+    return '<button class="seg-tab'+(selSeg===t.k?" on":"")+'" data-k="'+t.k+'">'+t.l+'<span class="tcnt">'+counts[t.k]+'</span></button>';
+  }).join("");
+}
+
+/* ── GRID ── */
+function renderGrid(){
+  var list=filtered();
+  var grid=document.getElementById("custGrid");
+  if(!list.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--text-3)">Không tìm thấy khách hàng nào.</div>';return;}
+  grid.innerHTML=list.map(function(c){
+    var p=PLANS[c.plan];var idx=CUSTOMERS.indexOf(c);
+    return '<div class="cust-card" data-id="'+c.id+'">'+
+      '<div class="cust-card-top">'+
+        '<div class="cust-logo" style="background:'+gradFor(idx)+'">'+c.short+'</div>'+
+        '<div style="flex:1;min-width:0"><div class="cust-name">'+c.name+'</div><div class="cust-ind">'+c.industry+'</div></div>'+
+        '<span class="plan-badge '+p.cls+'">'+p.l+'</span>'+
+      '</div>'+
+      '<div class="cust-stats">'+
+        '<div class="cust-stat"><div class="cs-lbl">MRR</div><div class="cs-val">'+(c.mrr?fmt(c.mrr):"—")+'</div></div>'+
+        '<div class="cust-stat"><div class="cs-lbl">Người dùng</div><div class="cs-val">'+c.users+'</div></div>'+
+      '</div>'+
+      '<div class="health-row">'+
+        '<div class="health-bar"><i style="width:'+c.health+'%;background:'+healthColor(c.health)+'"></i></div>'+
+        '<span class="health-label" style="color:'+healthColor(c.health)+'"><span class="health-dot" style="background:'+healthColor(c.health)+'"></span>'+c.health+'</span>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+}
+
+/* ── LIST ── */
+function renderList(){
+  var list=filtered();
+  var body=document.getElementById("custBody");
+  if(!list.length){body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:48px;color:var(--text-3)">Không tìm thấy khách hàng.</td></tr>';return;}
+  body.innerHTML=list.map(function(c){
+    var p=PLANS[c.plan];var idx=CUSTOMERS.indexOf(c);
+    return '<tr data-id="'+c.id+'">'+
+      '<td><div style="display:flex;align-items:center;gap:11px"><div class="cust-logo" style="width:34px;height:34px;font-size:.82rem;border-radius:9px;background:'+gradFor(idx)+'">'+c.short+'</div>'+
+        '<div style="min-width:0"><div style="font-size:.87rem;font-weight:600;color:var(--text)">'+c.name+'</div><div style="font-size:.72rem;color:var(--text-3);font-family:var(--font-mono)">'+c.industry+'</div></div></div></td>'+
+      '<td><span class="plan-badge '+p.cls+'">'+p.l+'</span></td>'+
+      '<td class="r"><span class="ct-mrr">'+(c.mrr?fmtFull(c.mrr):"—")+'</span></td>'+
+      '<td class="r" style="font-family:var(--font-mono);color:var(--text-2)">'+c.users+'</td>'+
+      '<td><div style="display:flex;align-items:center;gap:8px;min-width:120px"><div class="health-bar" style="flex:1"><i style="width:'+c.health+'%;background:'+healthColor(c.health)+'"></i></div><span style="font-family:var(--font-mono);font-size:.76rem;font-weight:700;color:'+healthColor(c.health)+'">'+c.health+'</span></div></td>'+
+      '<td><span style="display:inline-flex;align-items:center;gap:7px"><span class="contact-av" style="width:24px;height:24px;font-size:.6rem">'+c.csm+'</span><span style="font-size:.82rem;color:var(--text-2)">'+csmName(c.csm)+'</span></span></td>'+
+      '<td><span class="plan-badge '+(c.status==="at-risk"?"trial":c.status==="trial"?"trial":"pro")+'" style="'+(c.status==="active"?"background:var(--ok-soft);color:var(--ok)":c.status==="at-risk"?"background:var(--danger-soft);color:var(--danger)":"")+'">'+statusLabel(c.status)+'</span></td>'+
+    '</tr>';
+  }).join("");
+}
+
+/* ── DRAWER ── */
+function openDrawer(id){
+  var c=CUSTOMERS.find(function(x){return x.id===id;});
+  if(!c)return;
+  openId=id;
+  var p=PLANS[c.plan];var idx=CUSTOMERS.indexOf(c);
+  var logo=document.getElementById("cdLogo");
+  logo.style.background=gradFor(idx);logo.textContent=c.short;
+  document.getElementById("cdName").textContent=c.name;
+  document.getElementById("cdSub").textContent=c.id+" · "+c.industry;
+
+  var iconMap={ok:'<svg viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',blue:'<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>',warn:'<svg viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9l-7 12A2 2 0 0 0 5 19h14a2 2 0 0 0 1.7-3l-7-12a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>'};
+  var bgMap={ok:"var(--ok-soft)",blue:"var(--accent-soft)",warn:"var(--warn-soft)"};
+
+  var contactsHtml=c.contacts.map(function(ct){
+    var initials=ct.name.split(" ").slice(-2).map(function(w){return w[0];}).join("");
+    return '<div class="contact-item">'+
+      '<div class="contact-av">'+initials+'</div>'+
+      '<div class="contact-info"><div class="contact-name">'+ct.name+(ct.primary?' <span class="primary-tag">Chính</span>':'')+'</div><div class="contact-role">'+ct.role+'</div></div>'+
+      '<div class="contact-actions"><a href="mailto:'+ct.email+'" title="'+ct.email+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 6l10 7L22 6"/></svg></a>'+
+        '<a href="tel:'+ct.phone+'" title="'+ct.phone+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+
+  var activityHtml=c.activity.map(function(a){
+    return '<div class="act-row"><div class="act-ico" style="background:'+bgMap[a.ic]+'">'+iconMap[a.ic]+'</div>'+
+      '<div><div class="act-txt">'+a.t+'</div><div class="act-time">'+a.time+'</div></div></div>';
+  }).join("");
+
+  var hc=healthColor(c.health);
+  document.getElementById("cdBody").innerHTML=
+    '<div class="metric-grid">'+
+      '<div class="metric"><div class="ml">MRR</div><div class="mv">'+(c.mrr?fmt(c.mrr):"—")+'</div><div class="mc" style="color:var(--text-3)">'+(c.mrr?fmt(c.mrr*12)+"/năm":"chưa trả")+'</div></div>'+
+      '<div class="metric"><div class="ml">Người dùng</div><div class="mv">'+c.users+'</div><div class="mc" style="color:var(--text-3)">active seats</div></div>'+
+      '<div class="metric"><div class="ml">Health</div><div class="mv" style="color:'+hc+'">'+c.health+'</div><div class="mc" style="color:'+hc+'">'+healthLabel(c.health)+'</div></div>'+
+    '</div>'+
+    '<div class="dsec">Thông tin hợp đồng</div>'+
+    '<div class="dcard">'+
+      '<div class="drow"><span class="dl">Gói dịch vụ</span><span class="dv"><span class="plan-badge '+p.cls+'">'+p.l+'</span></span></div>'+
+      '<div class="drow"><span class="dl">Trạng thái</span><span class="dv">'+statusLabel(c.status)+'</span></div>'+
+      '<div class="drow"><span class="dl">CSM phụ trách</span><span class="dv"><span class="contact-av" style="width:22px;height:22px;font-size:.6rem">'+c.csm+'</span>'+csmName(c.csm)+'</span></div>'+
+      '<div class="drow"><span class="dl">Khách từ</span><span class="dv">'+viDate(c.since)+'</span></div>'+
+      '<div class="drow"><span class="dl">Gia hạn</span><span class="dv">'+viDate(c.renew)+'</span></div>'+
+    '</div>'+
+    '<div class="dsec">Người liên hệ ('+c.contacts.length+')</div>'+
+    '<div style="margin-bottom:20px">'+contactsHtml+'</div>'+
+    '<div class="dsec">Hoạt động gần đây</div>'+
+    '<div class="act-feed">'+activityHtml+'</div>';
+
+  document.getElementById("cdBack").classList.add("open");
+  document.getElementById("cdDrawer").classList.add("open");
+}
+function closeDrawer(){
+  document.getElementById("cdBack").classList.remove("open");
+  document.getElementById("cdDrawer").classList.remove("open");
+  openId=null;
+}
+
+/* ── CREATE MODAL ── */
+function openModal(){
+  if(document.getElementById("custModal"))return;
+  var back=document.createElement("div");back.className="modal-back";back.id="custModal";
+  back.innerHTML='<div class="cm-modal">'+
+    '<div class="cm-head"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M19 8v6M22 11h-6"/></svg></div><h3>Thêm khách hàng mới</h3><button class="x" id="cmClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>'+
+    '<div class="cm-body">'+
+      '<div class="cm-field"><label>Tên công ty *</label><input type="text" id="cmName" placeholder="vd. Công ty CP ABC"/></div>'+
+      '<div class="cm-field"><label>Ngành / Quy mô</label><input type="text" id="cmInd" placeholder="vd. Bán lẻ · 50 nhân sự"/></div>'+
+      '<div class="cm-row">'+
+        '<div class="cm-field"><label>Gói dịch vụ</label><select id="cmPlan">'+Object.keys(PLANS).map(function(k){return '<option value="'+k+'">'+PLANS[k].l+'</option>';}).join("")+'</select></div>'+
+        '<div class="cm-field"><label>CSM phụ trách</label><select id="cmCsm">'+CSM.map(function(c){return '<option value="'+c.v+'">'+c.l+'</option>';}).join("")+'</select></div>'+
+      '</div>'+
+      '<div class="cm-row">'+
+        '<div class="cm-field"><label>MRR (đ)</label><input type="number" id="cmMrr" min="0" step="100000" placeholder="vd. 5000000"/></div>'+
+        '<div class="cm-field"><label>Số người dùng</label><input type="number" id="cmUsers" min="1" placeholder="vd. 30" value="10"/></div>'+
+      '</div>'+
+      '<div class="cm-field"><label>Người liên hệ chính</label><input type="text" id="cmContact" placeholder="vd. Nguyễn Văn A — Giám đốc"/></div>'+
+    '</div>'+
+    '<div class="cm-foot"><button class="abtn ghost" id="cmCancel">Hủy</button><button class="abtn primary" id="cmSave">Thêm khách hàng</button></div>'+
+  '</div>';
+  document.body.appendChild(back);
+  function close(){var m=document.getElementById("custModal");if(m)m.remove();}
+  back.addEventListener("click",function(e){if(e.target===back)close();});
+  document.getElementById("cmClose").addEventListener("click",close);
+  document.getElementById("cmCancel").addEventListener("click",close);
+  document.getElementById("cmSave").addEventListener("click",function(){
+    var name=document.getElementById("cmName").value.trim();
+    if(!name){showToast("Vui lòng nhập tên công ty","err");return;}
+    var plan=document.getElementById("cmPlan").value;
+    var mrr=parseInt(document.getElementById("cmMrr").value)||0;
+    var users=parseInt(document.getElementById("cmUsers").value)||1;
+    var csm=document.getElementById("cmCsm").value;
+    var ind=document.getElementById("cmInd").value.trim()||"Chưa phân loại";
+    var contact=document.getElementById("cmContact").value.trim();
+    var parts=contact.split("—").map(function(s){return s.trim();});
+    var short=name.replace(/^(Công ty|CP|Tập đoàn|TNHH)\s*/gi,"").trim().split(" ").slice(0,2).map(function(w){return w[0];}).join("").toUpperCase().slice(0,2)||"NK";
+    var id="C-"+String(nextId++).padStart(3,"0");
+    CUSTOMERS.unshift({id:id,name:name,short:short,industry:ind,plan:plan,mrr:plan==="trial"?0:mrr,users:users,health:plan==="trial"?50:75,csm:csm,status:plan==="trial"?"trial":"active",since:"2026-06-15",renew:"2027-06-15",
+      contacts:contact?[{name:parts[0]||contact,role:parts[1]||"Liên hệ",email:"",phone:"",primary:true}]:[],activity:[{t:"Khách hàng được thêm vào hệ thống",time:"vừa xong",ic:"blue"}]});
+    close();renderAll();showToast("Đã thêm khách hàng "+name+" ✓","ok");
+  });
+  requestAnimationFrame(function(){document.getElementById("cmName").focus();});
+}
+
+/* ── EVENTS ── */
+document.getElementById("custGrid").addEventListener("click",function(e){var card=e.target.closest(".cust-card[data-id]");if(card)openDrawer(card.dataset.id);});
+document.getElementById("custBody").addEventListener("click",function(e){var row=e.target.closest("tr[data-id]");if(row)openDrawer(row.dataset.id);});
+document.getElementById("segTabs").addEventListener("click",function(e){var b=e.target.closest(".seg-tab");if(!b)return;selSeg=b.dataset.k;renderSegTabs();renderGrid();renderList();});
+document.getElementById("custSearch").addEventListener("input",function(e){search=e.target.value.trim();renderGrid();renderList();});
+document.getElementById("viewToggle").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-v]");if(!b)return;
+  view=b.dataset.v;
+  document.querySelectorAll("#viewToggle button").forEach(function(x){x.classList.remove("on");});
+  b.classList.add("on");
+  document.getElementById("custGrid").style.display=view==="grid"?"grid":"none";
+  document.getElementById("custTableWrap").style.display=view==="list"?"block":"none";
+});
+document.getElementById("cdBack").addEventListener("click",closeDrawer);
+document.getElementById("cdClose").addEventListener("click",closeDrawer);
+document.getElementById("cdMsgBtn").addEventListener("click",function(){showToast("Mở cửa sổ nhắn tin…","ok");});
+document.getElementById("cdEditBtn").addEventListener("click",function(){showToast("Mở form chỉnh sửa khách hàng…","ok");});
+document.getElementById("newCustBtn").addEventListener("click",openModal);
+
+/* ── TOAST ── */
+function showToast(msg,type){var t=document.getElementById("toast");t.textContent=msg;t.className="toast "+(type||"ok");t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2800);}
+
+/* ── RENDER ── */
+function renderAll(){renderKPIs();renderSegTabs();renderGrid();renderList();}
+renderAll();
+
+})();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

@@ -16,6 +16,7 @@ const updateSchema = z.object({
   status: z.enum(TASK_STATUSES).optional(),
   estimatedTime: z.number().int().nullable().optional(),
   assignedToId: z.number().int().optional(),
+  supportId: z.number().int().nullable().optional(),
   customerId: z.number().int().nullable().optional(),
   projectId: z.number().int().nullable().optional(),
   billable: z.boolean().optional(),
@@ -30,6 +31,7 @@ const updateSchema = z.object({
 const include = {
   assignedTo: { select: { id: true, fullName: true, avatarUrl: true } },
   assignedBy: { select: { id: true, fullName: true } },
+  support: { select: { id: true, fullName: true } },
   customer: { select: { id: true, customerName: true, businessName: true } },
   template: { select: { id: true, code: true, title: true } },
   parentTask: { select: { id: true, code: true, title: true } },
@@ -131,6 +133,7 @@ export const PUT = withContext(async (req: NextRequest, { params }: { params: { 
     if (d.priority !== undefined) data.priority = d.priority;
     if (d.estimatedTime !== undefined) data.estimatedTime = d.estimatedTime;
     if (d.assignedToId !== undefined) data.assignedToId = d.assignedToId;
+    if (d.supportId !== undefined) data.supportId = d.supportId;
     if (d.customerId !== undefined) data.customerId = d.customerId;
     if (d.projectId !== undefined) data.projectId = d.projectId;
     if (d.billable !== undefined) data.billable = d.billable;

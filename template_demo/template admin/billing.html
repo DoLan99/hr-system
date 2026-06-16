@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Billing — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css"/>
+<style>
+/* ── Billing page ── */
+.bl-layout{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
+.bl-main{display:flex;flex-direction:column;gap:16px}
+.bl-side{display:flex;flex-direction:column;gap:16px;position:sticky;top:calc(var(--nav-h,66px)+20px)}
+
+/* panel */
+.bp{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.bp-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.bp-head h3{font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.bp-head h3 svg{width:15px;height:15px;color:var(--accent-ink)}
+.bp-body{padding:18px}
+
+/* current plan hero */
+.plan-hero{background:linear-gradient(135deg,var(--accent),#1d4ed8);border-radius:var(--r-lg);padding:24px;color:#fff;position:relative;overflow:hidden;margin-bottom:16px}
+.plan-hero::after{content:"";position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.08);pointer-events:none}
+.ph-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:4px 11px;border-radius:99px;background:rgba(255,255,255,.18);color:#fff;margin-bottom:14px}
+.ph-name{font-size:1.6rem;font-weight:800;letter-spacing:-.03em;margin-bottom:4px}
+.ph-price{font-size:1.05rem;opacity:.85;margin-bottom:16px}
+.ph-badges{display:flex;gap:8px;flex-wrap:wrap}
+.ph-tag{display:inline-flex;align-items:center;gap:5px;font-size:.76rem;font-weight:500;padding:4px 11px;border-radius:99px;background:rgba(255,255,255,.14);color:#fff}
+.ph-tag svg{width:12px;height:12px}
+
+/* usage bars */
+.usage-list{display:flex;flex-direction:column;gap:14px}
+.usage-item{}
+.usage-top{display:flex;justify-content:space-between;font-size:.84rem;margin-bottom:6px}
+.usage-top .ulabel{font-weight:600;color:var(--text)}
+.usage-top .ucnt{font-family:var(--font-mono);font-size:.78rem;color:var(--text-3)}
+.usage-track{height:8px;border-radius:99px;background:var(--border);overflow:hidden}
+.usage-fill{height:100%;border-radius:99px;transition:width .6s var(--ease)}
+.usage-warn{color:var(--warn)!important}
+
+/* feature grid */
+.feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.feat-item{display:flex;align-items:center;gap:8px;font-size:.84rem}
+.feat-item svg{width:14px;height:14px;flex-shrink:0}
+.feat-item.yes{color:var(--text)}.feat-item.yes svg{color:var(--ok)}
+.feat-item.no{color:var(--text-3)}.feat-item.no svg{color:var(--text-3)}
+
+/* invoice table */
+.inv-table{width:100%;border-collapse:collapse;font-size:.84rem}
+.inv-table th{text-align:left;padding:9px 14px;font-family:var(--font-mono);font-size:.68rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);border-bottom:1px solid var(--border);background:var(--content)}
+.inv-table td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--text-2)}
+.inv-table tbody tr:last-child td{border-bottom:none}
+.inv-table tbody tr:hover{background:var(--content)}
+.inv-num{font-family:var(--font-mono);font-size:.76rem;color:var(--text-3)}
+.inv-status{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:99px}
+.inv-paid{background:var(--ok-soft);color:var(--ok)}
+.inv-pending{background:var(--warn-soft);color:var(--warn)}
+.inv-failed{background:var(--danger-soft);color:var(--danger)}
+.inv-dl{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--text-3);transition:background .12s,color .12s}
+.inv-dl:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.inv-dl svg{width:13px;height:13px}
+
+/* payment method card */
+.pm-card{display:flex;align-items:center;gap:13px;padding:14px;background:var(--content);border:1.5px solid var(--border-2);border-radius:12px;transition:border-color .15s}
+.pm-card:hover{border-color:var(--accent)}
+.pm-card.default{border-color:var(--accent);background:var(--accent-soft)}
+.pm-ico{width:44px;height:32px;border-radius:7px;display:grid;place-items:center;background:var(--elev);border:1px solid var(--border);flex-shrink:0}
+.pm-ico svg{width:22px;height:16px}
+.pm-bank{font-weight:700;font-size:.88rem}
+.pm-acct{font-family:var(--font-mono);font-size:.76rem;color:var(--text-3);margin-top:2px}
+.pm-default{margin-left:auto;font-family:var(--font-mono);font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent-ink)}
+
+/* upgrade plan cards */
+.plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.plan-card{background:var(--content);border:1.5px solid var(--border);border-radius:12px;padding:16px;transition:border-color .15s,transform .15s,box-shadow .15s;cursor:pointer}
+.plan-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow)}
+.plan-card.current{border-color:var(--accent);background:var(--accent-soft)}
+.plan-card.current::after{content:"Hiện tại";display:block;font-family:var(--font-mono);font-size:.66rem;font-weight:700;text-align:center;padding:3px;border-radius:99px;background:var(--accent);color:#fff;margin-top:12px}
+.plan-card .pn{font-family:var(--font-mono);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--accent-ink);margin-bottom:6px}
+.plan-card .pp{font-size:1.3rem;font-weight:800;letter-spacing:-.02em;color:var(--text)}
+.plan-card .pp small{font-size:.78rem;font-weight:500;color:var(--text-3)}
+.plan-card .pd{font-size:.78rem;color:var(--text-3);margin-top:4px}
+
+/* renewal alert */
+.renew-alert{display:flex;align-items:center;gap:12px;padding:14px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:11px}
+.renew-alert .ra-ico{width:36px;height:36px;border-radius:9px;background:rgba(251,191,36,.15);color:#f59e0b;display:grid;place-items:center;flex-shrink:0}
+.renew-alert .ra-ico svg{width:17px;height:17px}
+.renew-alert .ra-t{font-weight:600;font-size:.86rem}
+.renew-alert .ra-s{font-size:.76rem;color:var(--text-2);margin-top:2px}
+
+/* modal */
+.bm-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.bm-modal.open{opacity:1;pointer-events:auto}
+.bm-scrim{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.bm-card{position:relative;z-index:1;background:var(--elev);border:1px solid var(--border-2);border-radius:var(--r-lg);width:100%;max-width:480px;padding:26px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-lg)}
+.bm-card h2{font-size:1rem;font-weight:800}
+.bm-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--text-3)}
+.bm-close:hover{background:var(--content);color:var(--text)}
+.bm-f{display:flex;flex-direction:column;gap:5px}
+.bm-f label{font-size:.8rem;font-weight:600;color:var(--text-2)}
+.bm-f input,.bm-f select{background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:9px 12px;font-family:inherit;font-size:.88rem;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.bm-f input::placeholder{color:var(--text-3)}
+.bm-f input:focus,.bm-f select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.bm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bm-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:6px;border-top:1px solid var(--border)}
+
+@media(max-width:960px){.bl-layout{grid-template-columns:1fr}.bl-side{position:static}.plan-grid{grid-template-columns:1fr}.feat-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="app">
+
+  <aside class="side">
+    <div class="side-brand"><span class="lm">j</span><div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div></div>
+    <nav class="side-nav scroll" id="sideNav"></nav>
+    <div class="side-foot"><div class="side-user"><span class="av">DL</span><div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span></div></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="tb-icon menu-btn" id="menuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div><div class="tb-title">Billing</div></div>
+      <div class="tb-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input type="text" placeholder="Tìm hóa đơn…"/>
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="tb-right">
+        <button class="tb-icon" id="themeToggle">
+          <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+          <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+        </button>
+        <button class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+      </div>
+    </header>
+
+    <main class="content scroll">
+      <div class="content-inner">
+
+        <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div><h1>Billing &amp; Gói dịch vụ</h1><p>Quản lý gói, thanh toán và lịch sử hóa đơn của workspace.</p></div>
+          <div style="display:flex;gap:8px;">
+            <button class="abtn ghost" id="addPayBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Thêm TKNH</button>
+            <button class="abtn primary" id="upgBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M5 10l7-7 7 7M12 3v18"/></svg>Nâng cấp gói</button>
+          </div>
+        </div>
+
+        <div class="bl-layout">
+
+          <!-- LEFT: main -->
+          <div class="bl-main">
+
+            <!-- renewal alert -->
+            <div class="renew-alert">
+              <div class="ra-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+              <div><div class="ra-t">Gói sẽ gia hạn vào ngày 05/07/2026</div><div class="ra-s">Còn 19 ngày · Số tiền 299.000đ sẽ được trừ vào tài khoản Vietcombank ****5678</div></div>
+              <button class="abtn ghost" style="margin-left:auto;height:32px;font-size:.8rem;white-space:nowrap" id="cancelBtn">Hủy gia hạn</button>
+            </div>
+
+            <!-- current plan -->
+            <div class="bp">
+              <div class="bp-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2M8 7V5a2 2 0 0 0-4 0v2"/></svg>Gói đang dùng</h3><button class="abtn ghost" style="height:30px;font-size:.8rem" id="changePlanBtn">Đổi gói</button></div>
+              <div class="bp-body">
+                <div class="plan-hero">
+                  <div class="ph-badge">⚡ Starter Plan</div>
+                  <div class="ph-name">Starter</div>
+                  <div class="ph-price">299.000đ / tháng · Thanh toán hàng tháng</div>
+                  <div class="ph-badges">
+                    <span class="ph-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-5" stroke-linecap="round"/></svg>10 thành viên</span>
+                    <span class="ph-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Audit 90 ngày</span>
+                    <span class="ph-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Hỗ trợ Email</span>
+                  </div>
+                </div>
+                <div class="usage-list">
+                  <div class="usage-item"><div class="usage-top"><span class="ulabel">Thành viên</span><span class="ucnt">12 / 10 <span style="color:var(--danger);font-weight:700">⚠ Vượt giới hạn</span></span></div><div class="usage-track"><div class="usage-fill" style="width:120%;background:#ef4444"></div></div></div>
+                  <div class="usage-item"><div class="usage-top"><span class="ulabel">Dung lượng lưu trữ</span><span class="ucnt">4.2 GB / 10 GB</span></div><div class="usage-track"><div class="usage-fill" style="width:42%;background:var(--accent)"></div></div></div>
+                  <div class="usage-item"><div class="usage-top"><span class="ulabel">API calls / tháng</span><span class="ucnt">8.240 / 50.000</span></div><div class="usage-track"><div class="usage-fill" style="width:16%;background:var(--ok)"></div></div></div>
+                  <div class="usage-item"><div class="usage-top"><span class="ulabel">Lịch sử audit</span><span class="ucnt">90 ngày</span></div><div class="usage-track"><div class="usage-fill" style="width:100%;background:var(--accent)"></div></div></div>
+                </div>
+                <div style="margin-top:16px;padding:12px;background:var(--danger-soft);border:1px solid rgba(239,68,68,.25);border-radius:10px;font-size:.84rem;color:var(--danger);display:flex;align-items:center;gap:10px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M10.3 3.9l-7 12A2 2 0 0 0 5 19h14a2 2 0 0 0 1.7-3l-7-12a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+                  Workspace đang có <b>12 thành viên</b> nhưng gói Starter chỉ cho phép <b>10</b>. Nâng cấp lên gói Team để tiếp tục dùng đầy đủ tính năng.
+                  <button class="abtn primary" style="height:30px;font-size:.78rem;white-space:nowrap;margin-left:auto" id="upgBtn2">Nâng cấp ngay</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- tính năng so sánh -->
+            <div class="bp">
+              <div class="bp-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tính năng trong gói</h3></div>
+              <div class="bp-body">
+                <div class="feat-grid">
+                  <div class="feat-item yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Tasks &amp; Time tracking</div>
+                  <div class="feat-item yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Office Time &amp; Chấm công</div>
+                  <div class="feat-item yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Salary &amp; Payments</div>
+                  <div class="feat-item yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Performance Reviews</div>
+                  <div class="feat-item yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Leave Management</div>
+                  <div class="feat-item yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>Phân quyền nâng cao</div>
+                  <div class="feat-item no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>Anomaly Detection</div>
+                  <div class="feat-item no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>Vault (Password manager)</div>
+                  <div class="feat-item no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>Activity Heatmap</div>
+                  <div class="feat-item no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>Audit log không giới hạn</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- invoice history -->
+            <div class="bp">
+              <div class="bp-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/></svg>Lịch sử hóa đơn</h3>
+                <button class="abtn ghost" style="height:28px;font-size:.78rem">Export tất cả</button>
+              </div>
+              <table class="inv-table">
+                <thead><tr><th>Hóa đơn</th><th>Kỳ thanh toán</th><th>Gói</th><th>Số tiền</th><th>Phương thức</th><th>Trạng thái</th><th></th></tr></thead>
+                <tbody id="invBody"></tbody>
+              </table>
+            </div>
+
+          </div>
+
+          <!-- RIGHT: side -->
+          <div class="bl-side">
+
+            <!-- payment methods -->
+            <div class="bp">
+              <div class="bp-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Phương thức thanh toán</h3></div>
+              <div class="bp-body" style="display:flex;flex-direction:column;gap:10px">
+                <div class="pm-card default">
+                  <div class="pm-ico"><svg viewBox="0 0 60 40" fill="none"><rect width="60" height="40" rx="4" fill="#1a5e1e"/><text x="6" y="28" fill="#fff" font-size="12" font-weight="700" font-family="monospace">VCB</text></svg></div>
+                  <div><div class="pm-bank">Vietcombank</div><div class="pm-acct">**** **** **** 5678 · Đỗ Thị Lan</div></div>
+                  <span class="pm-default">Mặc định</span>
+                </div>
+                <div class="pm-card">
+                  <div class="pm-ico"><svg viewBox="0 0 60 40" fill="none"><rect width="60" height="40" rx="4" fill="#cc0001"/><text x="6" y="26" fill="#fff" font-size="10" font-weight="700" font-family="monospace">MB</text><text x="6" y="36" fill="#fff" font-size="8" font-family="monospace">BANK</text></svg></div>
+                  <div><div class="pm-bank">MB Bank</div><div class="pm-acct">**** **** **** 1234 · Đỗ Thị Lan</div></div>
+                  <button class="abtn ghost" style="height:26px;font-size:.76rem;margin-left:auto">Đặt mặc định</button>
+                </div>
+                <button class="abtn ghost" style="width:100%;height:36px;font-size:.82rem" id="addPayBtn2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="13" height="13"><path d="M12 5v14M5 12h14"/></svg>Thêm tài khoản ngân hàng</button>
+              </div>
+            </div>
+
+            <!-- upgrade plans -->
+            <div class="bp">
+              <div class="bp-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10l7-7 7 7M12 3v18"/></svg>Nâng cấp gói</h3></div>
+              <div class="bp-body">
+                <p style="font-size:.82rem;color:var(--text-2);margin-bottom:12px">Workspace hiện có 12 người — vượt giới hạn Starter (10). Nâng lên <b>Team</b> để mở khóa toàn bộ tính năng.</p>
+                <div class="plan-grid">
+                  <div class="plan-card"><div class="pn">Solo</div><div class="pp">Miễn phí</div><div class="pd">1 thành viên</div></div>
+                  <div class="plan-card current"><div class="pn">Starter</div><div class="pp">299k<small>/tháng</small></div><div class="pd">≤ 10 thành viên</div></div>
+                  <div class="plan-card" id="teamPlanCard"><div class="pn" style="color:#059669">Team</div><div class="pp">799k<small>/tháng</small></div><div class="pd">≤ 25 thành viên</div></div>
+                </div>
+                <button class="abtn primary" style="width:100%;height:40px;margin-top:14px;font-size:.88rem" id="upgBtn3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M5 10l7-7 7 7M12 3v18"/></svg>Nâng cấp lên Team — 799.000đ/tháng</button>
+                <p style="text-align:center;font-size:.74rem;color:var(--text-3);margin-top:8px;font-family:var(--font-mono)">Thanh toán chuyển khoản · Xuất hóa đơn VAT</p>
+              </div>
+            </div>
+
+            <!-- support -->
+            <div class="bp">
+              <div class="bp-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Hỗ trợ thanh toán</h3></div>
+              <div class="bp-body" style="display:flex;flex-direction:column;gap:10px">
+                <div style="font-size:.84rem;color:var(--text-2);line-height:1.6">Cần xuất hóa đơn VAT hoặc hỗ trợ chuyển khoản? Liên hệ đội ngũ billing.</div>
+                <a href="/cdn-cgi/l/email-protection#63010a0f0f0a0d0423090c010a0b0c0e064d150d" class="abtn ghost" style="height:36px;font-size:.83rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 4h16v16H4z" fill="none"/><path d="M4 6l8 6 8-6"/></svg><span class="__cf_email__" data-cfemail="a1c3c8cdcdc8cfc6e1cbcec3c8c9ceccc48fd7cf">[email&#160;protected]</span></a>
+                <div style="font-size:.76rem;color:var(--text-3);font-family:var(--font-mono)">Phản hồi trong vòng 2 giờ trong giờ hành chính (8:00–18:00)</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Add bank modal -->
+<div class="bm-modal" id="payModal">
+  <div class="bm-scrim" id="payScrim"></div>
+  <div class="bm-card">
+    <h2>Thêm tài khoản ngân hàng</h2>
+    <button class="bm-close" id="payClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <div class="bm-f"><label>Ngân hàng *</label>
+      <select id="pmBank"><option>Vietcombank</option><option>MB Bank</option><option>Techcombank</option><option>BIDV</option><option>Agribank</option><option>VPBank</option><option>Sacombank</option><option>ACB</option></select>
+    </div>
+    <div class="bm-f"><label>Số tài khoản *</label><input type="text" id="pmAcct" placeholder="0123456789"/></div>
+    <div class="bm-grid">
+      <div class="bm-f"><label>Chủ tài khoản *</label><input type="text" id="pmHolder" placeholder="NGUYEN VAN A"/></div>
+      <div class="bm-f"><label>Chi nhánh</label><input type="text" id="pmBranch" placeholder="CN Hoàn Kiếm"/></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--accent-soft);border-radius:9px;font-size:.82rem;color:var(--accent-ink)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg>Thông tin tài khoản được mã hóa bảo mật và chỉ dùng cho thanh toán dịch vụ.</div>
+    <div class="bm-foot"><button class="abtn ghost" id="payCancelBtn">Hủy</button><button class="abtn primary" id="paySaveBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="13" height="13"><path d="M5 12l5 5L20 6"/></svg>Lưu tài khoản</button></div>
+  </div>
+</div>
+
+<!-- Upgrade confirm modal -->
+<div class="bm-modal" id="upgModal">
+  <div class="bm-scrim" id="upgScrim"></div>
+  <div class="bm-card">
+    <h2>Xác nhận nâng cấp lên Team</h2>
+    <button class="bm-close" id="upgClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <div style="background:var(--content);border:1px solid var(--border);border-radius:11px;padding:16px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;font-size:.88rem"><span class="muted">Gói hiện tại</span><span>Starter · 299.000đ/tháng</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:.88rem"><span class="muted">Gói mới</span><span style="font-weight:700;color:var(--accent-ink)">Team · 799.000đ/tháng</span></div>
+      <div style="height:1px;background:var(--border)"></div>
+      <div style="display:flex;justify-content:space-between;font-size:.88rem"><span class="muted">Ngày có hiệu lực</span><span>Ngay lập tức</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:.88rem"><span class="muted">Chênh lệch kỳ này</span><span style="font-weight:700">+ 341.935đ (tính theo ngày)</span></div>
+    </div>
+    <p style="font-size:.82rem;color:var(--text-2)">Số tiền chênh lệch sẽ được khấu trừ tự động từ tài khoản <b>Vietcombank ****5678</b> trong vòng 24 giờ.</p>
+    <div class="bm-foot"><button class="abtn ghost" id="upgCancelBtn">Không, giữ nguyên</button><button class="abtn primary" id="upgConfirmBtn" style="background:#059669"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M5 12l5 5L20 6"/></svg>Xác nhận nâng cấp</button></div>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+/* ── Invoice data ── */
+var INVOICES=[
+  {id:"INV-2026-006",period:"T6/2026",plan:"Starter",amount:"299.000đ",method:"Vietcombank ****5678",status:"pending",date:"2026-06-05"},
+  {id:"INV-2026-005",period:"T5/2026",plan:"Starter",amount:"299.000đ",method:"Vietcombank ****5678",status:"paid",date:"2026-05-05"},
+  {id:"INV-2026-004",period:"T4/2026",plan:"Starter",amount:"299.000đ",method:"Vietcombank ****5678",status:"paid",date:"2026-04-05"},
+  {id:"INV-2026-003",period:"T3/2026",plan:"Starter",amount:"299.000đ",method:"MB Bank ****1234",status:"paid",date:"2026-03-05"},
+  {id:"INV-2026-002",period:"T2/2026",plan:"Starter",amount:"299.000đ",method:"MB Bank ****1234",status:"paid",date:"2026-02-05"},
+  {id:"INV-2026-001",period:"T1/2026",plan:"Starter",amount:"299.000đ",method:"MB Bank ****1234",status:"paid",date:"2026-01-05"}
+];
+
+document.getElementById("invBody").innerHTML=INVOICES.map(function(inv){
+  var st=inv.status;
+  var stEl='<span class="inv-status inv-'+st+'">'+(st==="paid"?"✓ Đã thanh toán":st==="pending"?"⏳ Chờ thanh toán":"✗ Thất bại")+'</span>';
+  return '<tr>'+
+    '<td><div style="font-weight:600;color:var(--text);font-size:.84rem">'+inv.id+'</div><div class="inv-num">'+inv.date+'</div></td>'+
+    '<td>'+inv.period+'</td>'+
+    '<td><span style="font-family:var(--font-mono);font-size:.76rem;background:var(--accent-soft);color:var(--accent-ink);padding:2px 8px;border-radius:99px">'+inv.plan+'</span></td>'+
+    '<td style="font-weight:700;color:var(--text)">'+inv.amount+'</td>'+
+    '<td style="font-size:.78rem">'+inv.method+'</td>'+
+    '<td>'+stEl+'</td>'+
+    '<td><button class="inv-dl" title="Tải PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></td>'+
+  '</tr>';
+}).join("");
+
+/* ── Modals ── */
+function openModal(id){document.getElementById(id).classList.add("open");}
+function closeModal(id){document.getElementById(id).classList.remove("open");}
+["addPayBtn","addPayBtn2"].forEach(function(id){document.getElementById(id).addEventListener("click",function(){openModal("payModal");});});
+document.getElementById("payClose").addEventListener("click",function(){closeModal("payModal");});
+document.getElementById("payScrim").addEventListener("click",function(){closeModal("payModal");});
+document.getElementById("payCancelBtn").addEventListener("click",function(){closeModal("payModal");});
+document.getElementById("paySaveBtn").addEventListener("click",function(){
+  if(!document.getElementById("pmAcct").value||!document.getElementById("pmHolder").value){alert("Vui lòng điền đầy đủ.");return;}
+  closeModal("payModal"); alert("Tài khoản ngân hàng đã được lưu.");
+});
+
+["upgBtn","upgBtn2","upgBtn3","changePlanBtn"].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener("click",function(){openModal("upgModal");});});
+["upgClose","upgCancelBtn","upgScrim"].forEach(function(id){document.getElementById(id).addEventListener("click",function(){closeModal("upgModal");});});
+document.getElementById("upgConfirmBtn").addEventListener("click",function(){
+  closeModal("upgModal");
+  document.querySelector(".ph-badge").textContent="⚡ Team Plan";
+  document.querySelector(".ph-name").textContent="Team";
+  document.querySelector(".ph-price").textContent="799.000đ / tháng · Thanh toán hàng tháng";
+  document.querySelector(".ph-badges span").innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke-linecap="round"/><path d="M16 4a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-5" stroke-linecap="round"/></svg>25 thành viên';
+  document.querySelector(".plan-card.current .pn").textContent="Team";
+  document.querySelector(".plan-card.current .pp").innerHTML='799k<small>/tháng</small>';
+  alert("🎉 Nâng cấp thành công! Workspace của bạn giờ đã là gói Team.");
+});
+document.getElementById("cancelBtn").addEventListener("click",function(){if(confirm("Bạn có chắc muốn hủy gia hạn tự động? Gói sẽ hết hạn sau kỳ hiện tại."))alert("Đã hủy gia hạn tự động. Gói sẽ hết hạn vào 05/07/2026.");});
+document.getElementById("teamPlanCard").addEventListener("click",function(){openModal("upgModal");});
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

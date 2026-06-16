@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/current-user";
 import { getManagedEmployeeIds, ADMIN_ROLES, SUB_MANAGER_ROLES } from "@/lib/managed-scope";
-import { TasksClient } from "./_components/tasks-client";
+import { TasksClient } from "./TasksClient";
 import { buildLabelConfig } from "@/lib/system-labels";
 
-export const metadata = { title: "Tasks — HR System" };
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Công việc — HR System" };
 
 export default async function TasksPage() {
   const { employee, organization, role } = await requireAuth();
@@ -24,6 +25,7 @@ export default async function TasksPage() {
     where.assignedToId = userId;
   }
 
+  /* mark overdue tasks */
   const now = new Date();
   await prisma.task.updateMany({
     where: {
@@ -67,7 +69,16 @@ export default async function TasksPage() {
     }),
     prisma.taskTemplate.findMany({
       where: { organizationId: organization.id, isActive: true },
-      select: { id: true, code: true, title: true, defaultTaskType: true, defaultEstimatedTime: true, defaultPriority: true, requiresVideo: true, department: true },
+      select: {
+        id: true,
+        code: true,
+        title: true,
+        defaultTaskType: true,
+        defaultEstimatedTime: true,
+        defaultPriority: true,
+        requiresVideo: true,
+        department: true,
+      },
       orderBy: [{ usageCount: "desc" }, { code: "asc" }],
     }),
     prisma.systemLabel.findMany({

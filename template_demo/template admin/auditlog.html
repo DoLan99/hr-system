@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Audit Log — jobihome.vn</title>
+<script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="css/app.css"/>
+<style>
+/* ── Audit Log ── */
+.al-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.al-stat{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.al-stat .asi{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex-shrink:0}
+.al-stat .asi svg{width:17px;height:17px}
+.al-stat .asv{font-size:1.4rem;font-weight:800;letter-spacing:-.02em}
+.al-stat .asl{font-size:0.78rem;color:var(--text-3);margin-top:1px}
+
+/* filter bar */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 16px;background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:16px}
+.fb-select{background:var(--content);border:1px solid var(--border-2);border-radius:9px;padding:7px 12px;font-family:inherit;font-size:0.83rem;color:var(--text);outline:none;transition:border-color .15s;cursor:pointer}
+.fb-select:focus{border-color:var(--accent)}
+.fb-search{display:flex;align-items:center;gap:8px;background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:0 12px;height:38px;flex:1;min-width:200px;transition:border-color .15s,box-shadow .15s}
+.fb-search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.fb-search svg{width:14px;height:14px;color:var(--text-3);flex-shrink:0}
+.fb-search input{background:none;border:none;outline:none;font-family:inherit;font-size:0.84rem;color:var(--text);width:100%}
+.fb-search input::placeholder{color:var(--text-3)}
+.filter-bar .spacer{flex:1}
+.fb-count{font-family:var(--font-mono);font-size:0.78rem;color:var(--text-3)}
+
+/* audit table */
+.audit-wrap{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.audit-table{width:100%;border-collapse:collapse;font-size:0.84rem}
+.audit-table thead th{text-align:left;padding:10px 14px;font-family:var(--font-mono);font-size:0.68rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3);border-bottom:1px solid var(--border);background:var(--content);white-space:nowrap;user-select:none;cursor:pointer;transition:color .12s}
+.audit-table thead th:hover{color:var(--text)}
+.audit-table thead th .sort-ico{display:inline-flex;vertical-align:middle;margin-left:4px;opacity:.4;font-size:.64rem}
+.audit-table thead th.sorted .sort-ico{opacity:1;color:var(--accent-ink)}
+.audit-table td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text-2)}
+.audit-table tbody tr{cursor:pointer;transition:background .12s}
+.audit-table tbody tr:last-child td{border-bottom:none}
+.audit-table tbody tr:hover{background:var(--content)}
+.audit-table tbody tr.selected{background:var(--accent-soft)}
+
+/* cells */
+.at-time{font-family:var(--font-mono);font-size:0.76rem;white-space:nowrap}
+.at-date{font-size:0.68rem;color:var(--text-3);display:block;margin-top:1px}
+.at-user{display:flex;align-items:center;gap:8px}
+.at-av{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0}
+.at-uname{font-weight:600;font-size:0.84rem;color:var(--text);white-space:nowrap}
+.at-action-chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:0.7rem;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;text-transform:uppercase;letter-spacing:.02em}
+.ac-create{background:rgba(34,197,94,.12);color:#22c55e}
+.ac-update{background:var(--accent-soft);color:var(--accent-ink)}
+.ac-delete{background:var(--danger-soft);color:var(--danger)}
+.ac-approve{background:rgba(34,197,94,.12);color:#22c55e}
+.ac-reject{background:var(--danger-soft);color:var(--danger)}
+.ac-login{background:var(--ok-soft);color:var(--ok)}
+.ac-logout{background:var(--border);color:var(--text-3)}
+.ac-view{background:rgba(8,145,178,.12);color:#0891b2}
+.ac-export{background:rgba(217,119,6,.12);color:#d97706}
+.ac-warning{background:var(--danger-soft);color:var(--danger)}
+.at-module{display:inline-flex;align-items:center;gap:5px;font-size:0.76rem;font-weight:500;padding:2px 8px;border-radius:99px;background:var(--content);color:var(--text-2);border:1px solid var(--border);white-space:nowrap}
+.at-ip{font-family:var(--font-mono);font-size:0.72rem;color:var(--text-3)}
+.at-status{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:0.7rem;font-weight:600;padding:2px 8px;border-radius:99px}
+.st-ok{background:var(--ok-soft);color:var(--ok)}
+.st-fail{background:var(--danger-soft);color:var(--danger)}
+.st-warn{background:var(--warn-soft);color:var(--warn)}
+
+/* detail panel */
+.audit-detail{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:94vw;background:var(--elev);border-left:1px solid var(--border);display:flex;flex-direction:column;z-index:60;transform:translateX(110%);transition:transform .3s cubic-bezier(.22,1,.36,1);box-shadow:-20px 0 60px rgba(0,0,0,.35)}
+.audit-detail.open{transform:translateX(0)}
+.ad-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.ad-head h3{font-size:0.96rem;font-weight:700}
+.ad-close{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);margin-left:auto}
+.ad-close:hover{background:var(--content);color:var(--text)}
+.ad-body{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:18px}
+.ad-sect-h{font-family:var(--font-mono);font-size:0.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:10px}
+.ad-row{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);font-size:0.85rem;gap:16px}
+.ad-row:last-child{border-bottom:none}
+.ad-row .lbl{color:var(--text-3);flex-shrink:0;width:110px}
+.ad-row .val{color:var(--text);font-weight:500;text-align:right;word-break:break-all}
+.ad-row .val.mono{font-family:var(--font-mono);font-size:0.82rem}
+.ad-payload{background:var(--content);border:1px solid var(--border);border-radius:10px;padding:13px;font-family:var(--font-mono);font-size:0.76rem;color:var(--text-2);line-height:1.6;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow-y:auto}
+
+/* pagination */
+.pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-top:1px solid var(--border);flex-wrap:wrap}
+.pager-info{font-size:0.82rem;color:var(--text-3);font-family:var(--font-mono)}
+.pager-btns{display:flex;gap:4px}
+.pg{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:0.82rem;font-weight:600;color:var(--text-2);border:1px solid var(--border);background:var(--content);cursor:pointer;transition:all .12s}
+.pg:hover{border-color:var(--accent);color:var(--accent-ink)}
+.pg.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.pg.nav svg{width:14px;height:14px}
+
+/* scrim */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:59;opacity:0;pointer-events:none;transition:opacity .25s}
+.scrim.on{opacity:1;pointer-events:auto}
+
+@media(max-width:900px){.al-stats{grid-template-columns:1fr 1fr}.audit-detail{width:100vw}.audit-table th:nth-child(5),.audit-table td:nth-child(5),.audit-table th:nth-child(6),.audit-table td:nth-child(6){display:none}}
+@media(max-width:600px){.al-stats{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="nav-scrim" id="navScrim"></div>
+<div class="scrim" id="scrim"></div>
+
+<div class="app">
+  <aside class="side">
+    <div class="side-brand"><span class="lm">j</span><div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div></div>
+    <nav class="side-nav scroll" id="sideNav"></nav>
+    <div class="side-foot"><div class="side-user"><span class="av">DL</span><div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span></div></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="tb-icon menu-btn" id="menuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div><div class="tb-title">Audit Log</div></div>
+      <div class="tb-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input type="text" id="globalSearch" placeholder="Tìm hành động, người dùng…"/>
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="tb-right">
+        <button class="tb-icon" id="themeToggle">
+          <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+          <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+        </button>
+        <button class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+      </div>
+    </header>
+
+    <main class="content scroll">
+      <div class="content-inner">
+
+        <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div><h1>Audit Log</h1><p>Toàn bộ hành động trong hệ thống — ai làm gì, khi nào, ở đâu.</p></div>
+          <div style="display:flex;gap:8px;">
+            <button class="abtn ghost" id="exportBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</button>
+            <button class="abtn ghost" id="refreshBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9A9 9 0 0 1 20.5 15M20.5 15A9 9 0 0 1 3.5 9"/></svg>Làm mới</button>
+          </div>
+        </div>
+
+        <!-- stats -->
+        <div class="al-stats" id="alStats"></div>
+
+        <!-- filter bar -->
+        <div class="filter-bar">
+          <div class="fb-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input type="text" id="searchLog" placeholder="Tìm người dùng, hành động, đối tượng…"/></div>
+          <select class="fb-select" id="filterModule">
+            <option value="">Tất cả module</option>
+            <option>Tasks</option><option>Nhân sự</option><option>Lương</option>
+            <option>Chấm công</option><option>Đánh giá</option><option>Nghỉ phép</option>
+            <option>Vault</option><option>Phân quyền</option><option>Hệ thống</option>
+          </select>
+          <select class="fb-select" id="filterAction">
+            <option value="">Tất cả hành động</option>
+            <option value="create">Tạo mới</option><option value="update">Cập nhật</option>
+            <option value="delete">Xóa</option><option value="approve">Duyệt</option>
+            <option value="login">Đăng nhập</option><option value="view">Xem</option>
+            <option value="export">Export</option><option value="warning">Cảnh báo</option>
+          </select>
+          <select class="fb-select" id="filterUser">
+            <option value="">Tất cả thành viên</option>
+          </select>
+          <select class="fb-select" id="filterDate">
+            <option value="today">Hôm nay</option>
+            <option value="7" selected>7 ngày qua</option>
+            <option value="30">30 ngày qua</option>
+            <option value="90">90 ngày qua</option>
+          </select>
+          <select class="fb-select" id="filterStatus">
+            <option value="">Mọi trạng thái</option>
+            <option value="ok">Thành công</option>
+            <option value="fail">Thất bại</option>
+            <option value="warn">Cảnh báo</option>
+          </select>
+          <span class="fb-count" id="fbCount"></span>
+          <button class="abtn ghost" style="height:36px;font-size:0.8rem" id="clearFilters">Xóa lọc</button>
+        </div>
+
+        <!-- table -->
+        <div class="audit-wrap">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th data-col="time">Thời gian <span class="sort-ico">↕</span></th>
+                <th data-col="user">Người dùng</th>
+                <th data-col="action">Hành động <span class="sort-ico">↕</span></th>
+                <th data-col="target">Đối tượng</th>
+                <th data-col="module">Module</th>
+                <th data-col="ip">IP</th>
+                <th data-col="status">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody id="auditBody"></tbody>
+          </table>
+          <div class="pager" id="pager"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Detail panel -->
+<aside class="audit-detail" id="auditDetail">
+  <div class="ad-head">
+    <h3 id="adTitle">Chi tiết hành động</h3>
+    <button class="ad-close" id="closeDetail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="ad-body" id="adBody"></div>
+</aside>
+
+<script>
+var AVCOLORS=["#3B5BDB","#2196f3","#7c3aed","#0891b2","#059669","#d97706","#dc2626","#7c3aed","#0f766e","#b45309","#1d4ed8","#6d28d9"];
+var MEMBERS=[
+  {id:"M1",name:"Nguyễn Minh Anh",init:"MA",col:0},
+  {id:"M2",name:"Trần Quốc Hoàng",init:"HG",col:1},
+  {id:"M3",name:"Lê Thị Lan",init:"LN",col:2},
+  {id:"M4",name:"Phạm Văn Tú",init:"TU",col:3},
+  {id:"M5",name:"Đỗ Thị Lan",init:"DL",col:4},
+  {id:"M6",name:"Vũ Thanh Hà",init:"TH",col:5}
+];
+MEMBERS.forEach(function(m){
+  var opt=document.createElement("option");opt.value=m.id;opt.textContent=m.name;
+  document.getElementById("filterUser").appendChild(opt);
+});
+
+var ACTION_LABEL={create:"Tạo mới",update:"Cập nhật",delete:"Xóa",approve:"Duyệt",reject:"Từ chối",login:"Đăng nhập",logout:"Đăng xuất",view:"Xem",export:"Export",warning:"Cảnh báo"};
+
+/* ── Sinh dữ liệu mẫu ── */
+var RAW_DATA=[
+  {id:"A001",uid:"M5",action:"approve",module:"Lương",target:"Bảng lương T6/2026 · 14 nhân viên",ip:"27.68.x.x",loc:"TP.HCM",browser:"Firefox 125",status:"ok",time:"2026-06-16 10:24:11",payload:JSON.stringify({salary_period:"T6/2026",total_employees:14,total_amount:"214,500,000 VNĐ"},null,2)},
+  {id:"A002",uid:"M1",action:"update",module:"Tasks",target:"JH-233 · API endpoint chấm công",ip:"27.68.x.x",loc:"TP.HCM",browser:"Chrome 124",status:"ok",time:"2026-06-16 10:18:03",payload:JSON.stringify({field:"status",from:"In Progress",to:"Done"},null,2)},
+  {id:"A003",uid:"M5",action:"view",module:"Vault",target:"Credentials · Acme Studio (4 items)",ip:"27.68.x.x",loc:"TP.HCM",browser:"Firefox 125",status:"ok",time:"2026-06-16 09:52:44",payload:JSON.stringify({customer:"Acme Studio",items_accessed:4},null,2)},
+  {id:"A004",uid:"M2",action:"login",module:"Hệ thống",target:"Đăng nhập thành công",ip:"103.x.x.x",loc:"Hà Nội",browser:"Arc 1.60",status:"ok",time:"2026-06-16 09:52:01",payload:JSON.stringify({device:"MacBook Air",session_id:"sess_8f3k2"},null,2)},
+  {id:"A005",uid:"M5",action:"update",module:"Đánh giá",target:"Review Q2 · Trần Quốc Hoàng → 8.8",ip:"27.68.x.x",loc:"TP.HCM",browser:"Firefox 125",status:"ok",time:"2026-06-16 09:40:17",payload:JSON.stringify({reviewer:"Đỗ Thị Lan",reviewee:"Trần Quốc Hoàng",score:8.8,period:"Q2/2026"},null,2)},
+  {id:"A006",uid:"M3",action:"create",module:"Nghỉ phép",target:"Đơn nghỉ phép · 14–15/06/2026 (2 ngày)",ip:"116.x.x.x",loc:"TP.HCM",browser:"Safari 17",status:"ok",time:"2026-06-16 09:15:08",payload:JSON.stringify({leave_type:"Phép năm",from:"2026-06-14",to:"2026-06-15",days:2},null,2)},
+  {id:"A007",uid:"M1",action:"create",module:"Tasks",target:"JH-250 · Audit log UI",ip:"27.68.x.x",loc:"TP.HCM",browser:"Chrome 124",status:"ok",time:"2026-06-16 08:30:44",payload:JSON.stringify({task_id:"JH-250",assignee:"Trần Quốc Hoàng",sprint:"Sprint 14"},null,2)},
+  {id:"A008",uid:"M2",action:"warning",module:"Hệ thống",target:"Đăng nhập từ địa điểm mới (Singapore)",ip:"45.x.x.x",loc:"Singapore",browser:"Chrome 124",status:"warn",time:"2026-06-15 23:44:22",payload:JSON.stringify({prev_location:"Hà Nội",new_location:"Singapore",risk_score:0.82},null,2)},
+  {id:"A009",uid:"M1",action:"export",module:"Nhân sự",target:"Danh sách nhân viên · 12 records · CSV",ip:"27.68.x.x",loc:"TP.HCM",browser:"Chrome 124",status:"ok",time:"2026-06-15 17:22:09",payload:JSON.stringify({format:"CSV",records:12,fields:["id","name","dept","role","status"]},null,2)},
+  {id:"A010",uid:"M2",action:"update",module:"Tasks",target:"JH-228 · Migrate Prisma schema → Done",ip:"103.x.x.x",loc:"Hà Nội",browser:"Arc 1.60",status:"ok",time:"2026-06-15 17:50:11",payload:JSON.stringify({from:"In Progress",to:"Done",actual_hours:4.5},null,2)},
+  {id:"A011",uid:"M5",action:"update",module:"Nhân sự",target:"Vũ Thanh Hà · trạng thái → Đã xác nhận",ip:"27.68.x.x",loc:"TP.HCM",browser:"Firefox 125",status:"ok",time:"2026-06-15 16:30:05",payload:JSON.stringify({employee_id:"JH-E006",field:"contract_status",from:"probation",to:"confirmed"},null,2)},
+  {id:"A012",uid:"M6",action:"create",module:"Đánh giá",target:"Self-review Q2 · Vũ Thanh Hà",ip:"1.x.x.x",loc:"TP.HCM",browser:"Chrome 124",status:"ok",time:"2026-06-15 14:10:38",payload:JSON.stringify({self_score:7.9,period:"Q2/2026"},null,2)},
+  {id:"A013",uid:"M4",action:"approve",module:"Chấm công",target:"Office Time T6W2 · 8 nhân viên",ip:"14.x.x.x",loc:"Đà Nẵng",browser:"Chrome 124",status:"ok",time:"2026-06-15 09:05:59",payload:JSON.stringify({week:"W24/2026",approved_count:8,total_hours:312},null,2)},
+  {id:"A014",uid:"M5",action:"delete",module:"Nhân sự",target:"Bùi Thị Ngọc · JH-E010 (đã nghỉ việc)",ip:"27.68.x.x",loc:"TP.HCM",browser:"Firefox 125",status:"ok",time:"2026-06-14 15:44:27",payload:JSON.stringify({employee_id:"JH-E010",reason:"resigned",last_working_day:"2026-06-13"},null,2)},
+  {id:"A015",uid:"M2",action:"login",module:"Hệ thống",target:"Đăng nhập thành công",ip:"103.x.x.x",loc:"Hà Nội",browser:"Arc 1.60",status:"ok",time:"2026-06-14 08:45:00",payload:JSON.stringify({device:"MacBook Air"},null,2)},
+  {id:"A016",uid:"M5",action:"create",module:"Vault",target:"Credentials mới · TechViet Solutions · SSH VPS",ip:"27.68.x.x",loc:"TP.HCM",browser:"Firefox 125",status:"ok",time:"2026-06-14 11:20:33",payload:JSON.stringify({customer:"TechViet Solutions",type:"ssh",label:"VPS Ubuntu 22.04"},null,2)},
+  {id:"A017",uid:"M3",action:"update",module:"Tasks",target:"JH-236 · Dashboard KPI → In Review",ip:"116.x.x.x",loc:"TP.HCM",browser:"Safari 17",status:"ok",time:"2026-06-13 17:05:12",payload:JSON.stringify({from:"In Progress",to:"Pending Review"},null,2)},
+  {id:"A018",uid:"M1",action:"reject",module:"Nghỉ phép",target:"Đơn nghỉ phép · Nguyễn Đức Nam · 20/06",ip:"27.68.x.x",loc:"TP.HCM",browser:"Chrome 124",status:"ok",time:"2026-06-13 10:14:55",payload:JSON.stringify({leave_id:"LV-041",reason:"Thiếu nhân lực sprint cuối"},null,2)},
+  {id:"A019",uid:"M5",action:"update",module:"Phân quyền",target:"Vai trò Member · +quyền task.create",ip:"27.68.x.x",loc:"TP.HCM",browser:"Firefox 125",status:"ok",time:"2026-06-12 14:02:08",payload:JSON.stringify({role:"Member",added_perms:["task.create"],removed_perms:[]},null,2)},
+  {id:"A020",uid:"M2",action:"warning",module:"Hệ thống",target:"4 lần nhập sai mật khẩu liên tiếp",ip:"14.x.x.x",loc:"Đà Nẵng",browser:"Chrome 124",status:"warn",time:"2026-06-12 16:30:44",payload:JSON.stringify({attempts:4,threshold:5,account_locked:false},null,2)}
+];
+
+var PAGE_SIZE=12, currentPage=1, sortCol="time", sortAsc=false, selectedId=null;
+
+/* ── Stats ── */
+(function(){
+  var total=RAW_DATA.length, warns=RAW_DATA.filter(function(r){return r.status==="warn";}).length;
+  var creates=RAW_DATA.filter(function(r){return r.action==="create";}).length;
+  var dels=RAW_DATA.filter(function(r){return r.action==="delete";}).length;
+  document.getElementById("alStats").innerHTML=[
+    {c:"#3B5BDB",sv:'<path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/>',v:total,l:"Tổng sự kiện"},
+    {c:"#059669",sv:'<path d="M12 5v14M5 12h14"/>',v:creates,l:"Tạo mới"},
+    {c:"#dc2626",sv:'<path d="M3 6h18M19 6l-1 14H6L5 6"/>',v:dels,l:"Xóa dữ liệu"},
+    {c:"#d97706",sv:'<path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>',v:warns,l:"Cảnh báo"}
+  ].map(function(s){
+    return '<div class="al-stat"><span class="asi" style="background:'+s.c+'22;color:'+s.c+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">'+s.sv+'</svg></span><div><div class="asv">'+s.v+'</div><div class="asl">'+s.l+'</div></div></div>';
+  }).join("");
+})();
+
+/* ── Filter + sort ── */
+function getFiltered(){
+  var q=document.getElementById("searchLog").value.toLowerCase();
+  var mod=document.getElementById("filterModule").value;
+  var act=document.getElementById("filterAction").value;
+  var uid=document.getElementById("filterUser").value;
+  var sts=document.getElementById("filterStatus").value;
+  var list=RAW_DATA.filter(function(r){
+    if(q&&r.target.toLowerCase().indexOf(q)===-1&&(MEMBERS.find(function(m){return m.id===r.uid;})||{name:""}).name.toLowerCase().indexOf(q)===-1&&r.module.toLowerCase().indexOf(q)===-1) return false;
+    if(mod&&r.module!==mod) return false;
+    if(act&&r.action!==act) return false;
+    if(uid&&r.uid!==uid) return false;
+    if(sts&&r.status!==sts) return false;
+    return true;
+  });
+  list.sort(function(a,b){
+    var va=sortCol==="time"?a.time:a[sortCol]||"";
+    var vb=sortCol==="time"?b.time:b[sortCol]||"";
+    return sortAsc?va.localeCompare(vb):vb.localeCompare(va);
+  });
+  return list;
+}
+
+function render(){
+  var list=getFiltered();
+  var total=list.length;
+  document.getElementById("fbCount").textContent=total+" sự kiện";
+  var start=(currentPage-1)*PAGE_SIZE, page=list.slice(start,start+PAGE_SIZE);
+  var body=document.getElementById("auditBody");
+  body.innerHTML=page.map(function(r){
+    var m=MEMBERS.find(function(x){return x.id===r.uid;})||{name:"System",init:"SY",col:11};
+    var dt=r.time.split(" ");
+    return '<tr data-rid="'+r.id+'"'+(r.id===selectedId?' class="selected"':'')+'>' +
+      '<td><span class="at-time">'+dt[1].slice(0,5)+'</span><span class="at-date">'+dt[0]+'</span></td>'+
+      '<td><div class="at-user"><span class="at-av" style="background:'+AVCOLORS[m.col%AVCOLORS.length]+'">'+m.init+'</span><span class="at-uname">'+m.name+'</span></div></td>'+
+      '<td><span class="at-action-chip ac-'+r.action+'">'+ACTION_LABEL[r.action]+'</span></td>'+
+      '<td style="max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">'+r.target+'</td>'+
+      '<td><span class="at-module">'+r.module+'</span></td>'+
+      '<td><span class="at-ip">'+r.ip+'</span></td>'+
+      '<td><span class="at-status st-'+r.status+'">'+(r.status==="ok"?"✓ OK":r.status==="warn"?"⚠ Cảnh báo":"✗ Lỗi")+'</span></td>'+
+    '</tr>';
+  }).join("");
+
+  /* row click → detail */
+  body.querySelectorAll("tr[data-rid]").forEach(function(row){
+    row.addEventListener("click",function(){openDetail(row.getAttribute("data-rid"));});
+  });
+
+  /* pager */
+  var totalPages=Math.max(1,Math.ceil(total/PAGE_SIZE));
+  var pages="";
+  for(var i=1;i<=totalPages;i++){
+    if(i===1||i===totalPages||Math.abs(i-currentPage)<=1){
+      pages+='<div class="pg'+(i===currentPage?" on":"")+'" data-pg="'+i+'">'+i+'</div>';
+    } else if(Math.abs(i-currentPage)===2){
+      pages+='<div class="pg" style="pointer-events:none;opacity:.4">…</div>';
+    }
+  }
+  document.getElementById("pager").innerHTML=
+    '<span class="pager-info">'+start+1+'–'+Math.min(start+PAGE_SIZE,total)+' / '+total+' sự kiện</span>'+
+    '<div class="pager-btns">'+
+      '<div class="pg nav" id="pgPrev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>'+
+      pages+
+      '<div class="pg nav" id="pgNext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>'+
+    '</div>';
+
+  document.querySelectorAll(".pg[data-pg]").forEach(function(b){
+    b.addEventListener("click",function(){currentPage=parseInt(b.getAttribute("data-pg"));render();});
+  });
+  document.getElementById("pgPrev").addEventListener("click",function(){if(currentPage>1){currentPage--;render();}});
+  document.getElementById("pgNext").addEventListener("click",function(){if(currentPage<totalPages){currentPage++;render();}});
+}
+
+/* ── Detail panel ── */
+function openDetail(rid){
+  selectedId=rid;
+  var r=RAW_DATA.find(function(x){return x.id===rid;}); if(!r) return;
+  var m=MEMBERS.find(function(x){return x.id===r.uid;})||{name:"System",init:"SY",col:11};
+  document.getElementById("adTitle").textContent=ACTION_LABEL[r.action]||r.action;
+  document.getElementById("adBody").innerHTML=
+    '<div><div class="ad-sect-h">Tổng quan sự kiện</div>'+
+      '<div class="ad-row"><span class="lbl">ID sự kiện</span><span class="val mono">'+r.id+'</span></div>'+
+      '<div class="ad-row"><span class="lbl">Thời gian</span><span class="val mono">'+r.time+'</span></div>'+
+      '<div class="ad-row"><span class="lbl">Hành động</span><span class="val"><span class="at-action-chip ac-'+r.action+'">'+ACTION_LABEL[r.action]+'</span></span></div>'+
+      '<div class="ad-row"><span class="lbl">Module</span><span class="val"><span class="at-module">'+r.module+'</span></span></div>'+
+      '<div class="ad-row"><span class="lbl">Đối tượng</span><span class="val" style="font-size:.82rem">'+r.target+'</span></div>'+
+      '<div class="ad-row"><span class="lbl">Trạng thái</span><span class="val"><span class="at-status st-'+r.status+'">'+(r.status==="ok"?"✓ Thành công":r.status==="warn"?"⚠ Cảnh báo":"✗ Thất bại")+'</span></span></div>'+
+    '</div>'+
+    '<div><div class="ad-sect-h">Người thực hiện</div>'+
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'+
+        '<span style="width:42px;height:42px;border-radius:12px;background:'+AVCOLORS[m.col%AVCOLORS.length]+';display:grid;place-items:center;font-size:0.9rem;font-weight:700;color:#fff">'+m.init+'</span>'+
+        '<div><div style="font-weight:700;font-size:0.95rem">'+m.name+'</div><div style="font-size:0.78rem;color:var(--text-3)">Super Admin</div></div>'+
+      '</div>'+
+      '<div class="ad-row"><span class="lbl">Địa chỉ IP</span><span class="val mono">'+r.ip+'</span></div>'+
+      '<div class="ad-row"><span class="lbl">Vị trí</span><span class="val">'+r.loc+'</span></div>'+
+      '<div class="ad-row"><span class="lbl">Trình duyệt</span><span class="val" style="font-size:.82rem">'+r.browser+'</span></div>'+
+    '</div>'+
+    '<div><div class="ad-sect-h">Payload dữ liệu</div>'+
+      '<div class="ad-payload">'+r.payload+'</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px">'+
+      '<button class="abtn ghost" style="height:32px;font-size:0.8rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy JSON</button>'+
+      (r.status==="warn"?'<button class="abtn ghost" style="height:32px;font-size:0.8rem;color:var(--danger);border-color:var(--danger-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M12 8v4M12 16h.01"/></svg>Điều tra</button>':'')+
+    '</div>';
+  document.getElementById("auditDetail").classList.add("open");
+  document.getElementById("scrim").classList.add("on");
+  render(); /* re-render to highlight selected row */
+}
+function closeDetail(){
+  selectedId=null;
+  document.getElementById("auditDetail").classList.remove("open");
+  document.getElementById("scrim").classList.remove("on");
+  render();
+}
+document.getElementById("closeDetail").addEventListener("click",closeDetail);
+document.getElementById("scrim").addEventListener("click",closeDetail);
+
+/* ── Sort on header click ── */
+document.querySelectorAll(".audit-table thead th[data-col]").forEach(function(th){
+  th.addEventListener("click",function(){
+    var col=th.getAttribute("data-col");
+    if(sortCol===col)sortAsc=!sortAsc; else{sortCol=col;sortAsc=false;}
+    document.querySelectorAll(".audit-table thead th").forEach(function(t){t.classList.remove("sorted");});
+    th.classList.add("sorted");
+    th.querySelector(".sort-ico").textContent=sortAsc?"↑":"↓";
+    currentPage=1;render();
+  });
+});
+
+/* ── Filters ── */
+["searchLog","filterModule","filterAction","filterUser","filterDate","filterStatus"].forEach(function(id){
+  document.getElementById(id).addEventListener("input",function(){currentPage=1;render();});
+  document.getElementById(id).addEventListener("change",function(){currentPage=1;render();});
+});
+document.getElementById("globalSearch").addEventListener("input",function(){document.getElementById("searchLog").value=this.value;currentPage=1;render();});
+document.getElementById("clearFilters").addEventListener("click",function(){
+  ["searchLog","filterModule","filterAction","filterUser","filterDate","filterStatus"].forEach(function(id){document.getElementById(id).value="";});
+  currentPage=1;render();
+});
+document.getElementById("refreshBtn").addEventListener("click",function(){render();});
+document.getElementById("exportBtn").addEventListener("click",function(){alert("Xuất CSV audit log đầy đủ sẽ ra mắt sớm.");});
+
+render();
+</script>
+<script src="js/admin.js"></script>
+</body>
+</html>

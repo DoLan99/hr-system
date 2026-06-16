@@ -18,6 +18,7 @@ const createSchema = z.object({
   templateId: z.number().int().nullable().optional(),
   parentTaskId: z.number().int().nullable().optional(),
   assignedToId: z.number().int().optional(),
+  supportId: z.number().int().nullable().optional(),
   customerId: z.number().int().nullable().optional(),
   projectId: z.number().int().nullable().optional(),
   billable: z.boolean().default(false),
@@ -29,6 +30,7 @@ const createSchema = z.object({
 const TASK_INCLUDE = {
   assignedTo: { select: { id: true, fullName: true, avatarUrl: true } },
   assignedBy: { select: { id: true, fullName: true } },
+  support: { select: { id: true, fullName: true } },
   customer: { select: { id: true, customerName: true, businessName: true } },
   template: { select: { id: true, code: true, title: true } },
   parentTask: { select: { id: true, code: true, title: true } },
@@ -138,6 +140,7 @@ export const POST = withContext(async (req: NextRequest) => {
 
   const task = await prisma.task.create({
     data: {
+      organizationId: auth.orgId,
       code,
       title: d.title,
       description: d.description,
@@ -149,6 +152,7 @@ export const POST = withContext(async (req: NextRequest) => {
       parentTaskId: d.parentTaskId ?? null,
       assignedToId,
       assignedById: userId,
+      supportId: d.supportId ?? null,
       customerId: d.customerId ?? null,
       projectId: d.projectId ?? null,
       billable: d.billable,

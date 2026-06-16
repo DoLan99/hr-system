@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/current-user";
 import { MANAGER_ROLES } from "@/lib/api-auth";
-import { SummaryClient } from "./_components/summary-client";
+import { SummaryClient } from "./SummaryClient";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,8 @@ export default async function SummaryPage() {
 
   const where: any = {
     organizationId: organization.id,
-    month, year,
+    month,
+    year,
   };
   if (!isManager) where.employeeId = userId;
 
@@ -25,8 +26,12 @@ export default async function SummaryPage() {
     include: {
       employee: {
         select: {
-          id: true, fullName: true, department: true,
-          payType: true, hourlyRate: true, monthlySalary: true,
+          id: true,
+          fullName: true,
+          department: true,
+          payType: true,
+          hourlyRate: true,
+          monthlySalary: true,
         },
       },
       confirmedBy: { select: { id: true, fullName: true } },
