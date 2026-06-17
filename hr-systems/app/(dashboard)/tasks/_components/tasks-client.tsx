@@ -32,6 +32,7 @@ type TaskItem = {
   assignedBy: { id: number; fullName: string };
   customer: { id: number; customerName: string | null; businessName: string | null } | null;
   template: { id: number; code: string; title: string } | null;
+  sprint?: { id: number; name: string; status: string } | null;
   _count: { timeLogs: number; subTasks: number };
 };
 

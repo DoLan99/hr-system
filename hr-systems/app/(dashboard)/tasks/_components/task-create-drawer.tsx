@@ -18,6 +18,7 @@ type Props = {
     defaultPriority: string | null;
     requiresVideo: boolean;
   }[];
+  sprints?: { id: number; name: string; status: string }[];
   currentUserId: number;
   isManager: boolean;
   initialStatus?: string;
@@ -60,10 +61,12 @@ const DEFAULT_FORM = (userId: number, status: string) => ({
   requiresVideo: false,
   dueDate: "",
   reasonNextAction: "",
+  sprintId: "",
+  storyPoints: "",
 });
 
 export function TaskCreateDrawer({
-  open, onClose, employees, customers, templates,
+  open, onClose, employees, customers, templates, sprints = [],
   currentUserId, isManager, initialStatus = "BACKLOG", onSaved,
 }: Props) {
   const { t } = useLocale();
@@ -113,6 +116,8 @@ export function TaskCreateDrawer({
         billable: form.billable,
         requiresVideo: form.requiresVideo,
         dueDate: form.dueDate || null,
+        sprintId: form.sprintId ? Number(form.sprintId) : null,
+        storyPoints: form.storyPoints ? Number(form.storyPoints) : null,
       };
       if (form.status === "BLOCKED" && form.reasonNextAction) {
         body.reasonNextAction = form.reasonNextAction;
@@ -306,6 +311,32 @@ export function TaskCreateDrawer({
                 value={form.estimatedTime}
                 onChange={(e) => setForm({ ...form, estimatedTime: e.target.value })}
                 placeholder="phút"
+              />
+            </div>
+
+            {sprints.length > 0 && (
+              <div className="jm-field">
+                <span className="jf-label">Sprint</span>
+                <select value={form.sprintId} onChange={(e) => setForm({ ...form, sprintId: e.target.value })}>
+                  <option value="">— Chưa có sprint —</option>
+                  {sprints.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.status === "ACTIVE" ? "▶ " : ""}{s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="jm-field">
+              <span className="jf-label">Story Points</span>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={form.storyPoints}
+                onChange={(e) => setForm({ ...form, storyPoints: e.target.value })}
+                placeholder="1–100"
               />
             </div>
 

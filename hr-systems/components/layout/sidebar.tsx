@@ -42,6 +42,7 @@ import {
   GitBranch as WorkflowIcon,
   Warehouse,
   ChevronUp,
+  Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -69,6 +70,7 @@ function useNavSections(): NavSection[] {
       title: "Công việc",
       items: [
         { label: t("nav.tasks"), href: "/tasks", icon: ListTodo },
+        { label: "Sprint", href: "/sprints", icon: Zap },
         { label: t("nav.timeLogs"), href: "/time-logs", icon: Clock4 },
         { label: t("nav.officeTime"), href: "/office-time", icon: Clock },
         { label: t("nav.taskTemplates"), href: "/task-templates", icon: Layers },

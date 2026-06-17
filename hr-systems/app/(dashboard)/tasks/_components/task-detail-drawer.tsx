@@ -2,10 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/lib/contexts/current-user-context";
 import { useLocale } from "@/lib/i18n/context";
 import { RichTextEditor } from "@/components/shared/rich-text-editor";
 import { TimerButton } from "@/components/tracking/timer-button";
+import { RecurrenceEditor } from "@/components/tasks/RecurrenceEditor";
+import type { RecurrenceFrequency } from "@/lib/recurrence";
 
 type SubTask = { id: number; code: string; title: string; status: string; progressPct: number };
 type TimeLogEntry = {
@@ -45,7 +48,19 @@ type TaskDetail = {
   subTasks: SubTask[];
   timeLogs: TimeLogEntry[];
   _count: { timeLogs: number; subTasks: number };
+  sprintId?: number | null;
+  sprint?: { id: number; name: string; status: string } | null;
+  storyPoints?: number | null;
 };
+
+type Attachment = { id: number; fileName: string; fileUrl: string; fileSize: number | null; mimeType: string | null; createdAt: string; uploadedBy: { id: number; fullName: string } };
+
+type Sprint = { id: number; name: string; status: string };
+type ChecklistItem = { id: number; content: string; checked: boolean; order: number };
+type Watcher = { employeeId: number; employee: { id: number; fullName: string; avatarUrl: string | null } };
+type DepTask = { id: number; code: string; title: string; status: string; priority: string };
+type Dependency = { id: number; type: string; dependsOn: DepTask };
+type BlockedByDep = { id: number; type: string; task: DepTask };
 
 type Props = {
   taskId: number | null;
@@ -54,6 +69,7 @@ type Props = {
   employees: { id: number; fullName: string; department: string | null }[];
   customers: { id: number; customerName: string | null; businessName: string | null }[];
   isManager: boolean;
+  labelConfig?: unknown;
   onSaved: () => void;
   onOpenTask?: (id: number) => void;
 };
@@ -84,6 +100,13 @@ const STATUS_CHIP_CLS: Record<string, string> = {
   CANCELLED: "backlogc",
 };
 
+const PRIO_LABEL: Record<string, string> = {
+  CRITICAL: "Khẩn cấp",
+  HIGH: "Cao",
+  NORMAL: "Bình thường",
+  LOW: "Thấp",
+};
+
 function prioCls(p: string) {
   return PRIORITIES.find((x) => x.value === p)?.cls ?? "md";
 }
@@ -106,17 +129,299 @@ function initials(name: string) {
 
 export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, isManager, onSaved, onOpenTask }: Props) {
   const { t } = useLocale();
+  const router = useRouter();
   const authUser = useCurrentUser();
   const currentUserId = authUser.employeeId;
 
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState<"desc" | "activity">("desc");
+  const [tab, setTab] = useState<"desc" | "activity" | "comments">("desc");
 
-  const [titleDraft, setTitleDraft] = useState("");
+  /* Comments */
+  type CmtAuthor = { id: number; fullName: string; avatarUrl: string | null };
+  type CmtReply = { id: number; content: string; author: CmtAuthor; createdAt: string };
+  type Cmt = { id: number; content: string; author: CmtAuthor; createdAt: string; replies: CmtReply[] };
+  const [comments, setComments] = useState<Cmt[]>([]);
+  const [cmtLoaded, setCmtLoaded] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [cmtSaving, setCmtSaving] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
+
+  async function loadComments(taskId: number) {
+    const res = await fetch(`/api/tasks/${taskId}/comments`);
+    if (res.ok) { const j = await res.json(); setComments(j.data ?? []); }
+    setCmtLoaded(true);
+  }
+
+  async function submitComment() {
+    if (!task || !newComment.trim() || cmtSaving) return;
+    setCmtSaving(true);
+    const res = await fetch(`/api/tasks/${task.id}/comments`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: newComment.trim() }),
+    });
+    setCmtSaving(false);
+    if (res.ok) { const j = await res.json(); setComments((p) => [j.data, ...p]); setNewComment(""); }
+  }
+
+  async function submitReply(parentId: number) {
+    if (!task || !replyText.trim()) return;
+    const res = await fetch(`/api/tasks/${task.id}/comments`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: replyText.trim(), parentId }),
+    });
+    if (res.ok) {
+      const j = await res.json();
+      setComments((p) => p.map((c) => c.id === parentId ? { ...c, replies: [...c.replies, j.data] } : c));
+      setReplyingTo(null); setReplyText("");
+    }
+  }
+
+  async function deleteComment(commentId: number) {
+    if (!task || !confirm("Xóa bình luận này?")) return;
+    const res = await fetch(`/api/tasks/${task.id}/comments/${commentId}`, { method: "DELETE" });
+    if (res.ok) setComments((p) => p.filter((c) => c.id !== commentId));
+  }
+
+  async function loadSprints() {
+    if (sprintsLoaded) return;
+    const res = await fetch("/api/sprints");
+    if (res.ok) { const j = await res.json(); setSprints(j.data ?? []); }
+    setSprintsLoaded(true);
+  }
+
+  async function loadChecklist(taskId: number) {
+    if (checklistLoaded) return;
+    const res = await fetch(`/api/tasks/${taskId}/checklist`);
+    if (res.ok) { const j = await res.json(); setChecklist(j.data ?? []); }
+    setChecklistLoaded(true);
+  }
+
+  async function loadWatchers(taskId: number) {
+    if (watchersLoaded) return;
+    const res = await fetch(`/api/tasks/${taskId}/watchers`);
+    if (res.ok) { const j = await res.json(); setWatchers(j.data ?? []); setIsWatching(j.isWatching ?? false); }
+    setWatchersLoaded(true);
+  }
+
+  async function toggleWatch() {
+    if (!task || watchSaving) return;
+    setWatchSaving(true);
+    if (isWatching) {
+      const empId = currentUserId;
+      const res = await fetch(`/api/tasks/${task.id}/watchers/${empId}`, { method: "DELETE" });
+      if (res.ok) { setIsWatching(false); setWatchers((p) => p.filter((w) => w.employeeId !== empId)); }
+    } else {
+      const res = await fetch(`/api/tasks/${task.id}/watchers`, { method: "POST" });
+      if (res.ok) { const j = await res.json(); setIsWatching(true); setWatchers((p) => [...p, j.data]); }
+    }
+    setWatchSaving(false);
+  }
+
+  async function addCheckItem() {
+    if (!task || !newCheckItem.trim() || checkItemSaving) return;
+    setCheckItemSaving(true);
+    const res = await fetch(`/api/tasks/${task.id}/checklist`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: newCheckItem.trim() }),
+    });
+    if (res.ok) { const j = await res.json(); setChecklist((p) => [...p, j.data]); setNewCheckItem(""); }
+    setCheckItemSaving(false);
+  }
+
+  async function toggleCheckItem(itemId: number, checked: boolean) {
+    if (!task) return;
+    const res = await fetch(`/api/tasks/${task.id}/checklist/${itemId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ checked }),
+    });
+    if (res.ok) setChecklist((p) => p.map((i) => i.id === itemId ? { ...i, checked } : i));
+  }
+
+  async function deleteCheckItem(itemId: number) {
+    if (!task) return;
+    const res = await fetch(`/api/tasks/${task.id}/checklist/${itemId}`, { method: "DELETE" });
+    if (res.ok) setChecklist((p) => p.filter((i) => i.id !== itemId));
+  }
+
+  async function loadDeps(taskId: number) {
+    if (depsLoaded) return;
+    const res = await fetch(`/api/tasks/${taskId}/dependencies`);
+    if (res.ok) { const j = await res.json(); setBlocking(j.data.blocking ?? []); setBlockedBy(j.data.blockedBy ?? []); }
+    setDepsLoaded(true);
+  }
+
+  async function addDep() {
+    if (!task || !depSearch.trim() || depSaving) return;
+    // search by code or title
+    const searchRes = await fetch(`/api/tasks?search=${encodeURIComponent(depSearch.trim())}`);
+    if (!searchRes.ok) return;
+    const { data } = await searchRes.json();
+    const found = data?.[0];
+    if (!found) { alert("Không tìm thấy task"); return; }
+    setDepSaving(true);
+    const res = await fetch(`/api/tasks/${task.id}/dependencies`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dependsOnId: found.id, type: depType }),
+    });
+    if (res.ok) {
+      const j = await res.json();
+      setBlocking((p) => [...p, j.data]);
+      setDepSearch(""); setAddingDep(false);
+    }
+    setDepSaving(false);
+  }
+
+  async function removeDep(depId: number, direction: "blocking" | "blockedBy") {
+    if (!task) return;
+    const res = await fetch(`/api/tasks/${task.id}/dependencies/${depId}`, { method: "DELETE" });
+    if (res.ok) {
+      if (direction === "blocking") setBlocking((p) => p.filter((d) => d.id !== depId));
+      else setBlockedBy((p) => p.filter((d) => d.id !== depId));
+    }
+  }
+
+  async function loadAttachments(taskId: number) {
+    const res = await fetch(`/api/tasks/${taskId}/attachments`);
+    if (res.ok) { const j = await res.json(); setAttachments(j.data ?? []); }
+  }
+
+  async function uploadAttachment(file: File) {
+    if (!task) return;
+    setAttachUploading(true);
+    // Upload via FormData to a generic upload endpoint, or store as base64 URL for simple cases
+    // Using a simple approach: POST metadata + fileUrl from a file reader (for OneDrive-less fallback)
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = e.target?.result as string;
+      const res = await fetch(`/api/tasks/${task.id}/attachments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileUrl: dataUrl,
+          fileSize: file.size,
+          mimeType: file.type,
+        }),
+      });
+      if (res.ok) { const j = await res.json(); setAttachments((p) => [j.data, ...p]); }
+      setAttachUploading(false);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function deleteAttachment(attId: number) {
+    if (!task || !confirm("Xóa file đính kèm này?")) return;
+    const res = await fetch(`/api/tasks/${task.id}/attachments/${attId}`, { method: "DELETE" });
+    if (res.ok) setAttachments((p) => p.filter((a) => a.id !== attId));
+  }
+
+  function handleCommentChange(value: string) {
+    setNewComment(value);
+    // Detect @mention
+    const lastAt = value.lastIndexOf("@");
+    if (lastAt !== -1) {
+      const afterAt = value.slice(lastAt + 1);
+      if (!afterAt.includes(" ") && !afterAt.includes("\n")) {
+        setMentionQuery(afterAt.toLowerCase());
+        setMentionAnchor(lastAt);
+        setShowMentions(true);
+        return;
+      }
+    }
+    setShowMentions(false);
+    setMentionAnchor(null);
+  }
+
+  function insertMention(emp: { id: number; fullName: string }) {
+    if (mentionAnchor === null) return;
+    const before = newComment.slice(0, mentionAnchor);
+    const after = newComment.slice(mentionAnchor + 1 + mentionQuery.length);
+    setNewComment(`${before}@${emp.fullName} ${after}`);
+    setShowMentions(false);
+    setMentionAnchor(null);
+    setTimeout(() => cmtTextareaRef.current?.focus(), 10);
+  }
+
+  function renderCommentContent(content: string) {
+    // Highlight @mentions
+    const parts = content.split(/(@\S+)/g);
+    return parts.map((part, i) =>
+      part.startsWith("@") ? (
+        <span key={i} style={{ color: "var(--accent)", fontWeight: 600 }}>{part}</span>
+      ) : part
+    );
+  }
+
+  function formatFileSize(bytes: number | null) {
+    if (!bytes) return "";
+    if (bytes < 1024) return `${bytes}B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+  }
+
+  function fileIcon(mime: string | null) {
+    if (!mime) return "📎";
+    if (mime.startsWith("image/")) return "🖼️";
+    if (mime.includes("pdf")) return "📄";
+    if (mime.includes("word") || mime.includes("document")) return "📝";
+    if (mime.includes("sheet") || mime.includes("excel")) return "📊";
+    if (mime.includes("zip") || mime.includes("archive")) return "🗜️";
+    return "📎";
+  }
+
+  /* Sprint */
+  const [sprints, setSprints] = useState<Sprint[]>([]);
+  const [sprintsLoaded, setSprintsLoaded] = useState(false);
+
+  /* Checklist */
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [checklistLoaded, setChecklistLoaded] = useState(false);
+  const [newCheckItem, setNewCheckItem] = useState("");
+  const [checkItemSaving, setCheckItemSaving] = useState(false);
+  const [addingCheckItem, setAddingCheckItem] = useState(false);
+  const checkItemInputRef = useRef<HTMLInputElement>(null);
+
+  /* Watchers */
+  const [watchers, setWatchers] = useState<Watcher[]>([]);
+  const [isWatching, setIsWatching] = useState(false);
+  const [watchersLoaded, setWatchersLoaded] = useState(false);
+  const [watchSaving, setWatchSaving] = useState(false);
+
+  /* Dependencies */
+  const [blocking, setBlocking] = useState<Dependency[]>([]);
+  const [blockedBy, setBlockedBy] = useState<BlockedByDep[]>([]);
+  const [depsLoaded, setDepsLoaded] = useState(false);
+  const [addingDep, setAddingDep] = useState(false);
+  const [depSearch, setDepSearch] = useState("");
+  const [depType, setDepType] = useState("BLOCKS");
+  const [depSaving, setDepSaving] = useState(false);
+
+  /* Attachments */
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachUploading, setAttachUploading] = useState(false);
+  const attachInputRef = useRef<HTMLInputElement>(null);
+
+  /* Recurrence */
+  type RecurrenceData = {
+    id?: number; frequency: RecurrenceFrequency; interval: number; daysOfWeek: number[];
+    dayOfMonth: number | null; endDate: string | null; maxOccurrences: number | null;
+    nextRunAt: string; lastRunAt: string | null; isActive: boolean; occurrenceCount: number;
+  };
+  const [recurrence, setRecurrence] = useState<RecurrenceData | null>(null);
+
+  /* Mentions */
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionAnchor, setMentionAnchor] = useState<number | null>(null);
+  const [showMentions, setShowMentions] = useState(false);
+  const cmtTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const [titleDraft, setTitleDraft] = useState<string | null>(null);
   const [descHtml, setDescHtml] = useState("");
   const [descSaved, setDescSaved] = useState("");
   const [descDirty, setDescDirty] = useState(false);
+  const [descEditing, setDescEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [descSaving, setDescSaving] = useState(false);
   const [estimatedDraft, setEstimatedDraft] = useState("");
@@ -127,27 +432,70 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
   const [subTaskDescOpen, setSubTaskDescOpen] = useState(false);
   const [subTaskSaving, setSubTaskSaving] = useState(false);
   const subTaskInputRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+
+  function autoResizeTitle() {
+    requestAnimationFrame(() => {
+      const el = titleRef.current;
+      if (!el) return;
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    });
+  }
 
   useEffect(() => {
     if (!open || !taskId) {
       setTask(null);
       setTab("desc");
+      setChecklist([]);
+      setChecklistLoaded(false);
+      setWatchers([]);
+      setWatchersLoaded(false);
+      setIsWatching(false);
+      setBlocking([]); setBlockedBy([]); setDepsLoaded(false);
+      setRecurrence(null);
       return;
     }
     setLoading(true);
+    setComments([]);
+    setCmtLoaded(false);
+    setChecklist([]);
+    setChecklistLoaded(false);
+    setWatchers([]);
+    setWatchersLoaded(false);
+    setIsWatching(false);
+    setBlocking([]); setBlockedBy([]); setDepsLoaded(false);
     fetch(`/api/tasks/${taskId}`)
       .then((r) => r.json())
       .then((j) => {
         setTask(j.data ?? null);
+        setTitleDraft(null);
         const desc = j.data?.description ?? "";
         setDescHtml(desc);
         setDescSaved(desc);
         setDescDirty(false);
+        setDescEditing(false);
+        setNewComment("");
         setTab("desc");
         setLoading(false);
+        if (j.data) {
+          loadChecklist(j.data.id);
+          loadWatchers(j.data.id);
+          loadDeps(j.data.id);
+          loadAttachments(j.data.id);
+          fetch(`/api/tasks/${j.data.id}/recurrence`).then(r => r.json()).then(rj => setRecurrence(rj.data ?? null));
+        }
       })
       .catch(() => setLoading(false));
   }, [open, taskId]);
+
+  useEffect(() => {
+    if (task) autoResizeTitle();
+  }, [task]);
+
+  useEffect(() => {
+    if (tab === "comments" && task && !cmtLoaded) loadComments(task.id);
+  }, [tab, task]);
 
   async function patch(data: Record<string, unknown>) {
     if (!task) return;
@@ -171,9 +519,10 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
   }
 
   async function saveTitle() {
-    if (!task) return;
+    if (!task || titleDraft === null) return;
     const trimmed = titleDraft.trim();
     if (trimmed && trimmed !== task.title) await patch({ title: trimmed });
+    setTitleDraft(null);
   }
 
   async function saveDesc() {
@@ -183,12 +532,14 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
     await patch({ description: normalized || null });
     setDescSaved(normalized);
     setDescDirty(false);
+    setDescEditing(false);
     setDescSaving(false);
   }
 
   function cancelDesc() {
     setDescHtml(descSaved);
     setDescDirty(false);
+    setDescEditing(false);
   }
 
   function openAddSubtask() {
@@ -239,146 +590,488 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
 
   if (!open) return null;
 
+  const prioDotColor = prioCls(task?.priority ?? "NORMAL") === "hi" ? "var(--danger)" : prioCls(task?.priority ?? "NORMAL") === "md" ? "var(--warn)" : "var(--ok)";
+
   return (
     <div className="td-back open" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="td-drawer open">
         {task && !loading ? (
           <>
-            {/* Header */}
+            {/* ── Header ── */}
             <div className="td-head">
               <span className="td-type" style={{ background: typeColor(task.taskType) }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  <path d="M9 11l3 3L22 4" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                 </svg>
               </span>
-              <span className="td-key">{task.code} · {t(`taskType.${task.taskType}`) || task.taskType}</span>
-              <div className="td-actions">
-                {saving && <span style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>{t("common.saving")}</span>}
-                {currentUserId && (
-                  <TimerButton
-                    taskId={task.id}
-                    assigneeId={task.assignedTo.id}
-                    currentUserId={currentUserId}
-                    onChange={() => {
-                      fetch(`/api/tasks/${task.id}`)
-                        .then((r) => r.json())
-                        .then((j) => j.data && setTask(j.data))
-                        .catch(() => {});
-                    }}
-                  />
-                )}
-                <Link href={`/time-logs?taskId=${task.id}`} onClick={onClose} className="abtn ghost">
-                  {t("tasks.logTime")}
-                </Link>
+              <span className="td-key">{task.code} · {task.taskType.replace("_", " ")}</span>
+              {saving && <span style={{ fontSize: "0.72rem", color: "var(--text-3)", marginLeft: 4 }}>Đang lưu…</span>}
+              <div className="td-head-right">
+                {/* Watch */}
+                <button className="td-icon-btn" title={isWatching ? "Đang theo dõi (click để bỏ)" : "Theo dõi task"}
+                  onClick={toggleWatch} disabled={watchSaving}
+                  style={isWatching ? { color: "var(--accent)", background: "var(--accent-soft)" } : undefined}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill={isWatching ? "var(--accent)" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </button>
+                {/* Share / copy link */}
+                <button className="td-icon-btn" title="Sao chép link"
+                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/tasks/${task.id}`).catch(() => {})}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                    <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
+                  </svg>
+                </button>
+                {/* More options */}
+                <button className="td-icon-btn" title="Thêm tùy chọn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>
+                  </svg>
+                </button>
+                {/* Expand to full page */}
+                <button className="td-icon-btn" title="Mở trang chi tiết"
+                  onClick={() => { onClose(); router.refresh(); router.push(`/tasks/${task.id}`); }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                  </svg>
+                </button>
+                {/* Close */}
+                <button className="td-icon-btn td-close" onClick={onClose} aria-label="Đóng">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M6 6l12 12M18 6L6 18"/>
+                  </svg>
+                </button>
               </div>
-              <button className="td-close" onClick={onClose} aria-label="Đóng">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
             </div>
 
-            {/* Body */}
+            {/* ── Body ── */}
             <div className="td-body">
-              {/* Left */}
+              {/* Left panel */}
               <div className="td-left">
-                <div className="td-desc-section">
-                  <input
+                {/* Title */}
+                <div className="td-title-wrap">
+                  <textarea
+                    ref={titleRef}
                     className="td-title-edit"
-                    value={titleDraft || task.title}
-                    onFocus={() => setTitleDraft(task.title)}
-                    onChange={(e) => setTitleDraft(e.target.value)}
-                    onBlur={() => { saveTitle(); setTitleDraft(""); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                    rows={1}
+                    value={titleDraft ?? task.title}
+                    onFocus={() => { setTitleDraft(task.title); autoResizeTitle(); }}
+                    onChange={(e) => { setTitleDraft(e.target.value); autoResizeTitle(); }}
+                    onBlur={saveTitle}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); }
+                      if (e.key === "Escape") { setTitleDraft(null); (e.target as HTMLTextAreaElement).blur(); }
+                    }}
                   />
-
                   {task.status === "BLOCKED" && task.reasonNextAction && (
-                    <div style={{ fontSize: "0.84rem", color: "var(--danger)", background: "var(--danger-soft)", border: "1px solid var(--danger)", padding: "8px 12px", borderRadius: 8, margin: "0 0 10px" }}>
-                      <b>{t("tasks.reasonNextAction")}:</b> {task.reasonNextAction}
+                    <div className="td-blocked-note">
+                      <b>Lý do blocked:</b> {task.reasonNextAction}
                     </div>
                   )}
+                </div>
 
-                  <div className="td-tabs">
-                    <button className={`td-tab${tab === "desc" ? " on" : ""}`} onClick={() => setTab("desc")}>{t("common.description")}</button>
-                    <button className={`td-tab${tab === "activity" ? " on" : ""}`} onClick={() => setTab("activity")}>
-                      {t("tasks.activity")}{task._count.timeLogs > 0 ? ` (${task._count.timeLogs})` : ""}
-                    </button>
+                {/* Action bar */}
+                <div className="td-action-bar2">
+                  {currentUserId && (
+                    <TimerButton
+                      taskId={task.id}
+                      assigneeId={task.assignedTo.id}
+                      currentUserId={currentUserId}
+                      onChange={() => {
+                        fetch(`/api/tasks/${task.id}`)
+                          .then((r) => r.json())
+                          .then((j) => j.data && setTask(j.data))
+                          .catch(() => {});
+                      }}
+                    />
+                  )}
+                  <Link href={`/time-logs?taskId=${task.id}`} onClick={onClose} className="abtn ghost" style={{ gap: 7 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+                    </svg>
+                    Log Time
+                  </Link>
+                </div>
+
+                {/* Tabs */}
+                <div className="td-tabs">
+                  <button className={`td-tab${tab === "desc" ? " on" : ""}`} onClick={() => setTab("desc")}>Mô tả</button>
+                  <button className={`td-tab${tab === "comments" ? " on" : ""}`} onClick={() => setTab("comments")}>
+                    Bình luận{task._count.timeLogs > 0 ? ` (${task._count.timeLogs})` : ""}
+                  </button>
+                  <button className={`td-tab${tab === "activity" ? " on" : ""}`} onClick={() => setTab("activity")}>Hoạt động</button>
+                </div>
+
+                {/* Panes */}
+                <div className="td-pane-wrap">
+                  {/* Mô tả */}
+                  <div className={`td-pane${tab === "desc" ? " on" : ""}`}>
+                    {descEditing ? (
+                      <>
+                        <RichTextEditor
+                          value={descHtml}
+                          onChange={(html) => {
+                            setDescHtml(html);
+                            const normalized = html === "<p></p>" ? "" : html;
+                            setDescDirty(normalized !== descSaved);
+                          }}
+                          placeholder="Thêm mô tả chi tiết, acceptance criteria, ghi chú…"
+                          minHeight={160}
+                        />
+                        <div className="td-desc-foot">
+                          <button className="abtn ghost" onClick={cancelDesc} disabled={descSaving}>Hủy</button>
+                          <button className="abtn primary" onClick={saveDesc} disabled={descSaving}>
+                            {descSaving ? "Đang lưu…" : "Lưu mô tả"}
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div onClick={() => setDescEditing(true)} className="td-desc-view" title="Click để chỉnh sửa">
+                        {descSaved
+                          ? <div className="prose prose-sm max-w-none" style={{ color: "var(--text-2)", lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: descSaved }} />
+                          : <span style={{ color: "var(--text-3)", fontSize: "0.88rem" }}>Thêm mô tả chi tiết, acceptance criteria, ghi chú…</span>
+                        }
+                      </div>
+                    )}
                   </div>
 
-                  <div className="td-pane-wrap">
-                    <div className={`td-pane${tab === "desc" ? " on" : ""}`}>
-                      <RichTextEditor
-                        value={descHtml}
-                        onChange={(html) => {
-                          setDescHtml(html);
-                          const normalized = html === "<p></p>" ? "" : html;
-                          setDescDirty(normalized !== descSaved);
+                  {/* Bình luận */}
+                  <div className={`td-pane${tab === "comments" ? " on" : ""}`}>
+                    <div className="td-cmt-input-wrap" style={{ position: "relative" }}>
+                      <textarea
+                        ref={cmtTextareaRef}
+                        className="td-cmt-input"
+                        rows={2}
+                        placeholder="Thêm bình luận… (Ctrl+Enter để gửi, @ để mention)"
+                        value={newComment}
+                        onChange={(e) => handleCommentChange(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); submitComment(); }
+                          if (e.key === "Escape") setShowMentions(false);
                         }}
-                        placeholder={t("tasks.addDescription")}
-                        minHeight={140}
+                        onBlur={() => setTimeout(() => setShowMentions(false), 150)}
                       />
-                      {descDirty && (
-                        <div className="td-desc-foot">
-                          <button className="abtn ghost" onClick={cancelDesc} disabled={descSaving}>{t("common.cancel")}</button>
-                          <button className="abtn primary" onClick={saveDesc} disabled={descSaving}>
-                            {descSaving ? t("common.saving") : t("common.save")}
+                      {/* Mention dropdown */}
+                      {showMentions && (
+                        <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 100, background: "var(--content)", border: "1px solid var(--border)", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", minWidth: 200, maxHeight: 180, overflowY: "auto" }}>
+                          {employees
+                            .filter((e) => e.fullName.toLowerCase().includes(mentionQuery))
+                            .slice(0, 6)
+                            .map((e) => (
+                              <button key={e.id} onMouseDown={() => insertMention(e)}
+                                style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", textAlign: "left", fontSize: "0.84rem", color: "var(--text)" }}
+                                onMouseEnter={(ev) => (ev.currentTarget.style.background = "var(--elev)")}
+                                onMouseLeave={(ev) => (ev.currentTarget.style.background = "none")}>
+                                <span style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--accent-soft)", color: "var(--accent)", display: "grid", placeItems: "center", fontSize: "0.72rem", fontWeight: 700, flexShrink: 0 }}>
+                                  {e.fullName.charAt(0).toUpperCase()}
+                                </span>
+                                {e.fullName}
+                              </button>
+                            ))}
+                          {employees.filter((e) => e.fullName.toLowerCase().includes(mentionQuery)).length === 0 && (
+                            <div style={{ padding: "10px 14px", color: "var(--text-3)", fontSize: "0.82rem" }}>Không tìm thấy</div>
+                          )}
+                        </div>
+                      )}
+                      {newComment.trim() && (
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginTop: 6 }}>
+                          <button className="abtn ghost" style={{ height: 28, fontSize: "0.78rem" }} onClick={() => setNewComment("")}>Hủy</button>
+                          <button className="abtn primary" style={{ height: 28, fontSize: "0.78rem" }} onClick={submitComment} disabled={cmtSaving}>
+                            {cmtSaving ? "Đang gửi…" : "Gửi"}
                           </button>
                         </div>
                       )}
                     </div>
 
-                    <div className={`td-pane${tab === "activity" ? " on" : ""}`}>
-                      <div className="td-activity">
-                        {task.timeLogs?.length > 0 ? (
-                          <>
-                            {task.timeLogs.slice(0, 15).map((log) => (
-                              <div key={log.id} className="td-act">
-                                <span className="cav">{initials(log.employee.fullName)}</span>
-                                <span className="atxt">
-                                  <b>{log.employee.fullName}</b> đã log <b>{formatMin(log.durationMinutes)}</b>
-                                  {log.note ? ` — ${log.note}` : ""}
-                                  <span className="at">{new Date(log.date).toLocaleDateString()} · {t(`approvalStatus.${log.approvalStatus}`) || log.approvalStatus}</span>
-                                </span>
+                    <div className="td-activity" style={{ padding: "8px 22px 16px" }}>
+                      {!cmtLoaded && <div style={{ color: "var(--text-3)", fontSize: "0.84rem" }}>Đang tải…</div>}
+                      {cmtLoaded && comments.length === 0 && (
+                        <div style={{ color: "var(--text-3)", fontSize: "0.84rem" }}>Chưa có bình luận nào.</div>
+                      )}
+                      {comments.map((c) => (
+                        <div key={c.id} style={{ display: "flex", gap: 10, paddingTop: 12 }}>
+                          <span className="cav" style={{ width: 30, height: 30, flexShrink: 0 }}>{initials(c.author.fullName)}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 3 }}>
+                              <b style={{ fontSize: "0.84rem", color: "var(--text)" }}>{c.author.fullName}</b>
+                              <span style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>
+                                {new Date(c.createdAt).toLocaleDateString("vi-VN")} {new Date(c.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: "0.85rem", color: "var(--text-2)", lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{renderCommentContent(c.content)}</div>
+                            <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+                              <button className="c-reply-btn" onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}>↩ Phản hồi</button>
+                              {c.author.id === currentUserId && (
+                                <button className="c-reply-btn" style={{ color: "var(--danger)" }} onClick={() => deleteComment(c.id)}>Xóa</button>
+                              )}
+                            </div>
+
+                            {/* Replies */}
+                            {c.replies.length > 0 && (
+                              <div style={{ borderLeft: "1.5px solid var(--border-2)", paddingLeft: 12, marginTop: 8, display: "flex", flexDirection: "column", gap: 10 }}>
+                                {c.replies.map((r) => (
+                                  <div key={r.id} style={{ display: "flex", gap: 8 }}>
+                                    <span className="cav" style={{ width: 24, height: 24, fontSize: "0.6rem", flexShrink: 0 }}>{initials(r.author.fullName)}</span>
+                                    <div>
+                                      <div style={{ display: "flex", gap: 6, marginBottom: 2 }}>
+                                        <b style={{ fontSize: "0.8rem", color: "var(--text)" }}>{r.author.fullName}</b>
+                                        <span style={{ fontSize: "0.7rem", color: "var(--text-3)" }}>{new Date(r.createdAt).toLocaleDateString("vi-VN")}</span>
+                                      </div>
+                                      <div style={{ fontSize: "0.82rem", color: "var(--text-2)", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{r.content}</div>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                            {task._count.timeLogs > 15 && (
-                              <Link href={`/time-logs?taskId=${task.id}`} onClick={onClose} style={{ textAlign: "center", fontSize: "0.8rem", color: "var(--accent-ink)" }}>
-                                {t("common.viewAll")} ({task._count.timeLogs})
-                              </Link>
                             )}
-                          </>
-                        ) : (
-                          <span style={{ color: "var(--text-3)", fontSize: "0.84rem" }}>{t("tasks.noActivity") || "Chưa có hoạt động"}</span>
+
+                            {/* Reply input */}
+                            {replyingTo === c.id && (
+                              <div style={{ marginTop: 8 }}>
+                                <textarea
+                                  className="td-cmt-input"
+                                  rows={2}
+                                  placeholder={`Phản hồi ${c.author.fullName}…`}
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); submitReply(c.id); } }}
+                                  autoFocus
+                                  style={{ fontSize: "0.83rem" }}
+                                />
+                                <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", marginTop: 5 }}>
+                                  <button className="abtn ghost" style={{ height: 26, fontSize: "0.76rem" }} onClick={() => { setReplyingTo(null); setReplyText(""); }}>Hủy</button>
+                                  <button className="abtn primary" style={{ height: 26, fontSize: "0.76rem" }} onClick={() => submitReply(c.id)}>Gửi</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hoạt động */}
+                  <div className={`td-pane${tab === "activity" ? " on" : ""}`}>
+                    {task.timeLogs?.length > 0 ? (
+                      <div className="td-activity">
+                        {task.timeLogs.slice(0, 20).map((log) => (
+                          <div key={log.id} className="td-act">
+                            <span className="cav">{initials(log.employee.fullName)}</span>
+                            <span className="atxt">
+                              <b>{log.employee.fullName}</b> đã log <b>{formatMin(log.durationMinutes)}</b>
+                              {log.note ? ` — ${log.note}` : ""}
+                              <span className="at">{new Date(log.date).toLocaleDateString("vi-VN")} · {log.approvalStatus}</span>
+                            </span>
+                          </div>
+                        ))}
+                        {task._count.timeLogs > 20 && (
+                          <Link href={`/time-logs?taskId=${task.id}`} onClick={onClose} style={{ fontSize: "0.8rem", color: "var(--accent-ink)", padding: "0 22px" }}>
+                            Xem tất cả ({task._count.timeLogs})
+                          </Link>
                         )}
                       </div>
-                    </div>
+                    ) : (
+                      <div style={{ padding: "20px 22px", color: "var(--text-3)", fontSize: "0.84rem" }}>
+                        Chưa có hoạt động nào. Dùng nút <b>Log Time</b> hoặc bấm timer để ghi nhận.
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Subtasks */}
+                {/* Attachments */}
                 <div className="td-sub-section">
                   <div className="td-st-wrap">
                     <div className="td-st-head">
-                      <span>{t("tasks.subTasks")}{task.subTasks?.length > 0 ? ` (${task.subTasks.length})` : ""}</span>
-                      {!addingSubtask && (
-                        <button className="st-add-btn" onClick={openAddSubtask}>+ {t("tasks.addSubtask")}</button>
+                      <span>ĐÍNH KÈM{attachments.length > 0 ? ` (${attachments.length})` : ""}</span>
+                      <button className="st-add-btn" onClick={() => attachInputRef.current?.click()} disabled={attachUploading}>
+                        {attachUploading ? "Đang tải…" : "+ Tải lên"}
+                      </button>
+                      <input ref={attachInputRef} type="file" style={{ display: "none" }}
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAttachment(f); e.target.value = ""; }} />
+                    </div>
+                    {attachments.map((att) => (
+                      <div key={att.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid var(--border)" }}>
+                        <span style={{ fontSize: "1rem", flexShrink: 0 }}>{fileIcon(att.mimeType)}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <a href={att.fileUrl} target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize: "0.83rem", color: "var(--accent-ink)", textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                            title={att.fileName}>{att.fileName}</a>
+                          <span style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>
+                            {att.uploadedBy.fullName} · {formatFileSize(att.fileSize)}
+                          </span>
+                        </div>
+                        <button onClick={() => deleteAttachment(att.id)}
+                          style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", fontSize: "0.75rem", padding: "2px 4px", flexShrink: 0 }}>✕</button>
+                      </div>
+                    ))}
+                    {!attachments.length && !attachUploading && (
+                      <div className="td-st-empty" onClick={() => attachInputRef.current?.click()}>
+                        + Kéo thả file hoặc click để tải lên
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Dependencies */}
+                {(blocking.length > 0 || blockedBy.length > 0 || isManager) && (
+                  <div className="td-sub-section">
+                    <div className="td-st-wrap">
+                      <div className="td-st-head">
+                        <span>LIÊN KẾT{blocking.length + blockedBy.length > 0 ? ` (${blocking.length + blockedBy.length})` : ""}</span>
+                        {isManager && !addingDep && (
+                          <button className="st-add-btn" onClick={() => setAddingDep(true)}>+ Thêm</button>
+                        )}
+                      </div>
+
+                      {blockedBy.length > 0 && (
+                        <div style={{ marginBottom: 6 }}>
+                          <div style={{ fontSize: "0.72rem", color: "var(--danger)", fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>Bị chặn bởi</div>
+                          {blockedBy.map((d) => (
+                            <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--border)" }}>
+                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: d.task.status === "DONE" ? "var(--ok)" : "var(--danger)", flexShrink: 0 }} />
+                              <span style={{ flex: 1, fontSize: "0.82rem", color: "var(--text)" }}>
+                                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--text-3)", marginRight: 4 }}>{d.task.code}</span>
+                                {d.task.title}
+                              </span>
+                              <span style={{ fontSize: "0.72rem", color: d.task.status === "DONE" ? "var(--ok)" : "var(--text-3)", flexShrink: 0 }}>{d.task.status.replace("_", " ")}</span>
+                              {isManager && (
+                                <button onClick={() => removeDep(d.id, "blockedBy")} style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", fontSize: "0.72rem", padding: "2px 4px" }}>✕</button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {blocking.length > 0 && (
+                        <div style={{ marginBottom: 6 }}>
+                          <div style={{ fontSize: "0.72rem", color: "var(--text-3)", fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>Liên kết đến</div>
+                          {blocking.map((d) => (
+                            <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--border)" }}>
+                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: d.type === "BLOCKS" ? "var(--warn)" : "var(--text-3)", flexShrink: 0 }} />
+                              <span style={{ flex: 1, fontSize: "0.82rem", color: "var(--text)" }}>
+                                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--text-3)", marginRight: 4 }}>{d.dependsOn.code}</span>
+                                {d.dependsOn.title}
+                              </span>
+                              <span style={{ fontSize: "0.7rem", color: "var(--text-3)", flexShrink: 0, background: "var(--elev)", padding: "1px 6px", borderRadius: 4 }}>
+                                {d.type === "BLOCKS" ? "blocks" : d.type === "RELATES_TO" ? "relates" : "duplicate"}
+                              </span>
+                              {isManager && (
+                                <button onClick={() => removeDep(d.id, "blocking")} style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", fontSize: "0.72rem", padding: "2px 4px" }}>✕</button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {addingDep && (
+                        <div style={{ padding: "8px 0", display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <input value={depSearch} onChange={(e) => setDepSearch(e.target.value)}
+                              placeholder="Nhập mã task (VD: TSK-0012)…"
+                              onKeyDown={(e) => { if (e.key === "Enter") addDep(); if (e.key === "Escape") { setAddingDep(false); setDepSearch(""); } }}
+                              style={{ flex: 1, background: "var(--elev)", border: "1px solid var(--border-2)", borderRadius: 6, padding: "5px 10px", fontFamily: "inherit", fontSize: "0.84rem", color: "var(--text)", outline: "none" }}
+                            />
+                            <select value={depType} onChange={(e) => setDepType(e.target.value)}
+                              style={{ background: "var(--elev)", border: "1px solid var(--border-2)", borderRadius: 6, padding: "5px 8px", fontSize: "0.82rem", color: "var(--text)", outline: "none" }}>
+                              <option value="BLOCKS">Blocks</option>
+                              <option value="RELATES_TO">Relates to</option>
+                              <option value="DUPLICATES">Duplicates</option>
+                            </select>
+                          </div>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button className="abtn" onClick={addDep} disabled={depSaving || !depSearch.trim()} style={{ padding: "5px 12px" }}>Thêm</button>
+                            <button className="abtn ghost" onClick={() => { setAddingDep(false); setDepSearch(""); }} style={{ padding: "5px 10px" }}>Hủy</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {!blocking.length && !blockedBy.length && !addingDep && (
+                        <div className="td-st-empty" onClick={() => isManager && setAddingDep(true)}>
+                          {isManager ? "+ Thêm liên kết task" : "Chưa có liên kết"}
+                        </div>
                       )}
                     </div>
+                  </div>
+                )}
 
+                {/* Checklist */}
+                <div className="td-sub-section">
+                  <div className="td-st-wrap">
+                    <div className="td-st-head">
+                      <span>
+                        CHECKLIST
+                        {checklist.length > 0 && (
+                          <span style={{ marginLeft: 6, fontSize: "0.75rem", color: "var(--text-3)", fontWeight: 400 }}>
+                            {checklist.filter((i) => i.checked).length}/{checklist.length}
+                          </span>
+                        )}
+                      </span>
+                      {!addingCheckItem && (
+                        <button className="st-add-btn" onClick={() => { setAddingCheckItem(true); setTimeout(() => checkItemInputRef.current?.focus(), 50); }}>
+                          + Add Item
+                        </button>
+                      )}
+                    </div>
+                    {checklist.length > 0 && (
+                      <div style={{ padding: "4px 0 8px", width: "100%", height: 4, background: "var(--border)", borderRadius: 4, margin: "0 0 8px" }}>
+                        <div style={{ height: "100%", background: "var(--ok)", borderRadius: 4, width: `${Math.round((checklist.filter((i) => i.checked).length / checklist.length) * 100)}%`, transition: "width 0.3s" }} />
+                      </div>
+                    )}
+                    {checklist.map((item) => (
+                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--border)" }}>
+                        <input type="checkbox" checked={item.checked} onChange={(e) => toggleCheckItem(item.id, e.target.checked)}
+                          style={{ accentColor: "var(--accent)", flexShrink: 0, cursor: "pointer" }} />
+                        <span style={{ flex: 1, fontSize: "0.84rem", color: item.checked ? "var(--text-3)" : "var(--text)", textDecoration: item.checked ? "line-through" : undefined }}>
+                          {item.content}
+                        </span>
+                        <button onClick={() => deleteCheckItem(item.id)}
+                          style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: "2px 4px", fontSize: "0.75rem", opacity: 0.6 }}>✕</button>
+                      </div>
+                    ))}
+                    {addingCheckItem && (
+                      <div style={{ display: "flex", gap: 6, padding: "8px 0", alignItems: "center" }}>
+                        <input ref={checkItemInputRef} value={newCheckItem} onChange={(e) => setNewCheckItem(e.target.value)}
+                          placeholder="Nội dung checklist item…"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") { e.preventDefault(); addCheckItem(); }
+                            if (e.key === "Escape") { setAddingCheckItem(false); setNewCheckItem(""); }
+                          }}
+                          style={{ flex: 1, background: "var(--elev)", border: "1px solid var(--border-2)", borderRadius: 6, padding: "5px 10px", fontFamily: "inherit", fontSize: "0.84rem", color: "var(--text)", outline: "none" }}
+                        />
+                        <button className="abtn" onClick={addCheckItem} disabled={checkItemSaving || !newCheckItem.trim()} style={{ padding: "5px 12px" }}>Thêm</button>
+                        <button className="abtn ghost" onClick={() => { setAddingCheckItem(false); setNewCheckItem(""); }} style={{ padding: "5px 10px" }}>Hủy</button>
+                      </div>
+                    )}
+                    {!checklist.length && !addingCheckItem && (
+                      <div className="td-st-empty" onClick={() => { setAddingCheckItem(true); setTimeout(() => checkItemInputRef.current?.focus(), 50); }}>
+                        + Thêm mục checklist
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sub Tasks — bottom */}
+                <div className="td-sub-section">
+                  <div className="td-st-wrap">
+                    <div className="td-st-head">
+                      <span>SUB TASKS{task.subTasks?.length > 0 ? ` (${task.subTasks.length})` : ""}</span>
+                      {!addingSubtask && (
+                        <button className="st-add-btn" onClick={openAddSubtask}>+ Add Subtask</button>
+                      )}
+                    </div>
                     <div className="td-st-list">
                       {task.subTasks?.map((sub) => (
                         <div key={sub.id} className="td-st-item" onClick={() => onOpenTask?.(sub.id)} style={{ cursor: onOpenTask ? "pointer" : "default" }}>
                           <span className={`st-cb${sub.status === "DONE" ? " done" : ""}`} />
                           <span className={`st-name${sub.status === "DONE" ? " done" : ""}`}>{sub.code} · {sub.title}</span>
-                          <span className={`td-col-chip ${STATUS_CHIP_CLS[sub.status] ?? "backlogc"}`}>{t(`taskStatus.${sub.status}`) || sub.status}</span>
+                          <span className={`td-col-chip ${STATUS_CHIP_CLS[sub.status] ?? "backlogc"}`}>{sub.status.replace("_", " ")}</span>
                         </div>
                       ))}
-
                       {!task.subTasks?.length && !addingSubtask && (
-                        <div className="td-st-empty" onClick={openAddSubtask}>{t("tasks.addSubtask")}</div>
+                        <div className="td-st-empty" onClick={openAddSubtask}>+ Add Subtask</div>
                       )}
                     </div>
-
                     {addingSubtask && (
                       <div className="td-st-form">
                         <input
@@ -391,24 +1084,24 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                             if (e.key === "Enter" && !subTaskDescOpen) createSubTask();
                             if (e.key === "Escape") setAddingSubtask(false);
                           }}
-                          placeholder={t("tasks.subTaskTitlePlaceholder")}
+                          placeholder="Tiêu đề subtask..."
                         />
                         {!subTaskDescOpen ? (
-                          <div className="stf-desc" onClick={() => setSubTaskDescOpen(true)}>+ {t("common.description")}</div>
+                          <div className="stf-desc" onClick={() => setSubTaskDescOpen(true)}>+ Mô tả</div>
                         ) : (
                           <div style={{ marginTop: 8 }}>
-                            <RichTextEditor value={subTaskDesc} onChange={setSubTaskDesc} placeholder={t("tasks.addDescription")} minHeight={90} />
+                            <RichTextEditor value={subTaskDesc} onChange={setSubTaskDesc} placeholder="Mô tả subtask..." minHeight={90} />
                           </div>
                         )}
                         <div className="stf-foot">
                           <select value={subTaskStatus} onChange={(e) => setSubTaskStatus(e.target.value)}>
                             {["BACKLOG", "IN_PROGRESS", "REVIEW", "DONE"].map((s) => (
-                              <option key={s} value={s}>{t(`taskStatus.${s}`) || s}</option>
+                              <option key={s} value={s}>{s.replace("_", " ")}</option>
                             ))}
                           </select>
-                          <button className="abtn ghost" onClick={() => setAddingSubtask(false)}>{t("common.cancel")}</button>
+                          <button className="abtn ghost" onClick={() => setAddingSubtask(false)}>Hủy</button>
                           <button className="abtn primary" onClick={createSubTask} disabled={subTaskSaving || !subTaskTitle.trim()}>
-                            {subTaskSaving ? t("common.saving") : t("common.create")}
+                            {subTaskSaving ? "Đang tạo…" : "Tạo"}
                           </button>
                         </div>
                       </div>
@@ -417,60 +1110,43 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                 </div>
               </div>
 
-              {/* Right */}
+              {/* ── Right sidebar ── */}
               <div className="td-right">
                 <div className="td-meta-sec">Chi tiết</div>
 
+                {/* Trạng thái */}
                 <div className="td-meta-row">
-                  <span className="mrl">{t("common.status")}</span>
+                  <span className="mrl">Trạng thái</span>
                   <span className="mrv" style={{ position: "relative" }}>
-                    <span className={`td-col-chip ${STATUS_CHIP_CLS[task.status] ?? "backlogc"}`}>{t(`taskStatus.${task.status}`) || task.status}</span>
+                    <span className={`td-col-chip ${STATUS_CHIP_CLS[task.status] ?? "backlogc"}`}>{task.status.replace("_", " ")}</span>
                     <select value={task.status} onChange={(e) => patch({ status: e.target.value })} disabled={saving} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}>
-                      {STATUSES.map((s) => (
-                        <option key={s} value={s}>{t(`taskStatus.${s}`) || s}</option>
-                      ))}
+                      {STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
                     </select>
                   </span>
                 </div>
 
+                {/* Ưu tiên */}
                 <div className="td-meta-row">
-                  <span className="mrl">{t("common.priority")}</span>
-                  <span className="mrv prio-sel" style={{ padding: 0 }}>
-                    <span className={`prio-dot`} style={{ background: prioCls(task.priority) === "hi" ? "var(--danger)" : prioCls(task.priority) === "md" ? "var(--warn)" : "var(--ok)" }} />
-                    <span>{t(`taskPriority.${task.priority}`) || task.priority}</span>
+                  <span className="mrl">Ưu tiên</span>
+                  <span className="mrv" style={{ position: "relative" }}>
+                    <span className="prio-dot" style={{ background: prioDotColor }} />
+                    <span>{PRIO_LABEL[task.priority] ?? task.priority}</span>
                     {isManager && (
-                      <select value={task.priority} onChange={(e) => patch({ priority: e.target.value })} disabled={saving}>
-                        {PRIORITIES.map((p) => (
-                          <option key={p.value} value={p.value}>{t(`taskPriority.${p.value}`) || p.value}</option>
-                        ))}
+                      <select value={task.priority} onChange={(e) => patch({ priority: e.target.value })} disabled={saving} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}>
+                        {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{PRIO_LABEL[p.value] ?? p.value}</option>)}
                       </select>
                     )}
                   </span>
                 </div>
 
+                {/* Phụ trách */}
                 <div className="td-meta-row">
-                  <span className="mrl">{t("tasks.taskType")}</span>
+                  <span className="mrl">Phụ trách</span>
                   <span className="mrv">
+                    <span className="td-av-sm">{initials(task.assignedTo.fullName)}</span>
                     {isManager ? (
-                      <select value={task.taskType} onChange={(e) => patch({ taskType: e.target.value })} disabled={saving}>
-                        {TASK_TYPES.map((tp) => (
-                          <option key={tp.value} value={tp.value}>{t(`taskType.${tp.value}`) || tp.value}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span>{t(`taskType.${task.taskType}`) || task.taskType}</span>
-                    )}
-                  </span>
-                </div>
-
-                <div className="td-meta-row">
-                  <span className="mrl">{t("common.assignedTo")}</span>
-                  <span className="mrv">
-                    {isManager ? (
-                      <select value={String(task.assignedTo.id)} onChange={(e) => patch({ assignedToId: Number(e.target.value) })} disabled={saving}>
-                        {employees.map((e) => (
-                          <option key={e.id} value={e.id}>{e.fullName}</option>
-                        ))}
+                      <select value={String(task.assignedTo.id)} onChange={(e) => patch({ assignedToId: Number(e.target.value) })} disabled={saving} style={{ background: "transparent", border: "none", fontFamily: "inherit", fontSize: "0.84rem", color: "var(--text)", outline: "none", cursor: "pointer", flex: 1 }}>
+                        {employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
                       </select>
                     ) : (
                       <span>{task.assignedTo.fullName}</span>
@@ -478,95 +1154,68 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                   </span>
                 </div>
 
+                {/* Hỗ trợ */}
                 <div className="td-meta-row">
-                  <span className="mrl">{t("tasks.support") || "Hỗ trợ"}</span>
+                  <span className="mrl">Hỗ trợ</span>
                   <span className="mrv">
                     {isManager ? (
-                      <select value={task.support ? String(task.support.id) : ""} onChange={(e) => patch({ supportId: e.target.value ? Number(e.target.value) : null })} disabled={saving}>
+                      <select value={task.support ? String(task.support.id) : ""} onChange={(e) => patch({ supportId: e.target.value ? Number(e.target.value) : null })} disabled={saving} style={{ background: "transparent", border: "none", fontFamily: "inherit", fontSize: "0.84rem", color: "var(--text)", outline: "none", cursor: "pointer", width: "100%" }}>
                         <option value="">— Chưa chọn —</option>
-                        {employees.map((e) => (
-                          <option key={e.id} value={e.id}>{e.fullName}</option>
-                        ))}
+                        {employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
                       </select>
                     ) : (
-                      <span>{task.support?.fullName ?? t("common.none")}</span>
+                      <span>{task.support?.fullName ?? "—"}</span>
                     )}
                   </span>
                 </div>
 
+                {/* Ước tính */}
                 <div className="td-meta-row">
-                  <span className="mrl">{t("common.customer")}</span>
-                  <span className="mrv">
-                    {isManager ? (
-                      <select value={String(task.customer?.id ?? "")} onChange={(e) => patch({ customerId: e.target.value ? Number(e.target.value) : null })} disabled={saving}>
-                        <option value="">{t("common.none")}</option>
-                        {customers.map((c) => (
-                          <option key={c.id} value={c.id}>{c.businessName ?? c.customerName}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span>{task.customer ? (task.customer.businessName ?? task.customer.customerName) : t("common.none")}</span>
-                    )}
-                  </span>
-                </div>
-
-                {task.parentTask && (
-                  <div className="td-meta-row">
-                    <span className="mrl">{t("tasks.parentTask")}</span>
-                    <span className="mrv" style={{ fontFamily: "var(--font-mono)", color: "var(--accent-ink)" }}>{task.parentTask.code}</span>
-                  </div>
-                )}
-
-                {task.template && (
-                  <div className="td-meta-row">
-                    <span className="mrl">{t("tasks.template")}</span>
-                    <span className="mrv" style={{ fontFamily: "var(--font-mono)", fontSize: "0.78rem" }}>{task.template.code} · {task.template.title}</span>
-                  </div>
-                )}
-
-                <div className="td-meta-row">
-                  <span className="mrl">{t("tasks.progress")}</span>
-                  <span className="mrv" style={{ gap: 8 }}>
-                    <div style={{ flex: 1, height: 7, background: "var(--border)", borderRadius: 99, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${Math.min(task.progressPct, 100)}%`, background: task.progressPct >= 100 ? "var(--ok)" : "linear-gradient(90deg,#22c55e,#4ade80)", borderRadius: 99 }} />
-                    </div>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.74rem", color: "var(--text-3)" }}>{task.progressPct}%</span>
-                  </span>
-                </div>
-
-                <div className="td-meta-row">
-                  <span className="mrl">{t("tasks.estimatedTime")}</span>
+                  <span className="mrl">Ước tính</span>
                   <span className="mrv">
                     {isManager ? (
                       <input
-                        type="number"
-                        min={0}
+                        type="number" min={0}
                         value={estimatedDraft !== "" ? estimatedDraft : (task.estimatedTime ?? "")}
                         onChange={(e) => setEstimatedDraft(e.target.value)}
                         onFocus={() => setEstimatedDraft(task.estimatedTime?.toString() ?? "")}
-                        onBlur={(e) => {
-                          const val = e.target.value;
-                          patch({ estimatedTime: val ? Number(val) : null });
-                          setEstimatedDraft("");
-                        }}
-                        disabled={saving}
-                        placeholder="phút"
-                        style={{ width: 70, background: "var(--elev)", border: "1px solid var(--border-2)", borderRadius: 6, padding: "3px 6px", fontFamily: "inherit", fontSize: "0.82rem", color: "var(--text)", outline: "none" }}
+                        onBlur={(e) => { patch({ estimatedTime: e.target.value ? Number(e.target.value) : null }); setEstimatedDraft(""); }}
+                        disabled={saving} placeholder="phút"
+                        style={{ width: 64, background: "var(--elev)", border: "1px solid var(--border-2)", borderRadius: 6, padding: "3px 6px", fontFamily: "inherit", fontSize: "0.82rem", color: "var(--text)", outline: "none" }}
                       />
                     ) : (
                       <span>{formatMin(task.estimatedTime)}</span>
                     )}
-                    <span style={{ color: "var(--text-3)" }}>/</span>
-                    <span style={task.estimatedTime && task.actualTimeTotal > task.estimatedTime ? { color: "var(--danger)", fontWeight: 600 } : undefined}>{formatMin(task.actualTimeTotal)}</span>
+                    {task.actualTimeTotal > 0 && <span style={{ color: "var(--text-3)", fontSize: "0.8rem" }}>/ {formatMin(task.actualTimeTotal)} thực tế</span>}
                   </span>
                 </div>
 
+                {/* Story Points */}
                 <div className="td-meta-row">
-                  <span className="mrl">{t("tasks.dueDate")}</span>
+                  <span className="mrl">Story Points</span>
                   <span className="mrv">
                     {isManager ? (
                       <input
-                        type="date"
+                        type="number" min={1} max={100}
+                        value={task.storyPoints ?? ""}
+                        onChange={(e) => patch({ storyPoints: e.target.value ? Number(e.target.value) : null })}
+                        disabled={saving} placeholder="—"
+                        style={{ width: 52, background: "var(--elev)", border: "1px solid var(--border-2)", borderRadius: 6, padding: "3px 6px", fontFamily: "inherit", fontSize: "0.82rem", color: "var(--text)", outline: "none" }}
+                      />
+                    ) : (
+                      <span style={{ fontWeight: 600, color: task.storyPoints ? "var(--accent)" : "var(--text-3)" }}>
+                        {task.storyPoints ? `${task.storyPoints} SP` : "—"}
+                      </span>
+                    )}
+                  </span>
+                </div>
+
+                {/* Due date */}
+                <div className="td-meta-row">
+                  <span className="mrl">Hạn</span>
+                  <span className="mrv">
+                    {isManager ? (
+                      <input type="date"
                         value={task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : ""}
                         onChange={(e) => patch({ dueDate: e.target.value || null })}
                         disabled={saving}
@@ -574,61 +1223,140 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                       />
                     ) : (
                       <span style={task.isOverdue ? { color: "var(--danger)", fontWeight: 600 } : undefined}>
-                        {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : t("common.none")}
+                        {task.dueDate ? new Date(task.dueDate).toLocaleDateString("vi-VN") : "—"}
                       </span>
                     )}
                   </span>
                 </div>
 
-                <label className="td-meta-row" style={{ cursor: "pointer" }}>
-                  <span className="mrl">{t("tasks.billable")}</span>
-                  <span className="mrv">
-                    <input
-                      type="checkbox"
-                      checked={task.billable}
-                      disabled={saving || !isManager}
-                      onChange={(e) => isManager && patch({ billable: e.target.checked })}
-                      style={{ accentColor: "var(--accent)" }}
-                    />
-                    <span>{task.billable ? t("common.yes") : t("common.no")}</span>
-                  </span>
-                </label>
+                {/* Customer */}
+                {(task.customer || isManager) && (
+                  <div className="td-meta-row">
+                    <span className="mrl">Khách hàng</span>
+                    <span className="mrv">
+                      {isManager ? (
+                        <select value={String(task.customer?.id ?? "")} onChange={(e) => patch({ customerId: e.target.value ? Number(e.target.value) : null })} disabled={saving} style={{ background: "transparent", border: "none", fontFamily: "inherit", fontSize: "0.84rem", color: "var(--text)", outline: "none", cursor: "pointer", width: "100%" }}>
+                          <option value="">— Không —</option>
+                          {customers.map((c) => <option key={c.id} value={c.id}>{c.businessName ?? c.customerName}</option>)}
+                        </select>
+                      ) : (
+                        <span>{task.customer ? (task.customer.businessName ?? task.customer.customerName) : "—"}</span>
+                      )}
+                    </span>
+                  </div>
+                )}
 
-                <label className="td-meta-row" style={{ cursor: "pointer" }}>
-                  <span className="mrl">{t("tasks.requiresVideo")}</span>
-                  <span className="mrv">
-                    <input
-                      type="checkbox"
-                      checked={task.requiresVideo}
-                      disabled={saving || !isManager}
-                      onChange={(e) => isManager && patch({ requiresVideo: e.target.checked })}
-                      style={{ accentColor: "var(--accent)" }}
-                    />
-                    <span>{task.requiresVideo ? t("common.yes") : t("common.no")}</span>
-                  </span>
-                </label>
-
-                <div className="td-meta-sec">{t("common.assignedBy")}</div>
+                {/* Billable / Video */}
                 <div className="td-meta-row">
-                  <span className="mrl">{t("common.assignedBy")}</span>
-                  <span className="mrv">{task.assignedBy.fullName}</span>
+                  <span className="mrl">Billable</span>
+                  <label className="mrv" style={{ cursor: isManager ? "pointer" : "default", gap: 6 }}>
+                    <input type="checkbox" checked={task.billable} disabled={saving || !isManager}
+                      onChange={(e) => isManager && patch({ billable: e.target.checked })}
+                      style={{ accentColor: "var(--accent)" }} />
+                    <span style={{ color: task.billable ? "var(--ok)" : "var(--text-3)" }}>{task.billable ? "Có" : "Không"}</span>
+                  </label>
+                </div>
+
+                {/* Sprint */}
+                <div className="td-meta-row">
+                  <span className="mrl">Sprint</span>
+                  <span className="mrv">
+                    {isManager ? (
+                      <select
+                        value={task.sprintId ? String(task.sprintId) : ""}
+                        onFocus={() => loadSprints()}
+                        onChange={(e) => patch({ sprintId: e.target.value ? Number(e.target.value) : null })}
+                        disabled={saving}
+                        style={{ background: "transparent", border: "none", fontFamily: "inherit", fontSize: "0.84rem", color: "var(--text)", outline: "none", cursor: "pointer", width: "100%" }}
+                      >
+                        <option value="">— Không có —</option>
+                        {sprints.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        {!sprintsLoaded && task.sprint && <option value={task.sprint.id}>{task.sprint.name}</option>}
+                      </select>
+                    ) : (
+                      <span>{task.sprint?.name ?? "—"}</span>
+                    )}
+                  </span>
+                </div>
+
+                {task.parentTask && (
+                  <div className="td-meta-row">
+                    <span className="mrl">Parent</span>
+                    <span className="mrv" style={{ fontFamily: "var(--font-mono)", color: "var(--accent-ink)", fontSize: "0.8rem" }}>{task.parentTask.code}</span>
+                  </div>
+                )}
+
+                {/* Watchers */}
+                {watchers.length > 0 && (
+                  <div className="td-meta-row">
+                    <span className="mrl">Theo dõi</span>
+                    <span className="mrv" style={{ flexWrap: "wrap", gap: 4 }}>
+                      {watchers.map((w) => (
+                        <span key={w.employeeId} className="td-av-sm" title={w.employee.fullName} style={{ flexShrink: 0 }}>
+                          {w.employee.fullName.charAt(0).toUpperCase()}
+                        </span>
+                      ))}
+                    </span>
+                  </div>
+                )}
+
+                {/* Recurrence */}
+                {(recurrence || isManager) && (
+                  <div className="td-meta-row" style={{ alignItems: "flex-start" }}>
+                    <span className="mrl" style={{ paddingTop: 2 }}>Lặp lại</span>
+                    <span className="mrv" style={{ flex: 1 }}>
+                      <RecurrenceEditor
+                        taskId={task.id}
+                        recurrence={recurrence}
+                        isManager={isManager}
+                        onSaved={setRecurrence}
+                      />
+                    </span>
+                  </div>
+                )}
+
+                {/* Người tạo */}
+                <div className="td-meta-sec" style={{ marginTop: 8 }}>Người tạo</div>
+                <div className="td-meta-row">
+                  <span className="mrl">Reporter</span>
+                  <span className="mrv">
+                    <span className="td-av-sm">{initials(task.assignedBy.fullName)}</span>
+                    {task.assignedBy.fullName}
+                  </span>
                 </div>
                 <div className="td-meta-row">
-                  <span className="mrl">{t("tasks.createdDate")}</span>
-                  <span className="mrv">{new Date(task.dateCreated).toLocaleDateString()}</span>
+                  <span className="mrl">Tạo lúc</span>
+                  <span className="mrv" style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>
+                    {new Date(task.dateCreated).toLocaleDateString("vi-VN")} {new Date(task.dateCreated).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
                 </div>
                 {task.dateStarted && (
                   <div className="td-meta-row">
-                    <span className="mrl">{t("tasks.startDate")}</span>
-                    <span className="mrv">{new Date(task.dateStarted).toLocaleDateString()}</span>
+                    <span className="mrl">Bắt đầu</span>
+                    <span className="mrv" style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>{new Date(task.dateStarted).toLocaleDateString("vi-VN")}</span>
                   </div>
                 )}
                 {task.dateCompleted && (
                   <div className="td-meta-row">
-                    <span className="mrl">{t("tasks.completedDate")}</span>
-                    <span className="mrv" style={{ color: "var(--ok)", fontWeight: 600 }}>{new Date(task.dateCompleted).toLocaleDateString()}</span>
+                    <span className="mrl">Hoàn thành</span>
+                    <span className="mrv" style={{ fontSize: "0.78rem", color: "var(--ok)", fontWeight: 600 }}>{new Date(task.dateCompleted).toLocaleDateString("vi-VN")}</span>
                   </div>
                 )}
+
+                {/* Delete */}
+                <div style={{ marginTop: "auto", paddingTop: 16 }}>
+                  <button
+                    className="abtn"
+                    style={{ width: "100%", background: "transparent", border: "1px solid rgba(239,68,68,0.35)", color: "var(--danger)", justifyContent: "center" }}
+                    onClick={async () => {
+                      if (!confirm(`Xóa task ${task.code}?`)) return;
+                      const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
+                      if (res.ok) { onSaved(); onClose(); }
+                    }}
+                  >
+                    🗑 Xóa task
+                  </button>
+                </div>
               </div>
             </div>
           </>

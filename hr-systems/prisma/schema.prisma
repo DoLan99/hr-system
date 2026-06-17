@@ -39,6 +39,7 @@ model Organization {
   customers            Customer[]
   taskTemplates        TaskTemplate[]
   tasks                Task[]
+  sprints              Sprint[]
   timeLogs             TimeLog[]
   officeTimes          OfficeTime[]
   templateSuggestions  TemplateSuggestion[]
@@ -249,6 +250,11 @@ model Employee {
   workflowsInitiated        WorkflowInstance[]   @relation("WorkflowInitiator")
   workflowApprovalsAssigned WorkflowApproval[]   @relation("WorkflowApprover")
 
+  // Task comments & watchers
+  taskComments         TaskComment[]
+  taskWatches          TaskWatcher[]
+  taskAttachments      TaskAttachment[]
+
   // Inventory
   inventoryTransactions     InventoryTransaction[]
   inventoryAssignments      InventoryAssignment[]
@@ -356,6 +362,31 @@ model TaskTemplate {
 // TASKS
 // ─────────────────────────────────────────────────────────────
 
+model Sprint {
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  goal           String?      @db.Text
+  status         SprintStatus @default(PLANNING)
+  startDate      DateTime?
+  endDate        DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+
+  tasks          Task[]
+
+  @@index([organizationId, status])
+  @@map("sprints")
+}
+
+enum SprintStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
 model Task {
   id                  Int          @id @default(autoincrement())
   organizationId      String
@@ -369,6 +400,7 @@ model Task {
   estimatedTime       Int?
   actualTimeTotal     Int          @default(0)
   progressPct         Int          @default(0)
+  storyPoints         Int?
 
   parentTaskId        Int?
   parentTask          Task?        @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: SetNull)
@@ -402,9 +434,20 @@ model Task {
   lastUpdate          DateTime     @default(now()) @updatedAt
   reasonNextAction    String?
 
+  sprintId            Int?
+  sprint              Sprint?      @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+
   timeLogs            TimeLog[]
+  comments            TaskComment[]
+  checklistItems      TaskChecklistItem[]
+  watchers            TaskWatcher[]
+  blockingDeps        TaskDependency[] @relation("DependencyTask")
+  blockedByDeps       TaskDependency[] @relation("DependencyDependsOn")
+  attachments         TaskAttachment[]
+  recurrence          TaskRecurrence?
 
   @@unique([organizationId, code])
+  @@index([organizationId, sprintId])
   @@index([organizationId, assignedToId, status])
   @@index([organizationId, customerId])
   @@index([organizationId, parentTaskId])
@@ -1553,4 +1596,112 @@ enum SkillImportance {
   CRITICAL
   IMPORTANT
   NICE_TO_HAVE
+}
+
+model TaskRecurrence {
+  id               Int                 @id @default(autoincrement())
+  taskId           Int                 @unique
+  task             Task                @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  frequency        RecurrenceFrequency
+  interval         Int                 @default(1)
+  daysOfWeek       Int[]
+  dayOfMonth       Int?
+  endDate          DateTime?
+  maxOccurrences   Int?
+  occurrenceCount  Int                 @default(0)
+  nextRunAt        DateTime
+  lastRunAt        DateTime?
+  isActive         Boolean             @default(true)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @default(now()) @updatedAt
+
+  @@index([nextRunAt, isActive])
+  @@map("task_recurrences")
+}
+
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+model TaskAttachment {
+  id             Int      @id @default(autoincrement())
+  taskId         Int
+  task           Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedById   Int
+  uploadedBy     Employee @relation(fields: [uploadedById], references: [id])
+  fileName       String
+  fileUrl        String   @db.Text
+  fileSize       Int?
+  mimeType       String?
+  driveItemId    String?
+  createdAt      DateTime @default(now())
+
+  @@index([taskId])
+  @@map("task_attachments")
+}
+
+model TaskDependency {
+  id          Int                    @id @default(autoincrement())
+  taskId      Int
+  task        Task                   @relation("DependencyTask", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnId Int
+  dependsOn   Task                   @relation("DependencyDependsOn", fields: [dependsOnId], references: [id], onDelete: Cascade)
+  type        TaskDependencyType     @default(BLOCKS)
+  createdAt   DateTime               @default(now())
+
+  @@unique([taskId, dependsOnId])
+  @@index([taskId])
+  @@index([dependsOnId])
+  @@map("task_dependencies")
+}
+
+enum TaskDependencyType {
+  BLOCKS
+  RELATES_TO
+  DUPLICATES
+}
+
+model TaskChecklistItem {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  content   String
+  checked   Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@map("task_checklist_items")
+}
+
+model TaskWatcher {
+  taskId     Int
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([taskId, employeeId])
+  @@map("task_watchers")
+}
+
+model TaskComment {
+  id          Int       @id @default(autoincrement())
+  taskId      Int
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId    Int
+  author      Employee  @relation(fields: [authorId], references: [id])
+  content     String    @db.Text
+  parentId    Int?
+  parent      TaskComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     TaskComment[] @relation("CommentReplies")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  deletedAt   DateTime?
+
+  @@index([taskId])
+  @@map("task_comments")
 }

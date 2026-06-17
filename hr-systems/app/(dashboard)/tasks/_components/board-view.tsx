@@ -27,6 +27,7 @@ type TaskItem = {
   assignedBy: { id: number; fullName: string };
   customer: { id: number; customerName: string | null; businessName: string | null } | null;
   template: { id: number; code: string; title: string } | null;
+  sprint?: { id: number; name: string; status: string } | null;
   _count: { timeLogs: number; subTasks: number };
 };
 
@@ -103,7 +104,7 @@ export function BoardView({ items, onEdit, onStatusChange, onCreateInColumn, lab
   }
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-6" style={{ minHeight: "calc(100vh - 240px)" }}>
+    <div className="flex gap-3 overflow-x-auto pb-2" style={{ height: "calc(100vh - 220px)" }}>
       {COLUMN_STATUSES.map((status) => {
         const meta = COLUMN_META[status] ?? { dot: "bg-slate-400", borderTop: "border-t-slate-400", columnBg: "bg-slate-50/70", dotRing: "ring-slate-200" };
         const label = t(`taskStatus.${status}`) || labelConfig.taskStatus[status]?.label || status;
@@ -113,7 +114,7 @@ export function BoardView({ items, onEdit, onStatusChange, onCreateInColumn, lab
         return (
           <div
             key={status}
-            className={`flex-shrink-0 w-[280px] flex flex-col rounded-xl border border-slate-200/80 bg-white dark:bg-slate-900 shadow-sm overflow-hidden transition-all ${
+            className={`flex-shrink-0 w-[280px] flex flex-col rounded-xl border border-slate-200/80 bg-white dark:bg-slate-900 shadow-sm overflow-hidden transition-all h-full ${
               isDropTarget ? "ring-2 ring-blue-400 ring-offset-2 shadow-md" : ""
             }`}
             onDragOver={(e) => { e.preventDefault(); setDropTarget(status); }}
@@ -145,7 +146,7 @@ export function BoardView({ items, onEdit, onStatusChange, onCreateInColumn, lab
               className={`flex-1 px-2 py-2 space-y-2 overflow-y-auto transition-colors ${
                 isDropTarget ? "bg-blue-50/60" : meta.columnBg
               }`}
-              style={{ maxHeight: "calc(100vh - 300px)", minHeight: "80px" }}
+              style={{ minHeight: 0 }}
             >
               {colTasks.map((task) => {
                 const priorityBorder = PRIORITY_BORDER[task.priority] ?? "border-l-slate-300";
@@ -188,12 +189,20 @@ export function BoardView({ items, onEdit, onStatusChange, onCreateInColumn, lab
                     {/* Code */}
                     <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mb-2">{task.code}</p>
 
-                    {/* Customer chip */}
-                    {task.customer && (
-                      <div className="mb-2">
-                        <span className="inline-flex items-center text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-md px-1.5 py-0.5 max-w-full truncate">
-                          {task.customer.businessName ?? task.customer.customerName}
-                        </span>
+                    {/* Customer + Sprint chips */}
+                    {(task.customer || task.sprint) && (
+                      <div className="mb-2 flex flex-wrap gap-1">
+                        {task.customer && (
+                          <span className="inline-flex items-center text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-md px-1.5 py-0.5 max-w-full truncate">
+                            {task.customer.businessName ?? task.customer.customerName}
+                          </span>
+                        )}
+                        {task.sprint && (
+                          <span className="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-md max-w-full truncate"
+                            style={{ background: "var(--accent-soft, #ede9fe)", color: "var(--accent-ink, #6d28d9)" }}>
+                            ⚡ {task.sprint.name}
+                          </span>
+                        )}
                       </div>
                     )}
 

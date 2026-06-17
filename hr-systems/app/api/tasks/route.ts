@@ -25,6 +25,8 @@ const createSchema = z.object({
   hourlyRateOverride: z.number().nullable().optional(),
   requiresVideo: z.boolean().optional(),
   dueDate: z.string().nullable().optional(),
+  storyPoints: z.number().int().min(1).max(100).nullable().optional(),
+  sprintId: z.number().int().nullable().optional(),
 });
 
 const TASK_INCLUDE = {
@@ -159,6 +161,8 @@ export const POST = withContext(async (req: NextRequest) => {
       hourlyRateOverride: d.hourlyRateOverride ?? null,
       requiresVideo,
       dueDate: d.dueDate ? new Date(d.dueDate) : null,
+      storyPoints: d.storyPoints ?? null,
+      sprintId: d.sprintId ?? null,
       dateStarted: status === "IN_PROGRESS" ? new Date() : null,
     },
     include: TASK_INCLUDE,

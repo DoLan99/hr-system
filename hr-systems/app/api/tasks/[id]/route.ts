@@ -26,6 +26,8 @@ const updateSchema = z.object({
   dueDate: z.string().nullable().optional(),
   progressPct: z.number().int().min(0).max(100).optional(),
   reasonNextAction: z.string().nullable().optional(),
+  sprintId: z.number().int().nullable().optional(),
+  storyPoints: z.number().int().min(1).max(100).nullable().optional(),
 });
 
 const include = {
@@ -35,6 +37,7 @@ const include = {
   customer: { select: { id: true, customerName: true, businessName: true } },
   template: { select: { id: true, code: true, title: true } },
   parentTask: { select: { id: true, code: true, title: true } },
+  sprint: { select: { id: true, name: true, status: true } },
   _count: { select: { timeLogs: true, subTasks: true } },
 };
 
@@ -140,6 +143,7 @@ export const PUT = withContext(async (req: NextRequest, { params }: { params: { 
     if (d.hourlyRateOverride !== undefined) data.hourlyRateOverride = d.hourlyRateOverride;
     if (d.requiresVideo !== undefined) data.requiresVideo = d.requiresVideo;
     if (d.dueDate !== undefined) data.dueDate = d.dueDate ? new Date(d.dueDate) : null;
+    if (d.sprintId !== undefined) data.sprintId = d.sprintId;
   }
 
   if (d.videoLink !== undefined) data.videoLink = d.videoLink;
@@ -157,6 +161,7 @@ export const PUT = withContext(async (req: NextRequest, { params }: { params: { 
   }
   if (d.progressPct !== undefined) data.progressPct = d.progressPct;
   if (d.reasonNextAction !== undefined) data.reasonNextAction = d.reasonNextAction;
+  if (d.storyPoints !== undefined) data.storyPoints = d.storyPoints;
 
   const willBeBillable = data.billable ?? existing.billable;
   const willHaveCustomer = (data.customerId !== undefined ? data.customerId : existing.customerId) ?? null;

@@ -37,7 +37,7 @@ export default async function TasksPage() {
     data: { isOverdue: true },
   });
 
-  const [tasks, employees, customers, templates, systemLabels] = await Promise.all([
+  const [tasks, employees, customers, templates, sprints, systemLabels] = await Promise.all([
     prisma.task.findMany({
       where,
       include: {
@@ -45,6 +45,7 @@ export default async function TasksPage() {
         assignedBy: { select: { id: true, fullName: true } },
         customer: { select: { id: true, customerName: true, businessName: true } },
         template: { select: { id: true, code: true, title: true } },
+        sprint: { select: { id: true, name: true, status: true } },
         _count: { select: { timeLogs: true, subTasks: true } },
       },
       orderBy: [{ status: "asc" }, { priority: "asc" }, { dueDate: "asc" }, { dateCreated: "desc" }],
@@ -81,6 +82,11 @@ export default async function TasksPage() {
       },
       orderBy: [{ usageCount: "desc" }, { code: "asc" }],
     }),
+    prisma.sprint.findMany({
+      where: { organizationId: organization.id, status: { in: ["PLANNING", "ACTIVE"] } },
+      select: { id: true, name: true, status: true },
+      orderBy: { createdAt: "desc" },
+    }),
     prisma.systemLabel.findMany({
       where: { organizationId: organization.id },
       orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
@@ -95,6 +101,7 @@ export default async function TasksPage() {
       employees={employees}
       customers={customers}
       templates={templates}
+      sprints={sprints}
       currentUserId={userId}
       isManager={isManager}
       labelConfig={labelConfig}

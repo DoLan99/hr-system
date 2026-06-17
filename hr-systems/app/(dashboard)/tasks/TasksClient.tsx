@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { TaskCreateDrawer } from "./_components/task-create-drawer";
 import { TaskDetailDrawer } from "./_components/task-detail-drawer";
 import { DEFAULT_LABEL_CONFIG, type LabelConfig } from "@/lib/system-labels";
@@ -37,6 +38,7 @@ type Props = {
   employees: { id: number; fullName: string; department: string | null }[];
   customers: { id: number; customerName: string | null; businessName: string | null }[];
   templates: any[];
+  sprints: { id: number; name: string; status: string }[];
   currentUserId: number;
   isManager: boolean;
   labelConfig?: LabelConfig;
@@ -152,68 +154,168 @@ const FilterIcon = () => (
   </svg>
 );
 
+const PRIO_DOTS: Record<string, { count: number; color: string }> = {
+  CRITICAL: { count: 4, color: "var(--danger)" },
+  HIGH:     { count: 3, color: "#f97316" },
+  NORMAL:   { count: 2, color: "var(--accent)" },
+  LOW:      { count: 1, color: "var(--text-3)" },
+};
+
+const TYPE_COLOR: Record<string, string> = {
+  NORMAL:        "#3B5BDB",
+  LEARNING:      "#8b5cf6",
+  NEW_RESEARCH:  "#06b6d4",
+  MEETING:       "#f59e0b",
+  ADMIN:         "#94a3b8",
+  BILLABLE_CLIENT: "#22c55e",
+  INTERNAL:      "#64748b",
+};
+
+const STATUSES_VI: { value: string; label: string }[] = [
+  { value: "BACKLOG",     label: "Backlog" },
+  { value: "IN_PROGRESS", label: "In Progress" },
+  { value: "BLOCKED",     label: "Blocked" },
+  { value: "REVIEW",      label: "Review" },
+  { value: "DONE",        label: "Done" },
+  { value: "CANCELLED",   label: "Cancelled" },
+];
+
 /* ── Task Card ──────────────────────────────────────────────── */
-function TaskCard({ task, onOpen }: { task: TaskItem; onOpen: (t: TaskItem) => void }) {
-  const prio = PRIO_MAP[task.priority] ?? { cls: "md" as const, label: task.priority };
-  const est = task.estimatedTime ? formatMin(task.estimatedTime) : null;
+function TaskCard({ task, onOpen, onDragStart, onStatusChange }: {
+  task: TaskItem;
+  onOpen: (t: TaskItem) => void;
+  onDragStart: (id: number) => void;
+  onStatusChange: (taskId: number, newStatus: string) => void;
+}) {
+  const router = useRouter();
+  const dot = PRIO_DOTS[task.priority] ?? PRIO_DOTS.NORMAL;
   const due = task.dueDate ? new Date(task.dueDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }) : null;
+  const customerLabel = task.customer ? (task.customer.businessName ?? task.customer.customerName) : null;
+  const typeColor = TYPE_COLOR[task.taskType] ?? "#3B5BDB";
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [statusSub, setStatusSub] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function close(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false); setStatusSub(false);
+      }
+    }
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [menuOpen]);
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setMenuOpen(false);
+  }
 
   return (
-    <div className="tcard" draggable="true">
-      {/* three-dot menu */}
-      <span className="tc-more" title="Xem chi tiết" onClick={() => onOpen(task)}>
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
-        </svg>
-      </span>
+    <div
+      className="tcard"
+      draggable="true"
+      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(task.id); }}
+    >
+      {/* Three-dot menu button */}
+      <div className="tc-menu-wrap" ref={menuRef} onClick={(e) => e.stopPropagation()}>
+        <button
+          className="tc-more"
+          title="Thêm tùy chọn"
+          onMouseDown={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); setStatusSub(false); }}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+            <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
+          </svg>
+        </button>
 
-      {/* top row: priority + code */}
-      <div className="tc-top">
-        <span className={`prio ${prio.cls}`}>{prio.label}</span>
-        <span className="tid">{task.code}</span>
+        {menuOpen && (
+          <div className="tc-dropdown">
+            <button className="tc-dd-item" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); router.refresh(); router.push(`/tasks/${task.id}`); }}>
+              Xem chi tiết
+            </button>
+            <div className="tc-dd-sep" />
+            <div
+              className="tc-dd-item has-sub"
+              onMouseEnter={() => setStatusSub(true)}
+              onMouseLeave={() => setStatusSub(false)}
+            >
+              <span>Đổi trạng thái</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12"><path d="M9 18l6-6-6-6"/></svg>
+              {statusSub && (
+                <div className="tc-sub-menu">
+                  {STATUSES_VI.filter((s) => s.value !== task.status).map((s) => (
+                    <button
+                      key={s.value}
+                      className="tc-dd-item"
+                      onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, s.value); setMenuOpen(false); setStatusSub(false); }}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="tc-dd-sep" />
+            <button className="tc-dd-item" onClick={(e) => { e.stopPropagation(); copyToClipboard(task.code); }}>
+              Sao chép key
+            </button>
+            <button className="tc-dd-item" onClick={(e) => { e.stopPropagation(); copyToClipboard(`${window.location.origin}/tasks?task=${task.id}`); }}>
+              Sao chép link
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* title — click opens detail drawer */}
-      <div className="tc-title" onClick={() => onOpen(task)} style={{ cursor: "pointer" }}>
-        {task.title}
+      {/* Title — click opens drawer */}
+      <div className="tc-title" onClick={() => onOpen(task)} style={{ cursor: "pointer" }}>{task.title}</div>
+
+      {/* Chips: customer + type */}
+      <div className="tc-tags">
+        {customerLabel && (
+          <span className="ttag customer">{customerLabel}</span>
+        )}
+        <span className="ttag type" style={{ background: typeColor + "22", color: typeColor, borderColor: typeColor + "55" }}>
+          {TASK_TYPE_LABEL[task.taskType] ?? task.taskType}
+        </span>
+        {task.billable && <span className="ttag alt">Billable</span>}
+        {task.requiresVideo && <span className="ttag alt">Video</span>}
       </div>
 
-      {/* tags: taskType */}
-      {task.taskType && (
-        <div className="tc-tags">
-          <span className="ttag">{task.taskType}</span>
-          {task.billable && <span className="ttag alt">Billable</span>}
-          {task.requiresVideo && <span className="ttag alt">Video</span>}
-        </div>
-      )}
+      {/* Status */}
+      <div className="tc-status">{task.status.replace("_", " ")}</div>
 
-      {/* progress bar */}
+      {/* Progress bar */}
       {task.progressPct > 0 && (
         <div className="progress">
           <i style={{ width: `${task.progressPct}%` }} />
         </div>
       )}
 
-      {/* footer: assignee + meta */}
+      {/* Footer: priority dots + code + due + avatar */}
       <div className="tc-foot">
-        <span className="av-sm" title={task.assignedTo.fullName}>
+        <div className="tc-prio-dots">
+          {Array.from({ length: dot.count }).map((_, i) => (
+            <span key={i} className="pdot" style={{ background: dot.color }} />
+          ))}
+          {Array.from({ length: 4 - dot.count }).map((_, i) => (
+            <span key={i} className="pdot empty" />
+          ))}
+        </div>
+        <span className="tid">{task.code}</span>
+        {due && (
+          <span className={`meta-i${task.isOverdue ? " due-soon" : ""}`} style={{ marginLeft: "auto" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 11, height: 11 }}>
+              <rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round"/>
+            </svg>
+            {due}
+          </span>
+        )}
+        <span className="av-sm" title={task.assignedTo.fullName} style={due ? undefined : { marginLeft: "auto" }}>
           {initials(task.assignedTo.fullName)}
         </span>
-        <div className="right">
-          {est && (
-            <span className="meta-i">
-              <ClockIcon />{est}
-            </span>
-          )}
-          {due && (
-            <span className={`meta-i${task.isOverdue ? " due-soon" : ""}`}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round"/>
-              </svg>
-              {due}
-            </span>
-          )}
-        </div>
       </div>
     </div>
   );
@@ -225,14 +327,27 @@ function BoardColumn({
   tasks,
   onOpen,
   onAddTask,
+  onCardDragStart,
+  onDropTask,
+  onStatusChange,
 }: {
   col: typeof COLS[number];
   tasks: TaskItem[];
   onOpen: (t: TaskItem) => void;
   onAddTask: (status: string) => void;
+  onCardDragStart: (id: number) => void;
+  onDropTask: (status: string) => void;
+  onStatusChange: (taskId: number, newStatus: string) => void;
 }) {
+  const [dragOver, setDragOver] = useState(false);
+
   return (
-    <section className={`kcol ${col.cls}`}>
+    <section
+      className={`kcol ${col.cls}${dragOver ? " drag-over" : ""}`}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOver(true); }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => { e.preventDefault(); setDragOver(false); onDropTask(col.createStatus); }}
+    >
       <div className="kcol-head">
         <span className="cdot" />
         <span className="cname">{col.label}</span>
@@ -247,7 +362,7 @@ function BoardColumn({
       </div>
       <div className="kcol-body">
         {tasks.map((t) => (
-          <TaskCard key={t.id} task={t} onOpen={onOpen} />
+          <TaskCard key={t.id} task={t} onOpen={onOpen} onDragStart={onCardDragStart} onStatusChange={onStatusChange} />
         ))}
         <button
           className="col-add-task"
@@ -266,6 +381,7 @@ export function TasksClient({
   employees,
   customers,
   templates,
+  sprints,
   currentUserId,
   isManager,
   labelConfig: lc,
@@ -282,6 +398,15 @@ export function TasksClient({
   const [initialStatus, setInitialStatus] = useState("BACKLOG");
   const [drawerTaskId, setDrawerTaskId] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const dragTaskId = useRef<number | null>(null);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showToast(msg: string, ok = true) {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ msg, ok });
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
+  }
 
   /* derived stats */
   const activeCount = useMemo(
@@ -337,9 +462,40 @@ export function TasksClient({
     setDrawerOpen(true);
   }
 
+  async function changeStatus(taskId: number, newStatus: string) {
+    const task = items.find((t) => t.id === taskId);
+    if (!task || task.status === newStatus) return;
+    setItems((prev) => prev.map((t) => t.id === taskId ? { ...t, status: newStatus } : t));
+    const res = await fetch(`/api/tasks/${taskId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (res.ok) {
+      const colLabel = COLS.find((c) => c.createStatus === newStatus)?.label ?? newStatus;
+      showToast(`✓ ${task.code} → ${colLabel}`);
+    } else {
+      setItems((prev) => prev.map((t) => t.id === taskId ? { ...t, status: task.status } : t));
+      showToast("Lỗi khi cập nhật trạng thái", false);
+    }
+  }
+
+  async function dropToColumn(newStatus: string) {
+    const id = dragTaskId.current;
+    if (!id) return;
+    dragTaskId.current = null;
+    await changeStatus(id, newStatus);
+  }
+
   /* ── render ──────────────────────────────────────────────── */
   return (
     <div className="tasks-page">
+      {/* Toast notification */}
+      {toast && (
+        <div className={`tasks-toast${toast.ok ? " ok" : " err"}`} onClick={() => setToast(null)}>
+          {toast.msg}
+        </div>
+      )}
       {/* ── Page Header ── */}
       <div className="page-head" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
         <div>
@@ -418,6 +574,9 @@ export function TasksClient({
         </div>
       </div>
 
+      {/* ── Board / List wrap ── */}
+      <div className="tasks-board-wrap">
+
       {/* ── Board view ── */}
       {view === "board" && (
         <div className="board" id="board">
@@ -428,6 +587,9 @@ export function TasksClient({
               tasks={grouped[col.label] ?? []}
               onOpen={openDetail}
               onAddTask={openCreate}
+              onCardDragStart={(id) => { dragTaskId.current = id; }}
+              onDropTask={dropToColumn}
+              onStatusChange={changeStatus}
             />
           ))}
         </div>
@@ -501,6 +663,8 @@ export function TasksClient({
         </div>
       )}
 
+      </div>{/* end tasks-board-wrap */}
+
       {/* ── Drawers ── */}
       <TaskCreateDrawer
         open={createOpen}
@@ -508,6 +672,7 @@ export function TasksClient({
         employees={employees}
         customers={customers}
         templates={templates}
+        sprints={sprints}
         currentUserId={currentUserId}
         isManager={isManager}
         initialStatus={initialStatus}
