@@ -53,14 +53,8 @@ type TaskDetail = {
   storyPoints?: number | null;
 };
 
-type Attachment = { id: number; fileName: string; fileUrl: string; fileSize: number | null; mimeType: string | null; createdAt: string; uploadedBy: { id: number; fullName: string } };
-
 type Sprint = { id: number; name: string; status: string };
-type ChecklistItem = { id: number; content: string; checked: boolean; order: number };
 type Watcher = { employeeId: number; employee: { id: number; fullName: string; avatarUrl: string | null } };
-type DepTask = { id: number; code: string; title: string; status: string; priority: string };
-type Dependency = { id: number; type: string; dependsOn: DepTask };
-type BlockedByDep = { id: number; type: string; task: DepTask };
 
 type Props = {
   taskId: number | null;
@@ -191,13 +185,6 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
     setSprintsLoaded(true);
   }
 
-  async function loadChecklist(taskId: number) {
-    if (checklistLoaded) return;
-    const res = await fetch(`/api/tasks/${taskId}/checklist`);
-    if (res.ok) { const j = await res.json(); setChecklist(j.data ?? []); }
-    setChecklistLoaded(true);
-  }
-
   async function loadWatchers(taskId: number) {
     if (watchersLoaded) return;
     const res = await fetch(`/api/tasks/${taskId}/watchers`);
@@ -217,104 +204,6 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
       if (res.ok) { const j = await res.json(); setIsWatching(true); setWatchers((p) => [...p, j.data]); }
     }
     setWatchSaving(false);
-  }
-
-  async function addCheckItem() {
-    if (!task || !newCheckItem.trim() || checkItemSaving) return;
-    setCheckItemSaving(true);
-    const res = await fetch(`/api/tasks/${task.id}/checklist`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: newCheckItem.trim() }),
-    });
-    if (res.ok) { const j = await res.json(); setChecklist((p) => [...p, j.data]); setNewCheckItem(""); }
-    setCheckItemSaving(false);
-  }
-
-  async function toggleCheckItem(itemId: number, checked: boolean) {
-    if (!task) return;
-    const res = await fetch(`/api/tasks/${task.id}/checklist/${itemId}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ checked }),
-    });
-    if (res.ok) setChecklist((p) => p.map((i) => i.id === itemId ? { ...i, checked } : i));
-  }
-
-  async function deleteCheckItem(itemId: number) {
-    if (!task) return;
-    const res = await fetch(`/api/tasks/${task.id}/checklist/${itemId}`, { method: "DELETE" });
-    if (res.ok) setChecklist((p) => p.filter((i) => i.id !== itemId));
-  }
-
-  async function loadDeps(taskId: number) {
-    if (depsLoaded) return;
-    const res = await fetch(`/api/tasks/${taskId}/dependencies`);
-    if (res.ok) { const j = await res.json(); setBlocking(j.data.blocking ?? []); setBlockedBy(j.data.blockedBy ?? []); }
-    setDepsLoaded(true);
-  }
-
-  async function addDep() {
-    if (!task || !depSearch.trim() || depSaving) return;
-    // search by code or title
-    const searchRes = await fetch(`/api/tasks?search=${encodeURIComponent(depSearch.trim())}`);
-    if (!searchRes.ok) return;
-    const { data } = await searchRes.json();
-    const found = data?.[0];
-    if (!found) { alert("Không tìm thấy task"); return; }
-    setDepSaving(true);
-    const res = await fetch(`/api/tasks/${task.id}/dependencies`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dependsOnId: found.id, type: depType }),
-    });
-    if (res.ok) {
-      const j = await res.json();
-      setBlocking((p) => [...p, j.data]);
-      setDepSearch(""); setAddingDep(false);
-    }
-    setDepSaving(false);
-  }
-
-  async function removeDep(depId: number, direction: "blocking" | "blockedBy") {
-    if (!task) return;
-    const res = await fetch(`/api/tasks/${task.id}/dependencies/${depId}`, { method: "DELETE" });
-    if (res.ok) {
-      if (direction === "blocking") setBlocking((p) => p.filter((d) => d.id !== depId));
-      else setBlockedBy((p) => p.filter((d) => d.id !== depId));
-    }
-  }
-
-  async function loadAttachments(taskId: number) {
-    const res = await fetch(`/api/tasks/${taskId}/attachments`);
-    if (res.ok) { const j = await res.json(); setAttachments(j.data ?? []); }
-  }
-
-  async function uploadAttachment(file: File) {
-    if (!task) return;
-    setAttachUploading(true);
-    // Upload via FormData to a generic upload endpoint, or store as base64 URL for simple cases
-    // Using a simple approach: POST metadata + fileUrl from a file reader (for OneDrive-less fallback)
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const dataUrl = e.target?.result as string;
-      const res = await fetch(`/api/tasks/${task.id}/attachments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: file.name,
-          fileUrl: dataUrl,
-          fileSize: file.size,
-          mimeType: file.type,
-        }),
-      });
-      if (res.ok) { const j = await res.json(); setAttachments((p) => [j.data, ...p]); }
-      setAttachUploading(false);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  async function deleteAttachment(attId: number) {
-    if (!task || !confirm("Xóa file đính kèm này?")) return;
-    const res = await fetch(`/api/tasks/${task.id}/attachments/${attId}`, { method: "DELETE" });
-    if (res.ok) setAttachments((p) => p.filter((a) => a.id !== attId));
   }
 
   function handleCommentChange(value: string) {
@@ -354,54 +243,15 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
     );
   }
 
-  function formatFileSize(bytes: number | null) {
-    if (!bytes) return "";
-    if (bytes < 1024) return `${bytes}B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
-    return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
-  }
-
-  function fileIcon(mime: string | null) {
-    if (!mime) return "📎";
-    if (mime.startsWith("image/")) return "🖼️";
-    if (mime.includes("pdf")) return "📄";
-    if (mime.includes("word") || mime.includes("document")) return "📝";
-    if (mime.includes("sheet") || mime.includes("excel")) return "📊";
-    if (mime.includes("zip") || mime.includes("archive")) return "🗜️";
-    return "📎";
-  }
-
   /* Sprint */
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [sprintsLoaded, setSprintsLoaded] = useState(false);
-
-  /* Checklist */
-  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
-  const [checklistLoaded, setChecklistLoaded] = useState(false);
-  const [newCheckItem, setNewCheckItem] = useState("");
-  const [checkItemSaving, setCheckItemSaving] = useState(false);
-  const [addingCheckItem, setAddingCheckItem] = useState(false);
-  const checkItemInputRef = useRef<HTMLInputElement>(null);
 
   /* Watchers */
   const [watchers, setWatchers] = useState<Watcher[]>([]);
   const [isWatching, setIsWatching] = useState(false);
   const [watchersLoaded, setWatchersLoaded] = useState(false);
   const [watchSaving, setWatchSaving] = useState(false);
-
-  /* Dependencies */
-  const [blocking, setBlocking] = useState<Dependency[]>([]);
-  const [blockedBy, setBlockedBy] = useState<BlockedByDep[]>([]);
-  const [depsLoaded, setDepsLoaded] = useState(false);
-  const [addingDep, setAddingDep] = useState(false);
-  const [depSearch, setDepSearch] = useState("");
-  const [depType, setDepType] = useState("BLOCKS");
-  const [depSaving, setDepSaving] = useState(false);
-
-  /* Attachments */
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [attachUploading, setAttachUploading] = useState(false);
-  const attachInputRef = useRef<HTMLInputElement>(null);
 
   /* Recurrence */
   type RecurrenceData = {
@@ -447,24 +297,18 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
     if (!open || !taskId) {
       setTask(null);
       setTab("desc");
-      setChecklist([]);
-      setChecklistLoaded(false);
       setWatchers([]);
       setWatchersLoaded(false);
       setIsWatching(false);
-      setBlocking([]); setBlockedBy([]); setDepsLoaded(false);
       setRecurrence(null);
       return;
     }
     setLoading(true);
     setComments([]);
     setCmtLoaded(false);
-    setChecklist([]);
-    setChecklistLoaded(false);
     setWatchers([]);
     setWatchersLoaded(false);
     setIsWatching(false);
-    setBlocking([]); setBlockedBy([]); setDepsLoaded(false);
     fetch(`/api/tasks/${taskId}`)
       .then((r) => r.json())
       .then((j) => {
@@ -479,10 +323,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
         setTab("desc");
         setLoading(false);
         if (j.data) {
-          loadChecklist(j.data.id);
           loadWatchers(j.data.id);
-          loadDeps(j.data.id);
-          loadAttachments(j.data.id);
           fetch(`/api/tasks/${j.data.id}/recurrence`).then(r => r.json()).then(rj => setRecurrence(rj.data ?? null));
         }
       })
@@ -874,178 +715,6 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                     ) : (
                       <div style={{ padding: "20px 22px", color: "var(--text-3)", fontSize: "0.84rem" }}>
                         Chưa có hoạt động nào. Dùng nút <b>Log Time</b> hoặc bấm timer để ghi nhận.
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Attachments */}
-                <div className="td-sub-section">
-                  <div className="td-st-wrap">
-                    <div className="td-st-head">
-                      <span>ĐÍNH KÈM{attachments.length > 0 ? ` (${attachments.length})` : ""}</span>
-                      <button className="st-add-btn" onClick={() => attachInputRef.current?.click()} disabled={attachUploading}>
-                        {attachUploading ? "Đang tải…" : "+ Tải lên"}
-                      </button>
-                      <input ref={attachInputRef} type="file" style={{ display: "none" }}
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAttachment(f); e.target.value = ""; }} />
-                    </div>
-                    {attachments.map((att) => (
-                      <div key={att.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid var(--border)" }}>
-                        <span style={{ fontSize: "1rem", flexShrink: 0 }}>{fileIcon(att.mimeType)}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <a href={att.fileUrl} target="_blank" rel="noopener noreferrer"
-                            style={{ fontSize: "0.83rem", color: "var(--accent-ink)", textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                            title={att.fileName}>{att.fileName}</a>
-                          <span style={{ fontSize: "0.72rem", color: "var(--text-3)" }}>
-                            {att.uploadedBy.fullName} · {formatFileSize(att.fileSize)}
-                          </span>
-                        </div>
-                        <button onClick={() => deleteAttachment(att.id)}
-                          style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", fontSize: "0.75rem", padding: "2px 4px", flexShrink: 0 }}>✕</button>
-                      </div>
-                    ))}
-                    {!attachments.length && !attachUploading && (
-                      <div className="td-st-empty" onClick={() => attachInputRef.current?.click()}>
-                        + Kéo thả file hoặc click để tải lên
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Dependencies */}
-                {(blocking.length > 0 || blockedBy.length > 0 || isManager) && (
-                  <div className="td-sub-section">
-                    <div className="td-st-wrap">
-                      <div className="td-st-head">
-                        <span>LIÊN KẾT{blocking.length + blockedBy.length > 0 ? ` (${blocking.length + blockedBy.length})` : ""}</span>
-                        {isManager && !addingDep && (
-                          <button className="st-add-btn" onClick={() => setAddingDep(true)}>+ Thêm</button>
-                        )}
-                      </div>
-
-                      {blockedBy.length > 0 && (
-                        <div style={{ marginBottom: 6 }}>
-                          <div style={{ fontSize: "0.72rem", color: "var(--danger)", fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>Bị chặn bởi</div>
-                          {blockedBy.map((d) => (
-                            <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--border)" }}>
-                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: d.task.status === "DONE" ? "var(--ok)" : "var(--danger)", flexShrink: 0 }} />
-                              <span style={{ flex: 1, fontSize: "0.82rem", color: "var(--text)" }}>
-                                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--text-3)", marginRight: 4 }}>{d.task.code}</span>
-                                {d.task.title}
-                              </span>
-                              <span style={{ fontSize: "0.72rem", color: d.task.status === "DONE" ? "var(--ok)" : "var(--text-3)", flexShrink: 0 }}>{d.task.status.replace("_", " ")}</span>
-                              {isManager && (
-                                <button onClick={() => removeDep(d.id, "blockedBy")} style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", fontSize: "0.72rem", padding: "2px 4px" }}>✕</button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {blocking.length > 0 && (
-                        <div style={{ marginBottom: 6 }}>
-                          <div style={{ fontSize: "0.72rem", color: "var(--text-3)", fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>Liên kết đến</div>
-                          {blocking.map((d) => (
-                            <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--border)" }}>
-                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: d.type === "BLOCKS" ? "var(--warn)" : "var(--text-3)", flexShrink: 0 }} />
-                              <span style={{ flex: 1, fontSize: "0.82rem", color: "var(--text)" }}>
-                                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--text-3)", marginRight: 4 }}>{d.dependsOn.code}</span>
-                                {d.dependsOn.title}
-                              </span>
-                              <span style={{ fontSize: "0.7rem", color: "var(--text-3)", flexShrink: 0, background: "var(--elev)", padding: "1px 6px", borderRadius: 4 }}>
-                                {d.type === "BLOCKS" ? "blocks" : d.type === "RELATES_TO" ? "relates" : "duplicate"}
-                              </span>
-                              {isManager && (
-                                <button onClick={() => removeDep(d.id, "blocking")} style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", fontSize: "0.72rem", padding: "2px 4px" }}>✕</button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {addingDep && (
-                        <div style={{ padding: "8px 0", display: "flex", flexDirection: "column", gap: 8 }}>
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <input value={depSearch} onChange={(e) => setDepSearch(e.target.value)}
-                              placeholder="Nhập mã task (VD: TSK-0012)…"
-                              onKeyDown={(e) => { if (e.key === "Enter") addDep(); if (e.key === "Escape") { setAddingDep(false); setDepSearch(""); } }}
-                              style={{ flex: 1, background: "var(--elev)", border: "1px solid var(--border-2)", borderRadius: 6, padding: "5px 10px", fontFamily: "inherit", fontSize: "0.84rem", color: "var(--text)", outline: "none" }}
-                            />
-                            <select value={depType} onChange={(e) => setDepType(e.target.value)}
-                              style={{ background: "var(--elev)", border: "1px solid var(--border-2)", borderRadius: 6, padding: "5px 8px", fontSize: "0.82rem", color: "var(--text)", outline: "none" }}>
-                              <option value="BLOCKS">Blocks</option>
-                              <option value="RELATES_TO">Relates to</option>
-                              <option value="DUPLICATES">Duplicates</option>
-                            </select>
-                          </div>
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <button className="abtn" onClick={addDep} disabled={depSaving || !depSearch.trim()} style={{ padding: "5px 12px" }}>Thêm</button>
-                            <button className="abtn ghost" onClick={() => { setAddingDep(false); setDepSearch(""); }} style={{ padding: "5px 10px" }}>Hủy</button>
-                          </div>
-                        </div>
-                      )}
-
-                      {!blocking.length && !blockedBy.length && !addingDep && (
-                        <div className="td-st-empty" onClick={() => isManager && setAddingDep(true)}>
-                          {isManager ? "+ Thêm liên kết task" : "Chưa có liên kết"}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Checklist */}
-                <div className="td-sub-section">
-                  <div className="td-st-wrap">
-                    <div className="td-st-head">
-                      <span>
-                        CHECKLIST
-                        {checklist.length > 0 && (
-                          <span style={{ marginLeft: 6, fontSize: "0.75rem", color: "var(--text-3)", fontWeight: 400 }}>
-                            {checklist.filter((i) => i.checked).length}/{checklist.length}
-                          </span>
-                        )}
-                      </span>
-                      {!addingCheckItem && (
-                        <button className="st-add-btn" onClick={() => { setAddingCheckItem(true); setTimeout(() => checkItemInputRef.current?.focus(), 50); }}>
-                          + Add Item
-                        </button>
-                      )}
-                    </div>
-                    {checklist.length > 0 && (
-                      <div style={{ padding: "4px 0 8px", width: "100%", height: 4, background: "var(--border)", borderRadius: 4, margin: "0 0 8px" }}>
-                        <div style={{ height: "100%", background: "var(--ok)", borderRadius: 4, width: `${Math.round((checklist.filter((i) => i.checked).length / checklist.length) * 100)}%`, transition: "width 0.3s" }} />
-                      </div>
-                    )}
-                    {checklist.map((item) => (
-                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--border)" }}>
-                        <input type="checkbox" checked={item.checked} onChange={(e) => toggleCheckItem(item.id, e.target.checked)}
-                          style={{ accentColor: "var(--accent)", flexShrink: 0, cursor: "pointer" }} />
-                        <span style={{ flex: 1, fontSize: "0.84rem", color: item.checked ? "var(--text-3)" : "var(--text)", textDecoration: item.checked ? "line-through" : undefined }}>
-                          {item.content}
-                        </span>
-                        <button onClick={() => deleteCheckItem(item.id)}
-                          style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: "2px 4px", fontSize: "0.75rem", opacity: 0.6 }}>✕</button>
-                      </div>
-                    ))}
-                    {addingCheckItem && (
-                      <div style={{ display: "flex", gap: 6, padding: "8px 0", alignItems: "center" }}>
-                        <input ref={checkItemInputRef} value={newCheckItem} onChange={(e) => setNewCheckItem(e.target.value)}
-                          placeholder="Nội dung checklist item…"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") { e.preventDefault(); addCheckItem(); }
-                            if (e.key === "Escape") { setAddingCheckItem(false); setNewCheckItem(""); }
-                          }}
-                          style={{ flex: 1, background: "var(--elev)", border: "1px solid var(--border-2)", borderRadius: 6, padding: "5px 10px", fontFamily: "inherit", fontSize: "0.84rem", color: "var(--text)", outline: "none" }}
-                        />
-                        <button className="abtn" onClick={addCheckItem} disabled={checkItemSaving || !newCheckItem.trim()} style={{ padding: "5px 12px" }}>Thêm</button>
-                        <button className="abtn ghost" onClick={() => { setAddingCheckItem(false); setNewCheckItem(""); }} style={{ padding: "5px 10px" }}>Hủy</button>
-                      </div>
-                    )}
-                    {!checklist.length && !addingCheckItem && (
-                      <div className="td-st-empty" onClick={() => { setAddingCheckItem(true); setTimeout(() => checkItemInputRef.current?.focus(), 50); }}>
-                        + Thêm mục checklist
                       </div>
                     )}
                   </div>
