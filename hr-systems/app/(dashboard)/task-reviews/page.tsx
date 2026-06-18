@@ -15,40 +15,32 @@ export default async function TaskReviewsPage() {
 
   const managedIds = isManager ? await getManagedEmployeeIds(userId, userRole) : [];
 
-  const suggestionWhere: any = { organizationId: organization.id };
-  if (!isAdmin) {
-    if (isSubManager) {
-      suggestionWhere.employeeId = { in: managedIds ? [...managedIds, userId] : [userId] };
-    } else {
-      suggestionWhere.employeeId = userId;
-    }
+  // Show REVIEW tasks — managers see their team's, admins see all
+  const taskWhere: any = { organizationId: organization.id, status: "REVIEW" };
+  if (!isAdmin && isSubManager && managedIds && managedIds.length) {
+    taskWhere.assignedToId = { in: [...(managedIds ?? []), userId] };
+  } else if (!isManager) {
+    // Regular employees only see tasks assigned to them or assigned by them
+    taskWhere.OR = [{ assignedToId: userId }, { assignedById: userId }];
   }
 
-  const [suggestions, flags] = await Promise.all([
-    prisma.templateSuggestion.findMany({
-      where: suggestionWhere,
-      include: {
-        employee: { select: { id: true, fullName: true, avatarUrl: true } },
-        reviewedBy: { select: { id: true, fullName: true } },
-      },
-      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    }),
-    isManager
-      ? prisma.estimateFlag.findMany({
-          where: { organizationId: organization.id, status: "OPEN" },
-          include: {
-            template: { select: { id: true, code: true, title: true } },
-          },
-          orderBy: [{ flaggedAt: "desc" }],
-        })
-      : [],
-  ]);
+  const tasks = await prisma.task.findMany({
+    where: taskWhere,
+    orderBy: [{ dueDate: "asc" }, { lastUpdate: "desc" }],
+    include: {
+      assignedTo: { select: { id: true, fullName: true, avatarUrl: true } },
+      assignedBy: { select: { id: true, fullName: true } },
+      template: { select: { id: true, code: true, title: true, defaultChecklist: true } },
+      sprint: { select: { id: true, name: true } },
+      checklistItems: { select: { id: true, content: true, checked: true }, orderBy: { order: "asc" } },
+    },
+  });
 
   return (
     <TaskReviewsClient
-      initialSuggestions={suggestions as any}
-      initialFlags={flags as any}
+      initialTasks={tasks as any}
       isManager={isManager}
+      currentUserId={userId}
     />
   );
 }

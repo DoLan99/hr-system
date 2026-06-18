@@ -72,6 +72,7 @@ model Organization {
   inventoryTransactions InventoryTransaction[]
   inventoryAssignments  InventoryAssignment[]
   channelIntegrations   ChannelIntegration[]
+  taskTypeConfigs       TaskTypeConfig[]
 
   @@map("organizations")
 }
@@ -212,6 +213,7 @@ model Employee {
 
   // Templates & Reviews
   templatesCreated     TaskTemplate[]        @relation("TemplateCreator")
+  templatesAssigned    TaskTemplate[]        @relation("TemplateAssignee")
   templateSuggestions  TemplateSuggestion[]  @relation("SuggestionEmployee")
   reviewedSuggestions  TemplateSuggestion[]  @relation("SuggestionReviewer")
   reviewedFlags        EstimateFlag[]        @relation("FlagReviewer")
@@ -338,12 +340,16 @@ model TaskTemplate {
   code                  String
   title                 String
   description           String?      @db.Text
-  defaultTaskType       TaskType     @default(NORMAL)
+  defaultTaskType       String       @default("NORMAL")
   defaultEstimatedTime  Int?
   defaultPriority       Priority     @default(NORMAL)
   requiresVideo         Boolean?
   department            String?
   linkTemplate          String?
+  defaultChecklist      Json?
+  defaultLabels         Json?
+  defaultAssigneeId     Int?
+  defaultAssignee       Employee?    @relation("TemplateAssignee", fields: [defaultAssigneeId], references: [id])
   usageCount            Int          @default(0)
   isActive              Boolean      @default(true)
   createdById           Int?
@@ -394,7 +400,7 @@ model Task {
   code                String
   title               String
   description         String?      @db.Text
-  taskType            TaskType     @default(NORMAL)
+  taskType            String       @default("NORMAL")
   priority            Priority     @default(NORMAL)
   status              TaskStatus   @default(BACKLOG)
   estimatedTime       Int?
@@ -546,7 +552,7 @@ model TemplateSuggestion {
   proposedCode          String
   proposedTitle         String
   description           String         @db.Text
-  proposedTaskType      TaskType
+  proposedTaskType      String       @default("NORMAL")
   proposedEstimate      Int
   evidenceVideoLink     String
   exampleTaskIds        Json           @default("[]")
@@ -1221,14 +1227,23 @@ enum Priority {
   LOW
 }
 
-enum TaskType {
-  NORMAL
-  LEARNING
-  NEW_RESEARCH
-  MEETING
-  ADMIN
-  BILLABLE_CLIENT
-  INTERNAL
+// TaskType values kept as String on models — configurable per org via TaskTypeConfig
+model TaskTypeConfig {
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  key            String       // e.g. "NORMAL", "LEARNING", or custom "BUG_FIX"
+  label          String       // Display: "Task", "Learning", "Bug Fix"
+  color          String       @default("#3B5BDB")   // background color for icon
+  iconEmoji      String       @default("✦")
+  sortOrder      Int          @default(0)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+  @@map("task_type_configs")
 }
 
 enum TaskStatus {

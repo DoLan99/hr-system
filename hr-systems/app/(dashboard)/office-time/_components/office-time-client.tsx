@@ -104,6 +104,36 @@ export function OfficeTimeClient({
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [explanation, setExplanation] = useState("");
 
+  // Today panel — only relevant when viewing self in current month
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const isCurrentMonth = viewDate.getMonth() === new Date().getMonth() && viewDate.getFullYear() === new Date().getFullYear();
+  const isSelfView = targetEmpId === employeeId;
+  const todayRecord = useMemo(
+    () => records.find(r => format(new Date(r.date), "yyyy-MM-dd") === todayStr),
+    [records, todayStr]
+  );
+  const [clockLoading, setClockLoading] = useState<string | null>(null);
+
+  async function punch(checkpoint: "startWork1" | "startLunch" | "startWork2" | "endWorkday") {
+    if (clockLoading) return;
+    setClockLoading(checkpoint);
+    try {
+      const res = await fetch("/api/office-time", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: todayStr, checkpoint }),
+      });
+      const json = await res.json();
+      if (json.data) {
+        setRecords(prev => {
+          const idx = prev.findIndex(r => format(new Date(r.date), "yyyy-MM-dd") === todayStr);
+          if (idx >= 0) { const n = [...prev]; n[idx] = json.data; return n; }
+          return [json.data, ...prev];
+        });
+      }
+    } finally { setClockLoading(null); }
+  }
+
   const fetchRecords = useCallback(async (date: Date, empId: number) => {
     setLoading("fetch");
     try {
@@ -263,6 +293,83 @@ export function OfficeTimeClient({
           <div className="kc flat">mỗi thành viên</div>
         </div>
       </div>
+
+      {/* ── Today Panel (self-view, current month) ── */}
+      {isSelfView && isCurrentMonth && (
+        <div className="ot-today">
+          <div className="ot-today-left">
+            <div className="ot-today-badge">Hôm nay</div>
+            <div className="ot-today-checkpoints">
+              <div className="ot-cp">
+                <span className="ot-cp-lbl">Check-in</span>
+                <span className={`ot-cp-val${todayRecord?.startWork1 ? " done" : ""}`}>
+                  {todayRecord?.startWork1 ? fmtTime(todayRecord.startWork1) : "—"}
+                </span>
+                {(() => {
+                  const lm = lateMinutes(todayRecord?.startWork1 ?? null);
+                  return lm > 0 ? <span className="ot-late">+{lm}ph</span> : null;
+                })()}
+              </div>
+              <div className="ot-cp-arrow">→</div>
+              <div className="ot-cp">
+                <span className="ot-cp-lbl">Nghỉ trưa</span>
+                <span className={`ot-cp-val${todayRecord?.startLunch ? " done" : ""}`}>
+                  {todayRecord?.startLunch ? fmtTime(todayRecord.startLunch) : "—"}
+                </span>
+              </div>
+              <div className="ot-cp-arrow">→</div>
+              <div className="ot-cp">
+                <span className="ot-cp-lbl">Buổi chiều</span>
+                <span className={`ot-cp-val${todayRecord?.startWork2 ? " done" : ""}`}>
+                  {todayRecord?.startWork2 ? fmtTime(todayRecord.startWork2) : "—"}
+                </span>
+              </div>
+              <div className="ot-cp-arrow">→</div>
+              <div className="ot-cp">
+                <span className="ot-cp-lbl">Check-out</span>
+                <span className={`ot-cp-val${todayRecord?.endWorkday ? " done" : ""}`}>
+                  {todayRecord?.endWorkday ? fmtTime(todayRecord.endWorkday) : <span style={{ animation: todayRecord?.startWork1 && !todayRecord.endWorkday ? "wpulse 1.5s infinite" : undefined, color: "var(--ok)" }}>{todayRecord?.startWork1 ? "▶ đang làm" : "—"}</span>}
+                </span>
+              </div>
+              {todayRecord?.actualWorked ? (
+                <>
+                  <div className="ot-cp-arrow">=</div>
+                  <div className="ot-cp">
+                    <span className="ot-cp-lbl">Giờ làm</span>
+                    <span className="ot-cp-val done" style={{ color: "var(--ok)", fontSize: "1rem" }}>{fmtMins(todayRecord.actualWorked)}</span>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="ot-today-btns">
+            {!todayRecord?.startWork1 && (
+              <button className="ot-punch checkin" onClick={() => punch("startWork1")} disabled={!!clockLoading}>
+                {clockLoading === "startWork1" ? "…" : "☀ Check-in"}
+              </button>
+            )}
+            {todayRecord?.startWork1 && !todayRecord.startLunch && (
+              <button className="ot-punch lunch" onClick={() => punch("startLunch")} disabled={!!clockLoading}>
+                {clockLoading === "startLunch" ? "…" : "☕ Nghỉ trưa"}
+              </button>
+            )}
+            {todayRecord?.startLunch && !todayRecord.startWork2 && (
+              <button className="ot-punch work2" onClick={() => punch("startWork2")} disabled={!!clockLoading}>
+                {clockLoading === "startWork2" ? "…" : "▶ Làm buổi chiều"}
+              </button>
+            )}
+            {todayRecord?.startWork1 && !todayRecord.endWorkday && (
+              <button className="ot-punch checkout" onClick={() => punch("endWorkday")} disabled={!!clockLoading}>
+                {clockLoading === "endWorkday" ? "…" : "🌙 Check-out"}
+              </button>
+            )}
+            {todayRecord?.endWorkday && (
+              <span className="ot-today-done">✓ Đã hoàn thành · {statusChip(todayRecord.approvalStatus, todayRecord.startWork1)}</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Toolbar ── */}
       <div className="ot-bar">

@@ -5,17 +5,18 @@ import { ADMIN_ROLES } from "@/lib/managed-scope";
 import { withContext } from "@/lib/with-context";
 import { requireApiAuth } from "@/lib/api-auth";
 
-const TASK_TYPES = ["NORMAL", "LEARNING", "NEW_RESEARCH", "MEETING", "ADMIN", "BILLABLE_CLIENT", "INTERNAL"] as const;
-
 const updateSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().nullable().optional(),
-  defaultTaskType: z.enum(TASK_TYPES).optional(),
+  defaultTaskType: z.string().optional(),
   defaultEstimatedTime: z.number().int().nullable().optional(),
   defaultPriority: z.enum(["CRITICAL", "HIGH", "NORMAL", "LOW"]).optional(),
   requiresVideo: z.boolean().nullable().optional(),
   department: z.string().nullable().optional(),
   linkTemplate: z.string().nullable().optional(),
+  defaultChecklist: z.array(z.string()).nullable().optional(),
+  defaultLabels: z.array(z.string()).nullable().optional(),
+  defaultAssigneeId: z.number().int().nullable().optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -49,7 +50,7 @@ export const PUT = withContext(async (req: NextRequest, { params }: { params: { 
 
   const updated = await prisma.taskTemplate.update({
     where: { id },
-    data: parsed.data,
+    data: parsed.data as any,
   });
   return NextResponse.json({ data: updated });
 });

@@ -5,18 +5,19 @@ import { ADMIN_ROLES } from "@/lib/managed-scope";
 import { withContext } from "@/lib/with-context";
 import { requireApiAuth } from "@/lib/api-auth";
 
-const TASK_TYPES = ["NORMAL", "LEARNING", "NEW_RESEARCH", "MEETING", "ADMIN", "BILLABLE_CLIENT", "INTERNAL"] as const;
-
 const createSchema = z.object({
   code: z.string().min(2).regex(/^[A-Z0-9_]+$/, "Code phải UPPER_SNAKE_CASE"),
   title: z.string().min(1),
   description: z.string().optional(),
-  defaultTaskType: z.enum(TASK_TYPES).default("NORMAL"),
+  defaultTaskType: z.string().default("TASK"),
   defaultEstimatedTime: z.number().int().nullable().optional(),
   defaultPriority: z.enum(["CRITICAL", "HIGH", "NORMAL", "LOW"]).optional(),
   requiresVideo: z.boolean().nullable().optional(),
-  department: z.string().optional(),
+  department: z.string().nullable().optional(),
   linkTemplate: z.string().optional(),
+  defaultChecklist: z.array(z.string()).nullable().optional(),
+  defaultLabels: z.array(z.string()).nullable().optional(),
+  defaultAssigneeId: z.number().int().nullable().optional(),
 });
 
 export const GET = withContext(async (req: NextRequest) => {
@@ -41,6 +42,11 @@ export const GET = withContext(async (req: NextRequest) => {
   const items = await prisma.taskTemplate.findMany({
     where,
     orderBy: [{ isActive: "desc" }, { usageCount: "desc" }, { code: "asc" }],
+    include: {
+      _count: { select: { tasks: true } },
+      createdBy: { select: { id: true, fullName: true } },
+      defaultAssignee: { select: { id: true, fullName: true } },
+    },
   });
 
   return NextResponse.json({ data: items });
@@ -62,7 +68,22 @@ export const POST = withContext(async (req: NextRequest) => {
   if (exists) return NextResponse.json({ error: "Code đã tồn tại" }, { status: 409 });
 
   const created = await prisma.taskTemplate.create({
-    data: { ...d, createdById: auth.actorId },
+    data: {
+      organizationId: auth.orgId,
+      code: d.code,
+      title: d.title,
+      description: d.description,
+      defaultTaskType: d.defaultTaskType,
+      defaultEstimatedTime: d.defaultEstimatedTime,
+      defaultPriority: d.defaultPriority,
+      requiresVideo: d.requiresVideo,
+      department: d.department,
+      linkTemplate: d.linkTemplate,
+      defaultChecklist: d.defaultChecklist ?? undefined,
+      defaultLabels: d.defaultLabels ?? undefined,
+      defaultAssigneeId: d.defaultAssigneeId,
+      createdById: auth.actorId,
+    },
   });
 
   return NextResponse.json({ data: created }, { status: 201 });
