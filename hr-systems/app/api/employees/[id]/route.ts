@@ -14,6 +14,7 @@ const updateSchema = z.object({
   departmentId: z.number().int().nullable().optional(),
   teamId: z.number().int().nullable().optional(),
   company: z.string().optional(),
+  emailCompany: z.string().email().optional(),
   emailGoogle: z.string().email().optional().or(z.literal("")),
   emailPrivate: z.string().email().optional().or(z.literal("")),
   mobileCompany: z.string().optional(),
@@ -25,12 +26,37 @@ const updateSchema = z.object({
   bonusAPct: z.number().min(0).max(100).optional(),
   bonusTPct: z.number().min(0).max(100).optional(),
   managerId: z.number().int().nullable().optional(),
+  careerTrackId: z.number().int().nullable().optional(),
+  careerLevelId: z.number().int().nullable().optional(),
   startDate: z.string().nullable().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "PROBATION"]).optional(),
   driveLink1: z.string().optional(),
   driveLink2: z.string().optional(),
   driveLink3: z.string().optional(),
   driveLink4: z.string().optional(),
+  // personal
+  dob: z.string().nullable().optional(),
+  gender: z.string().nullable().optional(),
+  nationality: z.string().nullable().optional(),
+  permanentAddr: z.string().nullable().optional(),
+  currentAddr: z.string().nullable().optional(),
+  cccd: z.string().nullable().optional(),
+  cccdDate: z.string().nullable().optional(),
+  cccdPlace: z.string().nullable().optional(),
+  // contract
+  contractType: z.string().nullable().optional(),
+  contractNo: z.string().nullable().optional(),
+  contractStart: z.string().nullable().optional(),
+  contractEnd: z.string().nullable().optional(),
+  // bank
+  bankName: z.string().nullable().optional(),
+  bankBranch: z.string().nullable().optional(),
+  bankAccount: z.string().nullable().optional(),
+  bankHolder: z.string().nullable().optional(),
+  // emergency
+  emergencyName: z.string().nullable().optional(),
+  emergencyRel: z.string().nullable().optional(),
+  emergencyPhone: z.string().nullable().optional(),
 });
 
 async function getCurrentRole(): Promise<string | null> {
@@ -64,10 +90,20 @@ export const GET = withContext(async (_req: NextRequest, { params }: { params: {
       bonusTPct: true, startDate: true, status: true, managerId: true,
       driveLink1: true, driveLink2: true, driveLink3: true, driveLink4: true,
       clerkUserId: true, isOwner: true, membershipRole: true,
+      dob: true, gender: true, nationality: true, permanentAddr: true, currentAddr: true,
+      cccd: true, cccdDate: true, cccdPlace: true,
+      contractType: true, contractNo: true, contractStart: true, contractEnd: true,
+      bankName: true, bankBranch: true, bankAccount: true, bankHolder: true,
+      emergencyName: true, emergencyRel: true, emergencyPhone: true,
+      photoPortrait: true, photoCccdFront: true, photoCccdBack: true,
       role: { select: { id: true, name: true, label: true } },
       manager: { select: { id: true, fullName: true } },
       dept: { select: { id: true, name: true } },
       team: { select: { id: true, name: true } },
+      careerTrackId: true,
+      careerLevelId: true,
+      careerTrack: { select: { id: true, name: true } },
+      careerLevel: { select: { id: true, name: true } },
     },
   });
 
@@ -108,9 +144,11 @@ export const PUT = withContext(async (req: NextRequest, { params }: { params: { 
     delete updateData.managerId;
   }
 
-  if (d.startDate !== undefined) {
-    updateData.startDate = d.startDate ? new Date(d.startDate) : null;
-  }
+  if (d.startDate !== undefined) updateData.startDate = d.startDate ? new Date(d.startDate) : null;
+  if (d.dob !== undefined) updateData.dob = d.dob ? new Date(d.dob) : null;
+  if (d.cccdDate !== undefined) updateData.cccdDate = d.cccdDate ? new Date(d.cccdDate) : null;
+  if (d.contractStart !== undefined) updateData.contractStart = d.contractStart ? new Date(d.contractStart) : null;
+  if (d.contractEnd !== undefined) updateData.contractEnd = d.contractEnd ? new Date(d.contractEnd) : null;
   if (d.emailGoogle === "") updateData.emailGoogle = null;
   if (d.emailPrivate === "") updateData.emailPrivate = null;
 
@@ -126,10 +164,20 @@ export const PUT = withContext(async (req: NextRequest, { params }: { params: { 
       bonusTPct: true, startDate: true, status: true, managerId: true,
       driveLink1: true, driveLink2: true, driveLink3: true, driveLink4: true,
       clerkUserId: true, isOwner: true, membershipRole: true,
+      dob: true, gender: true, nationality: true, permanentAddr: true, currentAddr: true,
+      cccd: true, cccdDate: true, cccdPlace: true,
+      contractType: true, contractNo: true, contractStart: true, contractEnd: true,
+      bankName: true, bankBranch: true, bankAccount: true, bankHolder: true,
+      emergencyName: true, emergencyRel: true, emergencyPhone: true,
+      photoPortrait: true, photoCccdFront: true, photoCccdBack: true,
       role: { select: { id: true, name: true, label: true } },
       manager: { select: { id: true, fullName: true } },
       dept: { select: { id: true, name: true } },
       team: { select: { id: true, name: true } },
+      careerTrackId: true,
+      careerLevelId: true,
+      careerTrack: { select: { id: true, name: true } },
+      careerLevel: { select: { id: true, name: true } },
     },
   });
 

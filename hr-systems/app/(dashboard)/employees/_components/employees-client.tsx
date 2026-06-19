@@ -81,6 +81,12 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
     });
   }, [employees, search, filterStatus, filterDept]);
 
+  async function safeJson(r: Response) {
+    const text = await r.text().catch(() => "");
+    if (!text) return {};
+    try { return JSON.parse(text); } catch { return {}; }
+  }
+
   async function toggleStatus(emp: EmployeeItem) {
     const newStatus = emp.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
     const res = await fetch(`/api/employees/${emp.id}`, {
@@ -88,7 +94,7 @@ export function EmployeesClient({ initialEmployees, roles, departments, teams }:
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: newStatus }),
     });
-    const json = await res.json();
+    const json = await safeJson(res);
     if (res.ok) upsert(json.data);
   }
 

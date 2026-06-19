@@ -1,41 +1,81 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Loader2, X, ChevronDown } from "lucide-react";
 import { useCurrentUser } from "@/lib/contexts/current-user-context";
-import { Pencil, X, Loader2, Shield, Users, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useLocale } from "@/lib/i18n/context";
 
-const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"];
-
-const PERMISSION_MODULES = [
-  { key: "dashboard",     label: "Dashboard" },
-  { key: "tasks",          label: "Tasks" },
-  { key: "time_logs",      label: "Time Logs" },
-  { key: "office_time",    label: "Office Time" },
-  { key: "task_templates", label: "Task Templates" },
-  { key: "task_reviews",   label: "Task Reviews" },
-  { key: "summary",       label: "Summary" },
-  { key: "payments",      label: "Payments" },
-  { key: "leave",         label: "Leave" },
-  { key: "customers",     label: "Customers" },
-  { key: "messages",      label: "Messages" },
-  { key: "employees",     label: "Employees" },
-  { key: "vault",         label: "Password Vault" },
-  { key: "work_rules",    label: "Work Rules" },
-  { key: "departments",   label: "Departments" },
-  { key: "roles",         label: "Roles" },
+// ── Permission groups matching the template ────────────────
+const PERM_GROUPS = [
+  {
+    id: "tasks", label: "Tasks & Time",
+    color: "#3B5BDB", bg: "rgba(59,91,219,.12)",
+    ico: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
+    perms: [
+      { id: "tasks",        name: "Xem / tạo task",       desc: "Xem danh sách, tạo và chỉnh sửa task" },
+      { id: "task_reviews", name: "Duyệt task",            desc: "Duyệt task REVIEW của thành viên" },
+      { id: "time_logs",    name: "Time logs",             desc: "Xem và ghi nhận thời gian làm việc" },
+      { id: "task_templates", name: "Task templates",      desc: "Quản lý thư viện task template" },
+    ],
+  },
+  {
+    id: "hr", label: "Nhân sự",
+    color: "#059669", bg: "rgba(5,150,105,.12)",
+    ico: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.9M16 3a4 4 0 0 1 0 7.7',
+    perms: [
+      { id: "employees",   name: "Quản lý nhân viên",     desc: "Xem, tạo, sửa hồ sơ nhân viên" },
+      { id: "departments", name: "Phòng ban & Teams",      desc: "Tạo và quản lý phòng ban" },
+      { id: "customers",   name: "Khách hàng",             desc: "Quản lý danh sách khách hàng" },
+    ],
+  },
+  {
+    id: "attendance", label: "Chấm công",
+    color: "#0891b2", bg: "rgba(8,145,178,.12)",
+    ico: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+    perms: [
+      { id: "office_time", name: "Chấm công",              desc: "Xem và quản lý bảng chấm công" },
+      { id: "work_rules",  name: "Cấu hình work rules",    desc: "Thiết lập quy tắc giờ làm việc" },
+    ],
+  },
+  {
+    id: "finance", label: "Tài chính",
+    color: "#d97706", bg: "rgba(217,119,6,.12)",
+    ico: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+    perms: [
+      { id: "payments",    name: "Thanh toán",             desc: "Xem và tạo lệnh thanh toán" },
+      { id: "summary",     name: "Báo cáo / Summary",      desc: "Xem dashboard tổng hợp dữ liệu" },
+    ],
+  },
+  {
+    id: "leave", label: "Nghỉ phép",
+    color: "#be185d", bg: "rgba(190,24,93,.12)",
+    ico: 'M3 4h18v17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4zM16 2v4M8 2v4M3 10h18',
+    perms: [
+      { id: "leave",       name: "Nghỉ phép",              desc: "Xin và duyệt đơn nghỉ phép" },
+    ],
+  },
+  {
+    id: "system", label: "Quản trị hệ thống",
+    color: "#64748b", bg: "rgba(100,116,139,.12)",
+    ico: 'M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z',
+    perms: [
+      { id: "vault",       name: "Password Vault",         desc: "Truy cập credentials khách hàng" },
+      { id: "roles",       name: "Phân quyền",             desc: "Tạo, sửa, xóa vai trò hệ thống" },
+      { id: "messages",    name: "Hộp thư / Kênh",         desc: "Xem và gửi tin nhắn nội bộ" },
+    ],
+  },
 ];
 
-const ROLE_COLORS: Record<string, string> = {
-  SUPER_ADMIN: "bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200",
-  ADMIN:       "bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200",
-  MANAGER:     "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200",
-  TEAM_LEAD:   "bg-cyan-100 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border-cyan-200",
-  ACCOUNTANT:  "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200",
-  HR:          "bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border-pink-200",
-  EMPLOYEE:    "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200",
-};
+const RM_COLORS = ["#3B5BDB","#7c3aed","#0891b2","#059669","#d97706","#dc2626","#0f766e","#be185d","#64748b","#1d4ed8"];
+const AV_COLORS = ["#3B5BDB","#2196f3","#7c3aed","#0891b2","#059669","#d97706","#dc2626","#0f766e","#be185d","#b45309","#1d4ed8","#6d28d9"];
+
+function avColor(name: string) {
+  const c = (name.charCodeAt(0) || 0) + (name.charCodeAt(1) || 0);
+  return AV_COLORS[c % AV_COLORS.length];
+}
+
+function initials(name: string) {
+  return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+}
 
 interface RoleItem {
   id: number;
@@ -43,119 +83,121 @@ interface RoleItem {
   label: string;
   description?: string | null;
   color?: string | null;
-  permissions: Record<string, any>;
+  permissions: Record<string, boolean>;
   _count: { employees: number };
 }
 
-interface Props {
-  initialRoles: RoleItem[];
+interface AssignedEmployee {
+  id: number;
+  fullName: string;
+  department: string | null;
+  role: { label: string } | null;
 }
 
-function RoleEditModal({ role, onClose, onSaved }: { role: RoleItem; onClose: () => void; onSaved: (r: RoleItem) => void }) {
-  const { t } = useLocale();
-  const [label, setLabel] = useState(role.label);
-  const [description, setDescription] = useState(role.description ?? "");
-  const [perms, setPerms] = useState<Record<string, boolean>>(() => {
-    const p: Record<string, boolean> = {};
-    PERMISSION_MODULES.forEach(m => {
-      p[m.key] = role.permissions?.[m.key] !== false;
-    });
-    return p;
-  });
-  const [loading, setLoading] = useState(false);
+// ── Toggle switch ─────────────────────────────────────────
+function PmToggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+  return (
+    <label className={`pm-toggle${disabled ? " disabled" : ""}`} title={disabled ? "Vai trò hệ thống" : ""}>
+      <input type="checkbox" checked={checked} disabled={disabled}
+        onChange={e => !disabled && onChange(e.target.checked)} />
+      <span className="track" />
+      <span className="thumb" />
+    </label>
+  );
+}
 
-  function togglePerm(key: string) {
-    setPerms(prev => ({ ...prev, [key]: !prev[key] }));
-  }
+// ── Add/Edit role modal ────────────────────────────────────
+function RoleModal({ role, onClose, onSaved }: {
+  role: Partial<RoleItem & { seniority: number }> | null;
+  onClose: () => void;
+  onSaved: (r: RoleItem) => void;
+}) {
+  const [name,      setName]      = useState(role?.label ?? "");
+  const [desc,      setDesc]      = useState(role?.description ?? "");
+  const [color,     setColor]     = useState(role?.color ?? RM_COLORS[0]);
+  const [seniority, setSeniority] = useState(role?.seniority ?? 1);
+  const [saving,    setSaving]    = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
+  async function handleSave() {
+    if (!name.trim()) return;
+    setSaving(true); setError(null);
     try {
-      const res = await fetch(`/api/roles/${role.id}`, {
-        method: "PUT",
+      const isEdit = role?.id != null;
+      const url = isEdit ? `/api/roles/${role!.id}` : "/api/roles";
+      const res = await fetch(url, {
+        method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label, description: description || undefined, permissions: perms }),
+        body: JSON.stringify({ label: name.trim(), description: desc || undefined, color, seniority }),
       });
       const json = await res.json();
       if (res.ok) onSaved(json.data);
-    } finally {
-      setLoading(false);
-    }
+      else setError(json.error?.message ?? json.error ?? "Lỗi lưu vai trò");
+    } finally { setSaving(false); }
   }
 
-  const allOn = PERMISSION_MODULES.every(m => perms[m.key]);
+  const inpStyle: React.CSSProperties = {
+    width: "100%", fontFamily: "inherit", fontSize: ".88rem",
+    background: "var(--content)", border: "1px solid var(--border-2)",
+    borderRadius: 8, padding: "7px 10px", color: "var(--text)", outline: "none",
+    boxSizing: "border-box",
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-          <div className="flex items-center gap-2.5">
-            <span className={cn("text-[12px] font-bold px-2.5 py-1 rounded-lg border", ROLE_COLORS[role.name] ?? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200")}>
-              {role.name}
-            </span>
-            <h2 className="text-[15px] font-semibold text-slate-900">{t("roles.editRole")}</h2>
-          </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 dark:text-slate-500 transition">
-            <X className="w-4 h-4" />
-          </button>
+    <div className="rm-modal open">
+      <div className="rm-scrim" onClick={onClose} />
+      <div className="rm-card">
+        <h2>{role?.id ? "Chỉnh sửa vai trò" : "Tạo vai trò mới"}</h2>
+        <button className="rm-close" onClick={onClose}><X size={16} /></button>
+
+        <div className="rm-f">
+          <label>Tên hiển thị *</label>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="vd. Senior Developer, Lead Designer…" style={inpStyle} />
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t("roles.displayName")}</label>
-              <input value={label} onChange={e => setLabel(e.target.value)} required className="form-input" />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t("roles.roleDescription")}</label>
-              <textarea value={description} onChange={e => setDescription(e.target.value)}
-                rows={2} className="form-input resize-none" placeholder={t("roles.descriptionPlaceholder")} />
-            </div>
-          </div>
+        <div className="rm-f">
+          <label>Mô tả</label>
+          <input value={desc} onChange={e => setDesc(e.target.value)} placeholder="Mô tả ngắn về vai trò này…" style={inpStyle} />
+        </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">{t("roles.accessPermissions")}</label>
-              <button type="button"
-                onClick={() => {
-                  const next: Record<string, boolean> = {};
-                  PERMISSION_MODULES.forEach(m => { next[m.key] = !allOn; });
-                  setPerms(next);
-                }}
-                className="text-[11.5px] text-blue-600 dark:text-blue-400 hover:underline">
-                {allOn ? t("roles.deselectAll") : t("roles.selectAll")}
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {PERMISSION_MODULES.map(m => (
-                <button key={m.key} type="button"
-                  onClick={() => togglePerm(m.key)}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg text-[12.5px] font-medium text-left transition border",
-                    perms[m.key]
-                      ? "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-700"
-                      : "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400"
-                  )}>
-                  <div className={cn(
-                    "w-4 h-4 rounded flex items-center justify-center flex-shrink-0",
-                    perms[m.key] ? "bg-blue-600" : "bg-slate-200"
-                  )}>
-                    {perms[m.key] && <Check className="w-2.5 h-2.5 text-white" />}
-                  </div>
-                  {m.label}
-                </button>
-              ))}
-            </div>
+        <div className="rm-f">
+          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            Cấp độ Career (Seniority)
+            <span style={{ fontSize: ".74rem", color: "var(--text-3)", fontWeight: 400 }}>— dùng để sắp xếp lộ trình thăng tiến</span>
+          </label>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <input
+              type="number" min={0} max={20} value={seniority}
+              onChange={e => setSeniority(Number(e.target.value))}
+              style={{ ...inpStyle, width: 80 }}
+            />
+            <span style={{ fontSize: ".8rem", color: "var(--text-3)" }}>
+              {seniority === 0 ? "0 = không nằm trong career track" :
+               seniority === 1 ? "Cấp thấp nhất (vd: Intern, Fresher)" :
+               seniority <= 3 ? "Cấp cơ bản (vd: Junior, Mid)" :
+               seniority <= 5 ? "Cấp cao (vd: Senior, Lead)" :
+               "Cấp rất cao (vd: Principal, Director)"}
+            </span>
           </div>
-        </form>
+        </div>
 
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-slate-100 dark:border-slate-800 flex-shrink-0">
-          <button type="button" onClick={onClose} className="btn-secondary">{t("common.cancel")}</button>
-          <button
-            onClick={e => { e.preventDefault(); handleSubmit(e as any); }}
-            disabled={loading} className="btn-primary">
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />} {t("roles.saveChanges")}
+        <div className="rm-f">
+          <label>Màu nhận diện</label>
+          <div className="rm-color-row">
+            {RM_COLORS.map(c => (
+              <span key={c} className={`rm-cpick${color === c ? " on" : ""}`}
+                style={{ background: c }} onClick={() => setColor(c)} />
+            ))}
+          </div>
+        </div>
+
+        {error && <p style={{ fontSize: ".82rem", color: "var(--danger)", margin: "0 0 8px" }}>{error}</p>}
+
+        <div className="rm-foot">
+          <button className="abtn ghost" onClick={onClose}>Hủy</button>
+          <button className="abtn primary" onClick={handleSave} disabled={saving || !name.trim()} style={{ gap: 6 }}>
+            {saving ? <Loader2 size={13} className="animate-spin" /> : null}
+            Lưu vai trò
           </button>
         </div>
       </div>
@@ -163,96 +205,302 @@ function RoleEditModal({ role, onClose, onSaved }: { role: RoleItem; onClose: ()
   );
 }
 
-export function RolesClient({ initialRoles }: Props) {
-  const user = useCurrentUser();
-  const { t } = useLocale();
-  const isAdmin = ADMIN_ROLES.includes(user.role.name);
+// ── Right panel ────────────────────────────────────────────
+function RolePanel({ role, isAdmin, onEdit, onDelete, onChange }: {
+  role: RoleItem;
+  isAdmin: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onChange: (perms: Record<string, boolean>) => void;
+}) {
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
+    Object.fromEntries(PERM_GROUPS.map(g => [g.id, true]))
+  );
+  const [perms, setPerms] = useState<Record<string, boolean>>(role.permissions ?? {});
+  const [members, setMembers] = useState<AssignedEmployee[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  const [roles, setRoles] = useState<RoleItem[]>(initialRoles);
-  const [editing, setEditing] = useState<RoleItem | null>(null);
+  // re-sync when role changes
+  useEffect(() => { setPerms(role.permissions ?? {}); }, [role.id]);
 
-  function updateRole(r: RoleItem) {
-    setRoles(prev => prev.map(x => x.id === r.id ? r : x));
+  useEffect(() => {
+    fetch(`/api/employees?roleId=${role.id}&status=ACTIVE`)
+      .then(r => r.json())
+      .then(d => setMembers((d.data ?? []).slice(0, 20)))
+      .catch(() => {});
+  }, [role.id]);
+
+  function toggleGroup(id: string) {
+    setOpenGroups(prev => ({ ...prev, [id]: !prev[id] }));
   }
 
+  function togglePerm(key: string, val: boolean) {
+    const next = { ...perms, [key]: val };
+    setPerms(next);
+  }
+
+  async function savePerms() {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/roles/${role.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissions: perms }),
+      });
+      if (res.ok) {
+        onChange(perms);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 1500);
+      }
+    } finally { setSaving(false); }
+  }
+
+  const totalPerms = PERM_GROUPS.reduce((a, g) => a + g.perms.length, 0);
+  const grantedCount = PERM_GROUPS.reduce((a, g) => a + g.perms.filter(p => perms[p.id] !== false).length, 0);
+  const isSystem = ["SUPER_ADMIN", "ADMIN", "MANAGER", "HR", "ACCOUNTANT", "EMPLOYEE"].includes(role.name);
+  // Only SUPER_ADMIN is truly immutable; other system roles can be edited by admins
+  const isReadOnly = role.name === "SUPER_ADMIN" || !isAdmin;
+  const roleColor = role.color ?? "#3B5BDB";
+
   return (
-    <div className="space-y-5">
+    <div className="role-panel">
       {/* Header */}
-      <div>
-        <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">{t("roles.title")}</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t("roles.subtitle")}</p>
+      <div className="rp-head">
+        <span className="rp-ico" style={{ background: roleColor + "22", color: roleColor }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
+          </svg>
+        </span>
+        <div>
+          <div className="rp-name">{role.label}</div>
+          <div className="rp-desc">{role.description ?? role.name}</div>
+          <div className="rp-badges">
+            {isSystem && <span className="sys-badge">⚙ Vai trò hệ thống</span>}
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: ".72rem", color: "var(--text-3)", background: "var(--content)", border: "1px solid var(--border)", borderRadius: 99, padding: "3px 9px" }}>
+              {grantedCount} quyền
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: ".72rem", color: "var(--text-3)", background: "var(--content)", border: "1px solid var(--border)", borderRadius: 99, padding: "3px 9px" }}>
+              {role._count.employees} thành viên
+            </span>
+          </div>
+        </div>
+        {isAdmin && (
+          <div className="rp-head-actions">
+            {!isSystem && (
+              <button className="abtn ghost" style={{ height: 32, fontSize: ".8rem", gap: 6 }} onClick={onDelete}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13">
+                  <path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M8 6V4h8v2" />
+                </svg>Xóa
+              </button>
+            )}
+            <button className="abtn ghost" style={{ height: 32, fontSize: ".8rem", gap: 6 }} onClick={onEdit}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z" />
+              </svg>Chỉnh sửa
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Role cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-        {roles.map(r => {
-          const permCount = PERMISSION_MODULES.filter(m => r.permissions?.[m.key] !== false).length;
-          const totalPerms = PERMISSION_MODULES.length;
-          const pct = totalPerms > 0 ? Math.round((permCount / totalPerms) * 100) : 0;
-          const colorCls = ROLE_COLORS[r.name] ?? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200";
+      {/* Permission matrix */}
+      <div className="perm-matrix">
+        <div className="pm-head">
+          <h3>
+            Ma trận quyền hạn&nbsp;
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: ".72rem", color: "var(--text-3)" }}>
+              ({grantedCount}/{totalPerms} được cấp)
+            </span>
+          </h3>
+          {isReadOnly
+            ? <span style={{ fontSize: ".76rem", color: "var(--text-3)" }}>{role.name === "SUPER_ADMIN" ? "Không thể sửa" : "Không có quyền"}</span>
+            : <button className="abtn primary" style={{ height: 30, fontSize: ".8rem" }} onClick={savePerms} disabled={saving}>
+                {saving ? <Loader2 size={12} className="animate-spin" /> : null}
+                {saved ? "✓ Đã lưu" : "Lưu thay đổi"}
+              </button>
+          }
+        </div>
 
+        {PERM_GROUPS.map(g => {
+          const grantedInGroup = g.perms.filter(p => perms[p.id] !== false).length;
+          const isOpen = openGroups[g.id] !== false;
           return (
-            <div key={r.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-card group">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border", colorCls)}>
-                    <Shield className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[14px] font-semibold text-slate-900">{r.label}</span>
-                      <span className={cn("text-[10.5px] font-bold px-1.5 py-0.5 rounded border", colorCls)}>{r.name}</span>
+            <div key={g.id} className={`pm-group${isOpen ? "" : " collapsed"}`}>
+              <div className="pm-group-head" onClick={() => toggleGroup(g.id)}>
+                <span className="gico" style={{ background: g.bg, color: g.color }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d={g.ico} />
+                  </svg>
+                </span>
+                <span className="glabel">{g.label}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: ".7rem", color: "var(--text-3)", marginLeft: 8 }}>
+                  {grantedInGroup}/{g.perms.length}
+                </span>
+                <span className="gchev">
+                  <ChevronDown size={14} />
+                </span>
+              </div>
+              {isOpen && (
+                <div className="pm-items">
+                  {g.perms.map(p => (
+                    <div key={p.id} className="pm-row">
+                      <span className="pr-name">{p.name}</span>
+                      <span className="pr-desc">{p.desc}</span>
+                      <PmToggle
+                        checked={perms[p.id] !== false}
+                        disabled={isReadOnly}
+                        onChange={v => togglePerm(p.id, v)}
+                      />
                     </div>
-                    {r.description && (
-                      <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{r.description}</p>
-                    )}
-                  </div>
+                  ))}
                 </div>
-                {isAdmin && (
-                  <button onClick={() => setEditing(r)}
-                    className="p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition opacity-0 group-hover:opacity-100">
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100">
-                <div className="flex items-center gap-1.5 text-[12.5px] text-slate-500">
-                  <Users className="w-3.5 h-3.5 text-slate-400" />
-                  <span><span className="font-semibold text-slate-700">{r._count.employees}</span> {t("roles.employees")}</span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between text-[11.5px] text-slate-400 dark:text-slate-500 mb-1">
-                    <span>{t("roles.accessPermissions")}</span>
-                    <span className="font-medium text-slate-600">{permCount}/{totalPerms}</span>
-                  </div>
-                  <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-1 mt-2.5">
-                {PERMISSION_MODULES.map(m => {
-                  const hasAccess = r.permissions?.[m.key] !== false;
-                  return hasAccess ? (
-                    <span key={m.key}
-                      className="text-[10.5px] bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 px-1.5 py-0.5 rounded font-medium">
-                      {m.label}
-                    </span>
-                  ) : null;
-                })}
-              </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {editing && (
-        <RoleEditModal
-          role={editing}
-          onClose={() => setEditing(null)}
-          onSaved={r => { updateRole(r); setEditing(null); }}
+      {/* Assigned members */}
+      <div className="assigned-list">
+        <div className="al-head">
+          <h3>
+            Thành viên được gán&nbsp;
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: ".72rem", color: "var(--text-3)" }}>
+              ({role._count.employees})
+            </span>
+          </h3>
+        </div>
+        {members.length === 0
+          ? <div style={{ padding: "20px", textAlign: "center", color: "var(--text-3)", fontSize: ".84rem" }}>Chưa có thành viên nào</div>
+          : members.map(e => (
+            <div key={e.id} className="al-row">
+              <span className="al-av" style={{ background: avColor(e.fullName) }}>
+                {initials(e.fullName)}
+              </span>
+              <div>
+                <div className="al-name">{e.fullName}</div>
+                <div className="al-dept">{e.role?.label ?? "—"} · {e.department ?? "—"}</div>
+              </div>
+              <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: ".7rem", padding: "2px 8px", borderRadius: 99, background: (role.color ?? "#3B5BDB") + "22", color: role.color ?? "#3B5BDB" }}>
+                {role.label}
+              </span>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────
+export function RolesClient({ initialRoles }: { initialRoles: RoleItem[] }) {
+  const user = useCurrentUser();
+  const isAdmin = ["SUPER_ADMIN", "ADMIN"].includes(user.role.name);
+
+  const [roles, setRoles] = useState<RoleItem[]>(initialRoles);
+  const [activeId, setActiveId] = useState(initialRoles[0]?.id ?? null);
+  const [showModal, setShowModal] = useState(false);
+  const [editRole, setEditRole] = useState<RoleItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const activeRole = roles.find(r => r.id === activeId) ?? roles[0] ?? null;
+
+  function handleSaved(r: RoleItem) {
+    setRoles(prev => {
+      const idx = prev.findIndex(x => x.id === r.id);
+      if (idx >= 0) return prev.map(x => x.id === r.id ? { ...x, ...r } : x);
+      return [...prev, { ...r, _count: { employees: 0 } }];
+    });
+    setActiveId(r.id);
+    setShowModal(false);
+    setEditRole(null);
+  }
+
+  async function handleDelete(r: RoleItem) {
+    if (!confirm(`Xóa vai trò "${r.label}"?`)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/roles/${r.id}`, { method: "DELETE" });
+      if (res.ok) {
+        const next = roles.filter(x => x.id !== r.id);
+        setRoles(next);
+        setActiveId(next[0]?.id ?? null);
+      }
+    } finally { setDeleting(false); }
+  }
+
+  return (
+    <div>
+      {/* Page head */}
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 22 }}>
+        <div>
+          <h1 style={{ fontSize: "1.35rem", fontWeight: 800, color: "var(--text)", margin: 0 }}>Phân quyền</h1>
+          <p style={{ fontSize: ".8rem", color: "var(--text-3)", marginTop: 4, marginBottom: 0 }}>
+            Quản lý vai trò và quyền hạn cho từng thành viên trong workspace.
+          </p>
+        </div>
+        {isAdmin && (
+          <button className="abtn primary" style={{ gap: 7 }} onClick={() => { setEditRole(null); setShowModal(true); }}>
+            <Plus size={15} /> Tạo vai trò
+          </button>
+        )}
+      </div>
+
+      <div className="roles-layout">
+        {/* Left: role list */}
+        <div>
+          <div className="role-list">
+            <div className="role-list-head">
+              <h3>Vai trò <span style={{ fontFamily: "var(--font-mono)", fontSize: ".72rem", color: "var(--text-3)" }}>({roles.length})</span></h3>
+            </div>
+            {roles.map(r => {
+              const grantedCount = PERM_GROUPS.reduce((a, g) => a + g.perms.filter(p => (r.permissions ?? {})[p.id] !== false).length, 0);
+              const roleColor = r.color ?? "#3B5BDB";
+              return (
+                <div key={r.id}
+                  className={`role-item${activeId === r.id ? " active" : ""}`}
+                  onClick={() => setActiveId(r.id)}
+                >
+                  <span className="ri-ico" style={{ background: roleColor + "22", color: roleColor }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
+                    </svg>
+                  </span>
+                  <div>
+                    <div className="ri-name">{r.label}</div>
+                    <div className="ri-sub">{r._count.employees} người dùng</div>
+                  </div>
+                  <span className="ri-ct">{grantedCount} quyền</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right: role panel */}
+        <div>
+          {activeRole ? (
+            <RolePanel
+              key={activeRole.id}
+              role={activeRole}
+              isAdmin={isAdmin}
+              onEdit={() => { setEditRole(activeRole); setShowModal(true); }}
+              onDelete={() => handleDelete(activeRole)}
+              onChange={perms => setRoles(prev => prev.map(r => r.id === activeRole.id ? { ...r, permissions: perms } : r))}
+            />
+          ) : (
+            <div style={{ background: "var(--elev)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "48px 0", textAlign: "center", color: "var(--text-3)", fontSize: ".88rem" }}>
+              Chọn vai trò để xem chi tiết
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showModal && (
+        <RoleModal
+          role={editRole}
+          onClose={() => { setShowModal(false); setEditRole(null); }}
+          onSaved={handleSaved}
         />
       )}
     </div>

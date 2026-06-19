@@ -73,6 +73,10 @@ model Organization {
   inventoryAssignments  InventoryAssignment[]
   channelIntegrations   ChannelIntegration[]
   taskTypeConfigs       TaskTypeConfig[]
+  developmentGoals      DevelopmentGoal[]
+  careerTracks          CareerTrack[]
+  careerLevels          CareerLevel[]
+  careerLevelSkills     CareerLevelSkill[]
 
   @@map("organizations")
 }
@@ -192,6 +196,41 @@ model Employee {
   driveLink3      String?
   driveLink4      String?
   startDate       DateTime?
+
+  // Personal info
+  dob             DateTime?
+  gender          String?
+  nationality     String?
+  permanentAddr   String?
+  currentAddr     String?
+
+  // ID card (CCCD)
+  cccd            String?
+  cccdDate        DateTime?
+  cccdPlace       String?
+
+  // Contract
+  contractType    String?
+  contractNo      String?
+  contractStart   DateTime?
+  contractEnd     DateTime?
+
+  // Bank account
+  bankName        String?
+  bankBranch      String?
+  bankAccount     String?
+  bankHolder      String?
+
+  // Emergency contact
+  emergencyName   String?
+  emergencyRel    String?
+  emergencyPhone  String?
+
+  // Identity photos
+  photoPortrait   String?
+  photoCccdFront  String?
+  photoCccdBack   String?
+
   managerId       Int?
   manager         Employee?    @relation("ManagerEmployee", fields: [managerId], references: [id])
   subordinates    Employee[]   @relation("ManagerEmployee")
@@ -241,9 +280,17 @@ model Employee {
   performanceReviews   PerformanceReview[]   @relation("PerfReviewEmployee")
   performanceReviewsAsManager PerformanceReview[] @relation("PerfReviewManager")
 
+  // Career Track (independent of system role)
+  careerTrackId        Int?
+  careerTrack          CareerTrack?          @relation(fields: [careerTrackId], references: [id])
+  careerLevelId        Int?
+  careerLevel          CareerLevel?          @relation(fields: [careerLevelId], references: [id])
+
   // Skills
   employeeSkills       EmployeeSkill[]       @relation("EmpSkillEmployee")
   verifiedEmployeeSkills EmployeeSkill[]     @relation("EmpSkillVerifier")
+  developmentGoals     DevelopmentGoal[]     @relation("EmpGoals")
+  developmentGoalsCreated DevelopmentGoal[]  @relation("EmpGoalCreator")
 
   // Drive permissions
   drivePermissions          DrivePermission[]
@@ -754,7 +801,9 @@ model Skill {
   updatedAt      DateTime     @updatedAt
 
   employeeSkills EmployeeSkill[]
-  roleRequirements RoleSkillRequirement[]
+  roleRequirements     RoleSkillRequirement[]
+  careerLevelSkills    CareerLevelSkill[]
+  developmentGoals     DevelopmentGoal[]
 
   @@unique([organizationId, name])
   @@index([organizationId, category])
@@ -798,6 +847,61 @@ model RoleSkillRequirement {
   @@unique([organizationId, roleId, skillId])
   @@index([organizationId, roleId])
   @@map("role_skill_requirements")
+}
+
+// ─────────────────────────────────────────────────────────────
+// CAREER TRACK  (tách biệt hoàn toàn với system Role/quyền hạn)
+// ─────────────────────────────────────────────────────────────
+
+model CareerTrack {
+  id             Int           @id @default(autoincrement())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String        // "Frontend Developer", "Backend Developer", "Design"
+  description    String?       @db.Text
+  color          String?
+  levels         CareerLevel[]
+  employees      Employee[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("career_tracks")
+}
+
+model CareerLevel {
+  id             Int           @id @default(autoincrement())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  trackId        Int
+  track          CareerTrack   @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  name           String        // "Intern", "Junior", "Mid", "Senior", "Lead", "Principal"
+  seniority      Int           @default(0) // thứ tự trong track
+  skillRequirements CareerLevelSkill[]
+  employees      Employee[]
+  createdAt      DateTime      @default(now())
+
+  @@unique([trackId, seniority])
+  @@index([organizationId, trackId])
+  @@map("career_levels")
+}
+
+model CareerLevelSkill {
+  id             Int             @id @default(autoincrement())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  levelId        Int
+  level          CareerLevel     @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  skillId        Int
+  skill          Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  requiredLevel  Int             @default(3)
+  importance     SkillImportance @default(IMPORTANT)
+  createdAt      DateTime        @default(now())
+
+  @@unique([levelId, skillId])
+  @@index([organizationId, levelId])
+  @@map("career_level_skills")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1719,4 +1823,39 @@ model TaskComment {
 
   @@index([taskId])
   @@map("task_comments")
+}
+
+// ─────────────────────────────────────────────────────────────
+// DEVELOPMENT GOALS
+// ─────────────────────────────────────────────────────────────
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+model DevelopmentGoal {
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employeeId     Int
+  employee       Employee     @relation("EmpGoals", fields: [employeeId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?      @db.Text
+  category       String?
+  targetDate     DateTime?
+  status         GoalStatus   @default(IN_PROGRESS)
+  progressPct    Int          @default(0)
+  skillId        Int?
+  skill          Skill?       @relation(fields: [skillId], references: [id], onDelete: SetNull)
+  targetLevel    Int?
+  createdById    Int
+  createdBy      Employee     @relation("EmpGoalCreator", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, employeeId])
+  @@map("development_goals")
 }

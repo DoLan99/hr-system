@@ -65,139 +65,69 @@ function useNavSections(): NavSection[] {
   const { t } = useLocale();
   const role = user.role.name;
 
+  const MANAGER_UP  = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+  const ADMIN_UP    = ["SUPER_ADMIN", "ADMIN"];
+  const HR_UP       = ["SUPER_ADMIN", "ADMIN", "HR"];
+  const ALL_STAFF   = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD", "HR", "ACCOUNTANT", "EMPLOYEE"];
+
   const sections: NavSection[] = [
     {
       title: "Công việc",
       items: [
-        { label: t("nav.tasks"), href: "/tasks", icon: ListTodo },
-        { label: "Sprint", href: "/sprints", icon: Zap },
-        { label: t("nav.timeLogs"), href: "/time-logs", icon: Clock4 },
-        { label: t("nav.officeTime"), href: "/office-time", icon: Clock },
-        { label: t("nav.taskTemplates"), href: "/task-templates", icon: Layers },
-        { label: t("nav.taskReviews"), href: "/task-reviews", icon: Inbox },
-        {
-          label: "Capacity",
-          href: "/capacity",
-          icon: Gauge,
-          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"],
-        },
-        {
-          label: "Đánh giá hiệu suất",
-          href: "/performance-reviews",
-          icon: ClipboardList,
-        },
-        {
-          label: "Skill & Career",
-          href: "/skills",
-          icon: Award,
-        },
+        { label: t("nav.tasks"),         href: "/tasks",               icon: ListTodo,      roles: ALL_STAFF },
+        { label: "Sprint",               href: "/sprints",             icon: Zap,           roles: MANAGER_UP },
+        { label: t("nav.timeLogs"),      href: "/time-logs",           icon: Clock4,        roles: ALL_STAFF },
+        { label: t("nav.officeTime"),    href: "/office-time",         icon: Clock,         roles: ALL_STAFF },
+        { label: t("nav.taskTemplates"), href: "/task-templates",      icon: Layers,        roles: MANAGER_UP },
+        { label: t("nav.taskReviews"),   href: "/task-reviews",        icon: Inbox,         roles: MANAGER_UP },
+        { label: "Capacity",             href: "/capacity",            icon: Gauge,         roles: MANAGER_UP },
+        { label: "Đánh giá hiệu suất",  href: "/performance-reviews", icon: ClipboardList, roles: ALL_STAFF },
+        { label: "Skill & Career",       href: "/skills",              icon: Award,         roles: ALL_STAFF },
       ],
     },
     {
       title: t("nav.salaryBenefits"),
       items: [
-        {
-          label: t("nav.summary"),
-          href: "/summary",
-          icon: BarChart3,
-          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD", "ACCOUNTANT", "EMPLOYEE"],
-        },
-        {
-          label: t("nav.payments"),
-          href: "/payments",
-          icon: CreditCard,
-          roles: ["SUPER_ADMIN", "ADMIN", "ACCOUNTANT"],
-        },
-        { label: t("nav.leave"), href: "/leave", icon: CalendarOff },
+        { label: t("nav.summary"),  href: "/summary",  icon: BarChart3,   roles: ALL_STAFF },
+        { label: t("nav.payments"), href: "/payments", icon: CreditCard,  roles: ["SUPER_ADMIN", "ADMIN", "ACCOUNTANT"] },
+        { label: t("nav.leave"),    href: "/leave",    icon: CalendarOff, roles: ALL_STAFF },
       ],
     },
     {
       title: t("nav.customers"),
       items: [
-        { label: t("nav.customers"), href: "/customers", icon: Users },
-        { label: t("nav.messages"), href: "/messages", icon: MessageSquare, badge: "2" },
+        { label: t("nav.customers"), href: "/customers", icon: Users,         roles: [...MANAGER_UP, "ACCOUNTANT"] },
+        { label: t("nav.messages"),  href: "/messages",  icon: MessageSquare, roles: ALL_STAFF, badge: "2" },
       ],
     },
     {
       title: "Phê duyệt",
       items: [
-        { label: "Hộp duyệt", href: "/approvals", icon: ClipboardCheck, badge: "4" },
-        {
-          label: "Cấu hình Workflow",
-          href: "/workflows",
-          icon: WorkflowIcon,
-          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"],
-        },
+        { label: "Hộp duyệt",         href: "/approvals", icon: ClipboardCheck, roles: ALL_STAFF, badge: "4" },
+        { label: "Cấu hình Workflow",  href: "/workflows", icon: WorkflowIcon,   roles: MANAGER_UP },
       ],
     },
     {
       title: "Tài nguyên",
       items: [
-        { label: "Tài liệu", href: "/documents", icon: FolderOpen },
-        { label: "Quản lý Kho", href: "/inventory", icon: Warehouse },
+        { label: "Tài liệu",    href: "/documents", icon: FolderOpen, roles: ALL_STAFF },
+        { label: "Quản lý Kho", href: "/inventory", icon: Warehouse,  roles: MANAGER_UP },
       ],
     },
     {
       title: t("nav.system"),
       items: [
-        {
-          label: t("nav.employees"),
-          href: "/employees",
-          icon: Users,
-          roles: ["SUPER_ADMIN", "ADMIN", "HR"],
-        },
-        {
-          label: t("nav.departments"),
-          href: "/departments",
-          icon: GitBranch,
-          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER"],
-        },
-        {
-          label: t("nav.roles"),
-          href: "/roles",
-          icon: Shield,
-          roles: ["SUPER_ADMIN", "ADMIN"],
-        },
-        {
-          label: t("nav.vault"),
-          href: "/vault",
-          icon: Lock,
-          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER"],
-        },
-        { label: t("nav.workRules"), href: "/work-rules", icon: ScrollText },
-        {
-          label: t("nav.systemLabels"),
-          href: "/system-labels",
-          icon: SlidersHorizontal,
-          roles: ["SUPER_ADMIN", "ADMIN"],
-        },
-        {
-          label: "Activity Tracking",
-          href: "/admin/activity",
-          icon: Activity,
-          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD", "HR"],
-        },
-        {
-          label: "Audit Log",
-          href: "/admin/audit",
-          icon: ShieldCheck,
-          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD", "HR"],
-        },
-        {
-          label: "Anomaly Alerts",
-          href: "/admin/anomalies",
-          icon: ShieldAlert,
-          roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD", "HR"],
-          badge: "1",
-          badgeVariant: "warn",
-        },
-        {
-          label: "Billing",
-          href: "/billing",
-          icon: Crown,
-          roles: ["SUPER_ADMIN", "ADMIN"],
-        },
-        { label: t("nav.settings"), href: "/settings", icon: Settings },
+        { label: t("nav.employees"),   href: "/employees",       icon: Users,           roles: [...HR_UP, "MANAGER"] },
+        { label: t("nav.departments"), href: "/departments",     icon: GitBranch,        roles: MANAGER_UP },
+        { label: t("nav.roles"),       href: "/roles",           icon: Shield,           roles: ADMIN_UP },
+        { label: t("nav.vault"),       href: "/vault",           icon: Lock,             roles: MANAGER_UP },
+        { label: t("nav.workRules"),   href: "/work-rules",      icon: ScrollText,       roles: ADMIN_UP },
+        { label: t("nav.systemLabels"),href: "/system-labels",   icon: SlidersHorizontal,roles: ADMIN_UP },
+        { label: "Activity Tracking",  href: "/admin/activity",  icon: Activity,         roles: [...MANAGER_UP, "HR"] },
+        { label: "Audit Log",          href: "/admin/audit",     icon: ShieldCheck,      roles: [...MANAGER_UP, "HR"] },
+        { label: "Anomaly Alerts",     href: "/admin/anomalies", icon: ShieldAlert,      roles: [...MANAGER_UP, "HR"], badge: "1", badgeVariant: "warn" },
+        { label: "Billing",            href: "/billing",         icon: Crown,            roles: ADMIN_UP },
+        { label: t("nav.settings"),    href: "/settings",        icon: Settings,         roles: ADMIN_UP },
       ],
     },
   ];
@@ -230,10 +160,16 @@ export function Sidebar() {
   const [openGroup, setOpenGroup] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
+    // Always open the section that contains the active page
+    if (activeSectionTitle) {
+      setOpenGroup(activeSectionTitle);
+      if (typeof window !== "undefined") window.localStorage.setItem("jh-nav-open", activeSectionTitle);
+      return;
+    }
     if (openGroup !== undefined) return;
     const stored = typeof window !== "undefined" ? window.localStorage.getItem("jh-nav-open") : null;
-    setOpenGroup(stored ?? activeSectionTitle ?? navSections[0]?.title ?? null);
-  }, [openGroup, activeSectionTitle, navSections]);
+    setOpenGroup(stored ?? navSections[0]?.title ?? null);
+  }, [activeSectionTitle]); // eslint-disable-line
 
   function toggleGroup(title: string) {
     setOpenGroup((prev) => {

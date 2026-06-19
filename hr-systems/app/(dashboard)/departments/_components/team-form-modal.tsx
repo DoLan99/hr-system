@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Loader2, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useToast } from "@/lib/hooks/use-toast";
 
 interface Employee { id: number; fullName: string }
 interface DeptOption { id: number; name: string }
@@ -20,6 +19,7 @@ interface Props {
 }
 
 export function TeamFormModal({ team, departments, employees, onClose, onSaved }: Props) {
+  const { toast } = useToast();
   const [name, setName] = useState(team?.name ?? "");
   const [code, setCode] = useState(team?.code ?? "");
   const [selectedDeptIds, setSelectedDeptIds] = useState<Set<number>>(
@@ -59,7 +59,8 @@ export function TeamFormModal({ team, departments, employees, onClose, onSaved }
         }),
       });
       const json = await res.json();
-      if (!res.ok) { setError(json.error?.message ?? "Lỗi lưu"); return; }
+      if (!res.ok) { setError(json.error?.message ?? json.error ?? "Lỗi lưu"); return; }
+      toast({ title: team ? "Đã cập nhật nhóm" : "Đã thêm nhóm", description: name, variant: "default" });
       onSaved(json.data);
     } finally {
       setLoading(false);
@@ -67,68 +68,69 @@ export function TeamFormModal({ team, departments, employees, onClose, onSaved }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h2 className="text-[15px] font-semibold text-slate-900">
-            {team ? "Sửa nhóm" : "Thêm nhóm"}
-          </h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 dark:text-slate-500 transition">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <div className="dm-modal open">
+      <div className="dm-scrim" onClick={onClose} />
+      <div className="dm-card">
+        <h2>{team ? "Sửa nhóm" : "Thêm nhóm"}</h2>
+        <button className="dm-close" type="button" onClick={onClose}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" width={16} height={16}>
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
 
-        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-3.5">
-          {error && <p className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-lg">{error}</p>}
+        <form onSubmit={handleSubmit} style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {error && (
+            <div style={{ background:"var(--danger-soft)", color:"var(--danger)", borderRadius:9, padding:"10px 14px", fontSize:".85rem" }}>
+              {error}
+            </div>
+          )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">Tên nhóm *</label>
-              <input value={name} onChange={e => setName(e.target.value)} required
-                placeholder="VD: Backend Team" className="form-input" />
+          <div className="dm-grid">
+            <div className="dm-f" style={{ gridColumn:"1 / -1" }}>
+              <label>Tên nhóm *</label>
+              <input value={name} onChange={e => setName(e.target.value)} required placeholder="VD: Backend Team" />
             </div>
-            <div>
-              <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">Mã nhóm</label>
-              <input value={code} onChange={e => setCode(e.target.value.toUpperCase())}
-                placeholder="VD: BE" className="form-input" />
+            <div className="dm-f">
+              <label>Mã nhóm</label>
+              <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="VD: BE" />
             </div>
-            <div>
-              <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">Trạng thái</label>
-              <select value={isActive ? "1" : "0"} onChange={e => setIsActive(e.target.value === "1")}
-                className="form-select w-full">
+            <div className="dm-f">
+              <label>Trạng thái</label>
+              <select value={isActive ? "1" : "0"} onChange={e => setIsActive(e.target.value === "1")}>
                 <option value="1">Hoạt động</option>
                 <option value="0">Tạm ngưng</option>
               </select>
             </div>
           </div>
 
-          {/* Multi-select departments */}
-          <div>
-            <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Phòng ban liên kết
-              <span className="ml-1.5 text-slate-400 dark:text-slate-500 font-normal">(có thể chọn nhiều)</span>
-            </label>
+          <div className="dm-f">
+            <label>Phòng ban liên kết <span style={{ fontWeight:400, color:"var(--text-3)" }}>(có thể chọn nhiều)</span></label>
             {departments.length === 0 ? (
-              <p className="text-[12px] text-slate-400 dark:text-slate-500 italic">Chưa có phòng ban nào</p>
+              <div style={{ fontSize:".82rem", color:"var(--text-3)", fontStyle:"italic" }}>Chưa có phòng ban nào</div>
             ) : (
-              <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, maxHeight:140, overflowY:"auto" }}>
                 {departments.map(d => {
                   const checked = selectedDeptIds.has(d.id);
                   return (
                     <button key={d.id} type="button" onClick={() => toggleDept(d.id)}
-                      className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-lg text-[12.5px] font-medium text-left border transition",
-                        checked
-                          ? "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-700"
-                          : "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100"
-                      )}>
-                      <div className={cn(
-                        "w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border",
-                        checked ? "bg-blue-600 border-blue-600" : "bg-white dark:bg-slate-900 border-slate-300"
-                      )}>
-                        {checked && <Check className="w-2.5 h-2.5 text-white" />}
-                      </div>
-                      <span className="truncate">{d.name}</span>
+                      style={{
+                        display:"flex", alignItems:"center", gap:8, padding:"8px 10px",
+                        borderRadius:9, border:`1.5px solid ${checked ? "var(--accent)" : "var(--border-2)"}`,
+                        background: checked ? "var(--accent-soft)" : "var(--content)",
+                        color: checked ? "var(--accent-ink)" : "var(--text-2)",
+                        fontSize:".82rem", fontWeight:600, textAlign:"left", cursor:"pointer",
+                        transition:"all .15s", fontFamily:"inherit",
+                      }}>
+                      <span style={{
+                        width:16, height:16, borderRadius:5, flexShrink:0, display:"grid", placeItems:"center",
+                        background: checked ? "var(--accent)" : "var(--border-2)",
+                        color:"#fff",
+                      }}>
+                        {checked && (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" width={10} height={10}><path d="M5 12l5 5L20 7" /></svg>
+                        )}
+                      </span>
+                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.name}</span>
                     </button>
                   );
                 })}
@@ -136,10 +138,9 @@ export function TeamFormModal({ team, departments, employees, onClose, onSaved }
             )}
           </div>
 
-          <div>
-            <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">Trưởng nhóm</label>
-            <select value={leadId ?? ""} onChange={e => setLeadId(e.target.value ? Number(e.target.value) : null)}
-              className="form-select w-full">
+          <div className="dm-f">
+            <label>Trưởng nhóm</label>
+            <select value={leadId ?? ""} onChange={e => setLeadId(e.target.value ? Number(e.target.value) : null)}>
               <option value="">— Chưa chọn —</option>
               {employees.map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.fullName}</option>
@@ -147,16 +148,21 @@ export function TeamFormModal({ team, departments, employees, onClose, onSaved }
             </select>
           </div>
 
-          <div>
-            <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">Mô tả</label>
+          <div className="dm-f">
+            <label>Mô tả</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)}
-              rows={2} className="form-input resize-none" placeholder="Mô tả nhiệm vụ nhóm..." />
+              rows={2} style={{ height:"auto", padding:"10px 12px", resize:"none" }} placeholder="Mô tả nhiệm vụ nhóm..." />
           </div>
 
-          <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose} className="btn-secondary">Hủy</button>
-            <button type="submit" disabled={loading} className="btn-primary">
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />} Lưu
+          <div className="dm-foot">
+            <button type="button" className="abtn ghost" onClick={onClose}>Hủy</button>
+            <button type="submit" className="abtn primary" disabled={loading}>
+              {loading && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" width={14} height={14} style={{ animation:"spin 1s linear infinite" }}>
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                </svg>
+              )}
+              Lưu
             </button>
           </div>
         </form>

@@ -5,34 +5,34 @@ import { withContext } from "@/lib/with-context";
 import { requireApiAuth } from "@/lib/api-auth";
 
 const updateSchema = z.object({
-  label: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
   description: z.string().optional(),
   color: z.string().optional(),
-  seniority: z.number().int().min(0).optional(),
-  permissions: z.record(z.any()).optional(),
 });
 
 export const PUT = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
   const auth = await requireApiAuth();
   if (!auth.ok) return auth.response;
-  if (!auth.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!auth.isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-  const d = parsed.data;
-  const role = await prisma.role.update({
+  const track = await prisma.careerTrack.update({
     where: { id: Number(params.id) },
-    data: {
-      ...(d.label !== undefined && { label: d.label }),
-      ...(d.description !== undefined && { description: d.description }),
-      ...(d.color !== undefined && { color: d.color }),
-      ...(d.seniority !== undefined && { seniority: d.seniority }),
-      ...(d.permissions !== undefined && { permissions: d.permissions }),
-    },
-    include: { _count: { select: { employees: true } } },
+    data: parsed.data,
+    include: { levels: { orderBy: { seniority: "asc" } }, _count: { select: { employees: true } } },
   });
 
-  return NextResponse.json({ data: role });
+  return NextResponse.json({ data: track });
+});
+
+export const DELETE = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const auth = await requireApiAuth();
+  if (!auth.ok) return auth.response;
+  if (!auth.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  await prisma.careerTrack.delete({ where: { id: Number(params.id) } });
+  return NextResponse.json({ ok: true });
 });

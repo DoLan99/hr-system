@@ -29,18 +29,23 @@ export const POST = withContext(async (req: NextRequest) => {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-  try {
-    const skill = await prisma.skill.create({
-      data: {
-        organizationId: auth.orgId,
-        name: parsed.data.name,
-        category: parsed.data.category ?? null,
-        description: parsed.data.description ?? null,
-      },
+  const { name, category, description } = parsed.data;
+
+  // If a skill with this name exists (even disabled), reactivate it
+  const existing = await prisma.skill.findFirst({
+    where: { organizationId: auth.orgId, name: { equals: name, mode: "insensitive" } },
+  });
+
+  if (existing) {
+    const skill = await prisma.skill.update({
+      where: { id: existing.id },
+      data: { isActive: true, category: category ?? null, description: description ?? null },
     });
     return NextResponse.json({ data: skill });
-  } catch (e: any) {
-    if (e.code === "P2002") return NextResponse.json({ error: "Tên skill đã tồn tại" }, { status: 409 });
-    throw e;
   }
+
+  const skill = await prisma.skill.create({
+    data: { organizationId: auth.orgId, name, category: category ?? null, description: description ?? null },
+  });
+  return NextResponse.json({ data: skill });
 });

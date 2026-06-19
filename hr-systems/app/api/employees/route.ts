@@ -6,6 +6,33 @@ import { withContext } from "@/lib/with-context";
 import { getOrgId } from "@/lib/request-context";
 import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
 
+function deptPrefix(deptName: string): string {
+  const name = deptName.trim();
+  // Lấy chữ cái đầu của mỗi từ, tối đa 3 ký tự, uppercase
+  const words = name.split(/\s+/).filter(Boolean);
+  if (words.length === 1) {
+    return name.slice(0, 3).toUpperCase();
+  }
+  return words.map(w => w[0]).join("").slice(0, 3).toUpperCase();
+}
+
+async function generateEmployeeCode(orgId: string, departmentId?: number | null, deptName?: string): Promise<string> {
+  let prefix = "NV";
+  if (departmentId) {
+    const dept = await rawPrisma.department.findUnique({ where: { id: departmentId }, select: { name: true } });
+    if (dept) prefix = deptPrefix(dept.name);
+  } else if (deptName) {
+    prefix = deptPrefix(deptName);
+  }
+
+  // Đếm số nhân viên đã có prefix này (bao gồm cả inactive)
+  const existing = await rawPrisma.employee.count({
+    where: { organizationId: orgId, employeeCode: { startsWith: prefix + "-" } },
+  });
+  const seq = existing + 1;
+  return `${prefix}-${String(seq).padStart(3, "0")}`;
+}
+
 const createSchema = z.object({
   fullName: z.string().min(1),
   emailCompany: z.string().email(),
@@ -32,6 +59,28 @@ const createSchema = z.object({
   driveLink2: z.string().optional(),
   driveLink3: z.string().optional(),
   driveLink4: z.string().optional(),
+  // personal
+  dob: z.string().nullable().optional(),
+  gender: z.string().nullable().optional(),
+  nationality: z.string().nullable().optional(),
+  permanentAddr: z.string().nullable().optional(),
+  currentAddr: z.string().nullable().optional(),
+  cccd: z.string().nullable().optional(),
+  cccdDate: z.string().nullable().optional(),
+  cccdPlace: z.string().nullable().optional(),
+  emergencyName: z.string().nullable().optional(),
+  emergencyRel: z.string().nullable().optional(),
+  emergencyPhone: z.string().nullable().optional(),
+  // contract
+  contractType: z.string().nullable().optional(),
+  contractNo: z.string().nullable().optional(),
+  contractStart: z.string().nullable().optional(),
+  contractEnd: z.string().nullable().optional(),
+  // bank
+  bankName: z.string().nullable().optional(),
+  bankBranch: z.string().nullable().optional(),
+  bankAccount: z.string().nullable().optional(),
+  bankHolder: z.string().nullable().optional(),
 });
 
 export const GET = withContext(async (req: NextRequest) => {
@@ -42,10 +91,14 @@ export const GET = withContext(async (req: NextRequest) => {
   const search = searchParams.get("search") ?? "";
   const status = searchParams.get("status");
   const department = searchParams.get("department");
+  const roleIdParam = searchParams.get("roleId");
+  const teamIdParam = searchParams.get("teamId");
 
-  const where: any = {};
+  const where: any = { organizationId: orgId };
   if (status) where.status = status;
   if (department) where.department = department;
+  if (roleIdParam) where.roleId = Number(roleIdParam);
+  if (teamIdParam) where.teamId = Number(teamIdParam);
   if (search) {
     where.OR = [
       { fullName: { contains: search, mode: "insensitive" } },
@@ -58,13 +111,29 @@ export const GET = withContext(async (req: NextRequest) => {
     where,
     select: {
       id: true, employeeCode: true, fullName: true, avatarUrl: true,
-      department: true, company: true, emailCompany: true, emailGoogle: true,
+      department: true, company: true, emailCompany: true, emailGoogle: true, emailPrivate: true,
       mobileCompany: true, payType: true, hourlyRate: true, monthlySalary: true,
       maxHoursMonth: true, bonusMPct: true, bonusAPct: true, bonusTPct: true,
       startDate: true, status: true, managerId: true,
       clerkUserId: true, isOwner: true, membershipRole: true,
+      // Personal info
+      dob: true, gender: true, nationality: true, permanentAddr: true, currentAddr: true,
+      cccd: true, cccdDate: true, cccdPlace: true,
+      // Contract
+      contractType: true, contractNo: true, contractStart: true, contractEnd: true,
+      // Bank
+      bankName: true, bankBranch: true, bankAccount: true, bankHolder: true,
+      // Emergency
+      emergencyName: true, emergencyRel: true, emergencyPhone: true,
+      // Photos
+      photoPortrait: true, photoCccdFront: true, photoCccdBack: true,
       role: { select: { id: true, name: true, label: true } },
       manager: { select: { id: true, fullName: true } },
+      dept: { select: { id: true, name: true } },
+      careerTrackId: true,
+      careerLevelId: true,
+      careerTrack: { select: { id: true, name: true, color: true } },
+      careerLevel: { select: { id: true, name: true, seniority: true } },
     },
     orderBy: { fullName: "asc" },
   });
@@ -108,7 +177,7 @@ export const POST = withContext(async (req: NextRequest) => {
   }
 
   const memberCount = await rawPrisma.employee.count({
-    where: { organizationId: auth.orgId, status: { not: "INACTIVE" } },
+    where: { organizationId: auth.orgId, status: { not: "INACTIVE" }, isOwner: false },
   });
   if (memberCount >= org.seatLimit) {
     return NextResponse.json(
@@ -121,31 +190,31 @@ export const POST = withContext(async (req: NextRequest) => {
     where: { id: auth.actorId },
     select: { clerkUserId: true },
   });
-  if (!inviter) return NextResponse.json({ error: "Người mời không tồn tại" }, { status: 500 });
 
-  const protocol = req.headers.get("x-forwarded-proto") ?? "http";
-  const host = req.headers.get("host") ?? "";
-  const redirectUrl = `${protocol}://${host}/welcome`;
-
-  const client = await clerkClient();
-  let clerkInvitationId: string;
+  // Try to send Clerk invitation (optional — failure does NOT block employee creation)
+  let placeholderClerkId = `pending:${d.emailCompany}`;
   try {
-    const invitation = await client.organizations.createOrganizationInvitation({
-      organizationId: org.clerkOrgId,
-      inviterUserId: inviter.clerkUserId,
-      emailAddress: d.emailCompany,
-      role: "org:member",
-      redirectUrl,
-    });
-    clerkInvitationId = invitation.id;
+    if (inviter) {
+      const protocol = req.headers.get("x-forwarded-proto") ?? "http";
+      const host = req.headers.get("host") ?? "";
+      const redirectUrl = `${protocol}://${host}/welcome`;
+      const client = await clerkClient();
+      const invitation = await client.organizations.createOrganizationInvitation({
+        organizationId: org.clerkOrgId,
+        inviterUserId: inviter.clerkUserId,
+        emailAddress: d.emailCompany,
+        role: "org:member",
+        redirectUrl,
+      });
+      placeholderClerkId = `pending:${invitation.id}`;
+    }
   } catch (err) {
-    console.error("[employees POST] Clerk invitation failed:", err);
-    const anyErr = err as { errors?: Array<{ message?: string; longMessage?: string; code?: string }>; status?: number };
-    const detail = anyErr.errors?.[0]?.longMessage ?? anyErr.errors?.[0]?.message ?? (err instanceof Error ? err.message : String(err));
-    return NextResponse.json({ error: `Không gửi được email mời: ${detail}` }, { status: 502 });
+    // Log but continue — employee record will be created, they can sign up manually
+    console.warn("[employees POST] Clerk invitation skipped:", (err as Error).message);
   }
 
-  const placeholderClerkId = `pending:${clerkInvitationId}`;
+  const autoCode = await generateEmployeeCode(auth.orgId, d.departmentId, d.department);
+  const finalCode = d.employeeCode?.trim() || autoCode;
 
   const employee = await prisma.employee.create({
     data: {
@@ -156,7 +225,7 @@ export const POST = withContext(async (req: NextRequest) => {
       fullName: d.fullName,
       emailCompany: d.emailCompany,
       roleId: d.roleId,
-      employeeCode: d.employeeCode,
+      employeeCode: finalCode,
       department: d.department,
       departmentId: d.departmentId ?? null,
       teamId: d.teamId ?? null,
@@ -178,12 +247,46 @@ export const POST = withContext(async (req: NextRequest) => {
       driveLink2: d.driveLink2,
       driveLink3: d.driveLink3,
       driveLink4: d.driveLink4,
+      // personal
+      dob: d.dob ? new Date(d.dob) : null,
+      gender: d.gender ?? null,
+      nationality: d.nationality ?? null,
+      permanentAddr: d.permanentAddr ?? null,
+      currentAddr: d.currentAddr ?? null,
+      cccd: d.cccd ?? null,
+      cccdDate: d.cccdDate ? new Date(d.cccdDate) : null,
+      cccdPlace: d.cccdPlace ?? null,
+      emergencyName: d.emergencyName ?? null,
+      emergencyRel: d.emergencyRel ?? null,
+      emergencyPhone: d.emergencyPhone ?? null,
+      // contract
+      contractType: d.contractType ?? null,
+      contractNo: d.contractNo ?? null,
+      contractStart: d.contractStart ? new Date(d.contractStart) : null,
+      contractEnd: d.contractEnd ? new Date(d.contractEnd) : null,
+      // bank
+      bankName: d.bankName ?? null,
+      bankBranch: d.bankBranch ?? null,
+      bankAccount: d.bankAccount ?? null,
+      bankHolder: d.bankHolder ?? null,
     },
     select: {
-      id: true, employeeCode: true, fullName: true, department: true,
-      emailCompany: true, payType: true, status: true,
-      clerkUserId: true, isOwner: true, membershipRole: true,
+      id: true, employeeCode: true, fullName: true, avatarUrl: true,
+      department: true, departmentId: true, teamId: true,
+      company: true, emailCompany: true, emailGoogle: true,
+      emailPrivate: true, mobileCompany: true, payType: true, hourlyRate: true,
+      monthlySalary: true, maxHoursMonth: true, bonusMPct: true, bonusAPct: true,
+      bonusTPct: true, startDate: true, status: true, managerId: true,
+      driveLink1: true,
+      dob: true, gender: true, nationality: true, permanentAddr: true, currentAddr: true,
+      cccd: true, cccdDate: true, cccdPlace: true,
+      contractType: true, contractNo: true, contractStart: true, contractEnd: true,
+      bankName: true, bankBranch: true, bankAccount: true, bankHolder: true,
+      emergencyName: true, emergencyRel: true, emergencyPhone: true,
+      photoPortrait: true, photoCccdFront: true, photoCccdBack: true,
       role: { select: { id: true, name: true, label: true } },
+      manager: { select: { id: true, fullName: true } },
+      dept: { select: { id: true, name: true } },
     },
   });
 

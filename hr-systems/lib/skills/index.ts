@@ -12,10 +12,9 @@ export interface SkillGap {
   met: boolean;
 }
 
-export interface RoleReadiness {
-  roleId: number;
-  roleName: string;
-  roleLabel: string;
+export interface CareerLevelReadiness {
+  levelId: number;
+  levelName: string;
   seniority: number;
   isCurrent: boolean;
   totalRequirements: number;
@@ -26,25 +25,21 @@ export interface RoleReadiness {
   gaps: SkillGap[];
 }
 
-interface EmployeeSkillRecord {
-  skillId: number;
-  currentLevel: number;
+export interface CareerPathResult {
+  trackId: number;
+  trackName: string;
+  trackColor: string | null;
+  currentLevelName: string | null;
+  levels: CareerLevelReadiness[];
 }
 
-interface RoleRequirementRecord {
-  skillId: number;
-  requiredLevel: number;
-  importance: "CRITICAL" | "IMPORTANT" | "NICE_TO_HAVE";
-  skill: { id: number; name: string; category: string | null };
-}
-
-function computeRoleReadiness(
-  reqs: RoleRequirementRecord[],
+function computeLevelReadiness(
+  reqs: Array<{ skillId: number; requiredLevel: number; importance: string; skill: { id: number; name: string; category: string | null } }>,
   empSkillMap: Map<number, number>,
-): { gaps: SkillGap[]; metCount: number; criticalGaps: number; readinessPct: number } {
+) {
+  const WEIGHT: Record<string, number> = { CRITICAL: 3, IMPORTANT: 2, NICE_TO_HAVE: 1 };
   const gaps: SkillGap[] = reqs.map(req => {
     const currentLevel = empSkillMap.get(req.skillId) ?? 0;
-    const met = currentLevel >= req.requiredLevel;
     return {
       skillId: req.skillId,
       skillName: req.skill.name,
@@ -52,50 +47,47 @@ function computeRoleReadiness(
       currentLevel,
       requiredLevel: req.requiredLevel,
       gap: Math.max(0, req.requiredLevel - currentLevel),
-      importance: req.importance,
-      met,
+      importance: req.importance as SkillGap["importance"],
+      met: currentLevel >= req.requiredLevel,
     };
   });
 
-  let totalWeight = 0;
-  let metWeight = 0;
-  let criticalGaps = 0;
-  let metCount = 0;
+  let totalWeight = 0, metWeight = 0, criticalGaps = 0, metCount = 0;
   for (const g of gaps) {
-    const w = IMPORTANCE_WEIGHT[g.importance];
+    const w = WEIGHT[g.importance] ?? 2;
     totalWeight += w;
-    if (g.met) {
-      metWeight += w;
-      metCount += 1;
-    } else if (g.importance === "CRITICAL") {
-      criticalGaps += 1;
-    }
+    if (g.met) { metWeight += w; metCount++; }
+    else if (g.importance === "CRITICAL") criticalGaps++;
   }
 
   const readinessPct = totalWeight > 0 ? Math.round((metWeight / totalWeight) * 100) : 100;
-
   return { gaps, metCount, criticalGaps, readinessPct };
 }
 
-export async function computeCareerPath(orgId: string, employeeId: number): Promise<{
-  current: { roleId: number; roleName: string; gaps: SkillGap[]; readinessPct: number } | null;
-  candidates: RoleReadiness[];
-}> {
+export async function computeCareerPath(
+  orgId: string,
+  employeeId: number,
+): Promise<CareerPathResult | null> {
   const employee = await prisma.employee.findFirst({
     where: { organizationId: orgId, id: employeeId },
-    select: { roleId: true, role: { select: { id: true, name: true, label: true, seniority: true } } },
+    select: { careerTrackId: true, careerLevelId: true },
   });
-  if (!employee) return { current: null, candidates: [] };
 
-  const [allRoles, empSkills] = await Promise.all([
-    prisma.role.findMany({
-      where: { organizationId: orgId },
+  if (!employee?.careerTrackId) return null;
+
+  const [track, empSkills] = await Promise.all([
+    prisma.careerTrack.findFirst({
+      where: { id: employee.careerTrackId, organizationId: orgId },
       include: {
-        skillRequirements: {
-          include: { skill: { select: { id: true, name: true, category: true } } },
+        levels: {
+          orderBy: { seniority: "asc" },
+          include: {
+            skillRequirements: {
+              include: { skill: { select: { id: true, name: true, category: true } } },
+            },
+          },
         },
       },
-      orderBy: [{ seniority: "asc" }, { label: "asc" }],
     }),
     prisma.employeeSkill.findMany({
       where: { organizationId: orgId, employeeId },
@@ -103,30 +95,28 @@ export async function computeCareerPath(orgId: string, employeeId: number): Prom
     }),
   ]);
 
-  const empSkillMap = new Map(empSkills.map((e: EmployeeSkillRecord) => [e.skillId, e.currentLevel]));
+  if (!track) return null;
 
-  const currentRole = allRoles.find(r => r.id === employee.roleId);
-  let current: { roleId: number; roleName: string; gaps: SkillGap[]; readinessPct: number } | null = null;
-  if (currentRole) {
-    const { gaps, readinessPct } = computeRoleReadiness(currentRole.skillRequirements as any, empSkillMap);
-    current = { roleId: currentRole.id, roleName: currentRole.label, gaps, readinessPct };
-  }
+  const empSkillMap = new Map(empSkills.map(e => [e.skillId, e.currentLevel]));
 
-  const candidates: RoleReadiness[] = allRoles.map(role => {
-    const { gaps, metCount, criticalGaps, readinessPct } = computeRoleReadiness(role.skillRequirements as any, empSkillMap);
-    let status: RoleReadiness["status"];
+  const levels: CareerLevelReadiness[] = track.levels.map(level => {
+    const { gaps, metCount, criticalGaps, readinessPct } = computeLevelReadiness(
+      level.skillRequirements as any,
+      empSkillMap,
+    );
+
+    let status: CareerLevelReadiness["status"];
     if (criticalGaps === 0 && readinessPct >= 90) status = "ready";
     else if (criticalGaps === 0 && readinessPct >= 70) status = "almost";
     else if (readinessPct >= 50) status = "developing";
     else status = "early";
 
     return {
-      roleId: role.id,
-      roleName: role.name,
-      roleLabel: role.label,
-      seniority: role.seniority,
-      isCurrent: role.id === employee.roleId,
-      totalRequirements: role.skillRequirements.length,
+      levelId: level.id,
+      levelName: level.name,
+      seniority: level.seniority,
+      isCurrent: level.id === employee.careerLevelId,
+      totalRequirements: level.skillRequirements.length,
       metRequirements: metCount,
       criticalGaps,
       readinessPct,
@@ -135,5 +125,13 @@ export async function computeCareerPath(orgId: string, employeeId: number): Prom
     };
   });
 
-  return { current, candidates };
+  const currentLevel = track.levels.find(l => l.id === employee.careerLevelId);
+
+  return {
+    trackId: track.id,
+    trackName: track.name,
+    trackColor: track.color,
+    currentLevelName: currentLevel?.name ?? null,
+    levels,
+  };
 }

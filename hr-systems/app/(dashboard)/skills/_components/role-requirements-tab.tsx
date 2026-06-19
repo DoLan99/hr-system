@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Plus, Loader2, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { SKILL_LEVELS } from "@/lib/skills/constants";
+import { safeJson } from "@/lib/safe-json";
 
 interface Role {
   id: number;
@@ -29,29 +29,32 @@ interface Requirement {
 }
 
 const IMP_OPTIONS = [
-  { val: "CRITICAL", label: "Bắt buộc", color: "bg-red-50 text-red-700 border-red-200" },
-  { val: "IMPORTANT", label: "Quan trọng", color: "bg-orange-50 text-orange-700 border-orange-200" },
-  { val: "NICE_TO_HAVE", label: "Nên có", color: "bg-slate-50 text-slate-600 border-slate-200" },
+  { val: "CRITICAL",     label: "Bắt buộc",  color: "var(--danger)",  bg: "var(--danger-soft)"  },
+  { val: "IMPORTANT",    label: "Quan trọng", color: "var(--warn)",    bg: "var(--warn-soft)"    },
+  { val: "NICE_TO_HAVE", label: "Nên có",     color: "var(--text-3)",  bg: "var(--border)"       },
 ] as const;
 
+function impStyle(val: string) {
+  return IMP_OPTIONS.find(o => o.val === val) ?? IMP_OPTIONS[2];
+}
+
 export function RoleRequirementsTab() {
-  const [roles, setRoles] = useState<Role[]>([]);
+  const [roles, setRoles]   = useState<Role[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
-  const [reqs, setReqs] = useState<Requirement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [reqs, setReqs]     = useState<Requirement[]>([]);
+  const [loading, setLoading]         = useState(true);
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
 
-  // Add form
-  const [addSkillId, setAddSkillId] = useState<number | "">("");
-  const [addLevel, setAddLevel] = useState(3);
+  const [addSkillId,    setAddSkillId]    = useState<number | "">("");
+  const [addLevel,      setAddLevel]      = useState(3);
   const [addImportance, setAddImportance] = useState<"CRITICAL" | "IMPORTANT" | "NICE_TO_HAVE">("IMPORTANT");
   const [adding, setAdding] = useState(false);
 
   const fetchData = useCallback(async () => {
     const [rolesRes, skillsRes, reqsRes] = await Promise.all([
-      fetch("/api/roles").then(r => r.json()).catch(() => ({ data: [] })),
-      fetch("/api/skills").then(r => r.json()),
-      fetch("/api/role-skill-requirements").then(r => r.json()),
+      fetch("/api/roles").then(safeJson).catch(() => ({ data: [] })),
+      fetch("/api/skills").then(safeJson),
+      fetch("/api/role-skill-requirements").then(safeJson),
     ]);
     const rolesList = (rolesRes.data ?? []) as Role[];
     setRoles(rolesList);
@@ -68,12 +71,16 @@ export function RoleRequirementsTab() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
-    return <div className="flex items-center justify-center py-10 text-slate-400"><Loader2 className="w-4 h-4 animate-spin mr-2" /> Đang tải…</div>;
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 0", color: "var(--text-3)", gap: 8 }}>
+        <Loader2 size={16} className="animate-spin" /> Đang tải…
+      </div>
+    );
   }
 
-  const roleReqs = reqs.filter(r => r.roleId === selectedRoleId);
-  const roleReqsSkillIds = new Set(roleReqs.map(r => r.skillId));
-  const availableSkills = skills.filter(s => !roleReqsSkillIds.has(s.id));
+  const roleReqs        = reqs.filter(r => r.roleId === selectedRoleId);
+  const roleReqSkillIds = new Set(roleReqs.map(r => r.skillId));
+  const availableSkills = skills.filter(s => !roleReqSkillIds.has(s.id));
 
   async function addReq() {
     if (!selectedRoleId || !addSkillId) return;
@@ -82,10 +89,7 @@ export function RoleRequirementsTab() {
       await fetch("/api/role-skill-requirements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          roleId: selectedRoleId, skillId: addSkillId,
-          requiredLevel: addLevel, importance: addImportance,
-        }),
+        body: JSON.stringify({ roleId: selectedRoleId, skillId: addSkillId, requiredLevel: addLevel, importance: addImportance }),
       });
       setAddSkillId("");
       await fetchData();
@@ -95,15 +99,14 @@ export function RoleRequirementsTab() {
   async function updateReq(id: number, patch: Partial<{ requiredLevel: number; importance: string }>) {
     const current = reqs.find(r => r.id === id);
     if (!current) return;
-    const body = {
-      roleId: current.roleId, skillId: current.skillId,
-      requiredLevel: patch.requiredLevel ?? current.requiredLevel,
-      importance: (patch.importance ?? current.importance) as any,
-    };
     await fetch("/api/role-skill-requirements", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        roleId: current.roleId, skillId: current.skillId,
+        requiredLevel: patch.requiredLevel ?? current.requiredLevel,
+        importance: (patch.importance ?? current.importance) as any,
+      }),
     });
     setReqs(prev => prev.map(r => r.id === id ? { ...r, ...patch } as any : r));
   }
@@ -114,30 +117,42 @@ export function RoleRequirementsTab() {
     setReqs(prev => prev.filter(r => r.id !== id));
   }
 
+  const selStyle: React.CSSProperties = {
+    fontFamily: "inherit", fontSize: ".84rem",
+    background: "var(--content)", border: "1px solid var(--border-2)",
+    borderRadius: 6, padding: "5px 8px", color: "var(--text)", outline: "none",
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {/* Role picker */}
-      <div className="md:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-        <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
-          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">Chọn role</p>
+    <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 16 }}>
+      {/* ── Role list ── */}
+      <div style={{ background: "var(--elev)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", overflow: "hidden" }}>
+        <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", fontSize: ".72rem", fontWeight: 700, letterSpacing: ".08em", color: "var(--text-3)", textTransform: "uppercase" }}>
+          Chọn role
         </div>
         {roles.length === 0 ? (
-          <p className="p-4 text-xs text-slate-400 text-center">Chưa có role nào trong tổ chức.</p>
+          <p style={{ padding: "16px 14px", fontSize: ".82rem", color: "var(--text-3)", textAlign: "center" }}>Chưa có role nào.</p>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div>
             {roles.map(r => {
-              const count = reqs.filter(x => x.roleId === r.id).length;
+              const count   = reqs.filter(x => x.roleId === r.id).length;
+              const isActive = selectedRoleId === r.id;
               return (
                 <button
                   key={r.id}
                   onClick={() => setSelectedRoleId(r.id)}
-                  className={cn(
-                    "w-full px-4 py-2 text-left text-sm transition flex items-center justify-between",
-                    selectedRoleId === r.id ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium" : "hover:bg-slate-50 dark:hover:bg-slate-800/40",
-                  )}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    width: "100%", padding: "8px 14px", textAlign: "left", border: "none", cursor: "pointer",
+                    fontSize: ".84rem", fontWeight: isActive ? 600 : 400,
+                    borderBottom: "1px solid var(--border)",
+                    background: isActive ? "var(--accent-soft)" : "transparent",
+                    color: isActive ? "var(--accent-ink)" : "var(--text-2)",
+                    transition: "background .12s",
+                  }}
                 >
-                  <span className="truncate">{r.label}</span>
-                  <span className="text-[10px] text-slate-400 ml-2">{count}</span>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+                  <span style={{ fontSize: ".72rem", color: "var(--text-3)", marginLeft: 6, flexShrink: 0 }}>{count}</span>
                 </button>
               );
             })}
@@ -145,20 +160,20 @@ export function RoleRequirementsTab() {
         )}
       </div>
 
-      {/* Requirements editor */}
-      <div className="md:col-span-2 space-y-3">
+      {/* ── Requirements editor ── */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {selectedRoleId == null ? (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-8 text-center text-sm text-slate-400">
+          <div style={{ background: "var(--elev)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "32px 16px", textAlign: "center", color: "var(--text-3)", fontSize: ".84rem" }}>
             Chọn 1 role bên trái
           </div>
         ) : (
           <>
+            {/* Add row */}
             {availableSkills.length > 0 && (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 flex flex-wrap items-end gap-2">
-                <div className="flex-1 min-w-[160px]">
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Skill</label>
-                  <select value={addSkillId} onChange={e => setAddSkillId(e.target.value === "" ? "" : Number(e.target.value))}
-                    className="w-full px-2 py-1.5 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800">
+              <div style={{ background: "var(--elev)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "10px 14px", display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 10 }}>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <label style={{ display: "block", fontSize: ".72rem", fontWeight: 600, color: "var(--text-3)", marginBottom: 4 }}>Skill</label>
+                  <select value={addSkillId} onChange={e => setAddSkillId(e.target.value === "" ? "" : Number(e.target.value))} style={{ ...selStyle, width: "100%" }}>
                     <option value="">Chọn…</option>
                     {availableSkills.map(s => (
                       <option key={s.id} value={s.id}>{s.category ? `[${s.category}] ` : ""}{s.name}</option>
@@ -166,71 +181,86 @@ export function RoleRequirementsTab() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Level cần</label>
-                  <select value={addLevel} onChange={e => setAddLevel(Number(e.target.value))}
-                    className="px-2 py-1.5 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800">
-                    {[1, 2, 3, 4, 5].map(l => <option key={l} value={l}>{l} - {SKILL_LEVELS[l]}</option>)}
+                  <label style={{ display: "block", fontSize: ".72rem", fontWeight: 600, color: "var(--text-3)", marginBottom: 4 }}>Level cần</label>
+                  <select value={addLevel} onChange={e => setAddLevel(Number(e.target.value))} style={selStyle}>
+                    {[1, 2, 3, 4, 5].map(l => <option key={l} value={l}>{l} – {SKILL_LEVELS[l]}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Mức</label>
-                  <select value={addImportance} onChange={e => setAddImportance(e.target.value as any)}
-                    className="px-2 py-1.5 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800">
+                  <label style={{ display: "block", fontSize: ".72rem", fontWeight: 600, color: "var(--text-3)", marginBottom: 4 }}>Mức</label>
+                  <select value={addImportance} onChange={e => setAddImportance(e.target.value as any)} style={selStyle}>
                     {IMP_OPTIONS.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
                   </select>
                 </div>
-                <button onClick={addReq} disabled={adding || !addSkillId}
-                  className="px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded flex items-center gap-1">
-                  {adding ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                <button
+                  onClick={addReq}
+                  disabled={adding || !addSkillId}
+                  className="abtn primary"
+                  style={{ height: 32, fontSize: ".8rem", gap: 5, padding: "0 12px" }}
+                >
+                  {adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
                   Thêm
                 </button>
               </div>
             )}
 
             {roleReqs.length === 0 ? (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-8 text-center text-sm text-slate-400">
+              <div style={{ background: "var(--elev)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "32px 16px", textAlign: "center", color: "var(--text-3)", fontSize: ".84rem" }}>
                 Role này chưa có yêu cầu skill nào.
               </div>
             ) : (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                <table className="w-full text-xs">
+              <div style={{ background: "var(--elev)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".82rem" }}>
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400">
-                      <th className="text-left px-3 py-2">Skill</th>
-                      <th className="text-center px-3 py-2">Level cần</th>
-                      <th className="text-center px-3 py-2">Mức</th>
-                      <th className="px-2 py-2"></th>
+                    <tr style={{ background: "var(--content)", borderBottom: "1px solid var(--border)" }}>
+                      <th style={{ textAlign: "left", padding: "7px 14px", fontWeight: 600, color: "var(--text-3)", fontSize: ".72rem", textTransform: "uppercase", letterSpacing: ".06em" }}>Skill</th>
+                      <th style={{ textAlign: "center", padding: "7px 10px", fontWeight: 600, color: "var(--text-3)", fontSize: ".72rem", textTransform: "uppercase", letterSpacing: ".06em" }}>Level cần</th>
+                      <th style={{ textAlign: "center", padding: "7px 10px", fontWeight: 600, color: "var(--text-3)", fontSize: ".72rem", textTransform: "uppercase", letterSpacing: ".06em" }}>Mức</th>
+                      <th style={{ width: 32 }} />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {roleReqs.map(r => (
-                      <tr key={r.id}>
-                        <td className="px-3 py-2">
-                          <p className="font-medium text-slate-800 dark:text-slate-200">{r.skill.name}</p>
-                          {r.skill.category && <p className="text-[10px] text-slate-400">{r.skill.category}</p>}
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <select value={r.requiredLevel}
-                            onChange={e => updateReq(r.id, { requiredLevel: Number(e.target.value) })}
-                            className="px-1.5 py-0.5 text-[11px] border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800">
-                            {[1, 2, 3, 4, 5].map(l => <option key={l} value={l}>{l}</option>)}
-                          </select>
-                          <p className="text-[9px] text-slate-400 mt-0.5">{SKILL_LEVELS[r.requiredLevel]}</p>
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <select value={r.importance}
-                            onChange={e => updateReq(r.id, { importance: e.target.value })}
-                            className="px-1.5 py-0.5 text-[11px] border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800">
-                            {IMP_OPTIONS.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
-                          </select>
-                        </td>
-                        <td className="px-2 py-2 text-right">
-                          <button onClick={() => removeReq(r.id)} className="p-1 text-slate-300 hover:text-red-500 transition">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                  <tbody>
+                    {roleReqs.map((r, idx) => {
+                      const imp = impStyle(r.importance);
+                      return (
+                        <tr key={r.id} style={{ borderBottom: idx < roleReqs.length - 1 ? "1px solid var(--border)" : "none" }}>
+                          <td style={{ padding: "8px 14px" }}>
+                            <span style={{ fontWeight: 500, color: "var(--text)" }}>{r.skill.name}</span>
+                            {r.skill.category && (
+                              <span style={{ marginLeft: 6, fontSize: ".72rem", color: "var(--text-3)" }}>{r.skill.category}</span>
+                            )}
+                          </td>
+                          <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                            <select
+                              value={r.requiredLevel}
+                              onChange={e => updateReq(r.id, { requiredLevel: Number(e.target.value) })}
+                              style={selStyle}
+                            >
+                              {[1, 2, 3, 4, 5].map(l => <option key={l} value={l}>{l} – {SKILL_LEVELS[l]}</option>)}
+                            </select>
+                          </td>
+                          <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                            <select
+                              value={r.importance}
+                              onChange={e => updateReq(r.id, { importance: e.target.value })}
+                              style={{ ...selStyle, color: imp.color }}
+                            >
+                              {IMP_OPTIONS.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
+                            </select>
+                          </td>
+                          <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                            <button
+                              onClick={() => removeReq(r.id)}
+                              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, display: "flex", borderRadius: 4, transition: "color .12s" }}
+                              onMouseEnter={e => (e.currentTarget.style.color = "var(--danger)")}
+                              onMouseLeave={e => (e.currentTarget.style.color = "var(--text-3)")}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -17,5 +17,5 @@ export const GET = withContext(async (req: NextRequest) => {
   }
 
   const result = await computeCareerPath(auth.orgId, employeeId);
-  return NextResponse.json({ data: result });
+  return NextResponse.json({ data: result ?? null });
 });

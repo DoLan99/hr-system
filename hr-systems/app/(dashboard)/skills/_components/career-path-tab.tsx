@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Loader2, TrendingUp, Sparkles, AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SKILL_LEVELS } from "@/lib/skills/constants";
+import { safeJson } from "@/lib/safe-json";
 
 interface SkillGap {
   skillId: number;
@@ -63,7 +64,7 @@ export function CareerPathTab({ employeeId }: { employeeId: number }) {
   const [creating, setCreating] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
-    const res = await fetch(`/api/skills/career-path?employeeId=${employeeId}`).then(r => r.json());
+    const res = await fetch(`/api/skills/career-path?employeeId=${employeeId}`).then(safeJson);
     setData(res.data ?? null);
   }, [employeeId]);
 
@@ -93,9 +94,9 @@ export function CareerPathTab({ employeeId }: { employeeId: number }) {
           estimatedHours: gap.gap * 8,
         }),
       });
-      const json = await res.json();
+      const json = await safeJson(res);
       if (res.ok) {
-        alert(`Đã tạo task ${json.data.code}: ${json.data.title}`);
+        alert(`Đã tạo task ${json.data?.code}: ${json.data?.title}`);
       } else {
         alert(`Lỗi: ${JSON.stringify(json.error)}`);
       }

@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { Plus, Loader2, BookOpen, Trash2, Settings, ShieldCheck, Sparkles, AlertTriangle } from "lucide-react";
 import { CatalogTab } from "./catalog-tab";
-import { RoleRequirementsTab } from "./role-requirements-tab";
+import { GoalsTab } from "./goals-tab";
+import { CareerTrackAdmin } from "./career-track-admin";
 
 // ── Types ──────────────────────────────────────────────
 interface Employee {
@@ -12,6 +13,8 @@ interface Employee {
   avatarUrl: string | null;
   department: string | null;
   role: { name: string; label: string } | null;
+  careerTrack?: { id: number; name: string; color: string | null } | null;
+  careerLevel?: { id: number; name: string } | null;
 }
 
 interface SkillItem {
@@ -25,10 +28,9 @@ interface SkillItem {
   skill: { id: number; name: string; category: string | null; description: string | null };
 }
 
-interface RoleReadiness {
-  roleId: number;
-  roleName: string;
-  roleLabel: string;
+interface CareerLevelReadiness {
+  levelId: number;
+  levelName: string;
   seniority: number;
   isCurrent: boolean;
   readinessPct: number;
@@ -37,6 +39,13 @@ interface RoleReadiness {
   criticalGaps: number;
   status: string;
   gaps: { skillId: number; skillName: string; currentLevel: number; requiredLevel: number; gap: number; met: boolean; importance: string }[];
+}
+interface CareerPathResult {
+  trackId: number;
+  trackName: string;
+  trackColor: string | null;
+  currentLevelName: string | null;
+  levels: CareerLevelReadiness[];
 }
 
 // ── Constants ──────────────────────────────────────────
@@ -98,32 +107,39 @@ function SkScoreRing({ score, max = 5 }: { score: number; max?: number }) {
 }
 
 // ── Career Path nodes ──────────────────────────────────
-function CareerPathDisplay({ roles, currentRole }: { roles: RoleReadiness[]; currentRole: string | null }) {
-  const sorted = [...roles].sort((a, b) => a.seniority - b.seniority);
-  if (!sorted.length) {
+function CareerPathDisplay({ careerData }: { careerData: CareerPathResult | null }) {
+  if (!careerData) {
     return (
       <div style={{ padding: "16px 18px", background: "var(--content)", color: "var(--text-3)", fontSize: ".84rem" }}>
-        Chưa có career track. Manager cần tạo role + yêu cầu skill.
+        Nhân viên chưa được gán Career Track. Manager vào hồ sơ nhân viên để gán track + cấp độ.
       </div>
     );
   }
-  const curIdx = sorted.findIndex(r => r.isCurrent);
+  const levels = careerData.levels;
+  if (levels.length === 0) {
+    return (
+      <div style={{ padding: "16px 18px", background: "var(--content)", color: "var(--text-3)", fontSize: ".84rem" }}>
+        Track "{careerData.trackName}" chưa có cấp độ nào. Vào Career Tracks để thêm cấp.
+      </div>
+    );
+  }
+  const curIdx = levels.findIndex(l => l.isCurrent);
   return (
     <div className="career-path">
-      {sorted.map((r, i) => {
+      {levels.map((l, i) => {
         const state = curIdx < 0 ? (i === 0 ? "current" : "future") :
           i < curIdx ? "done" : i === curIdx ? "current" : i === curIdx + 1 ? "next" : "future";
         return (
-          <div key={r.roleId} style={{ display: "contents" }}>
+          <div key={l.levelId} style={{ display: "contents" }}>
             <div className={`cp-node ${state}`}>
               <div className={`cp-circle ${state}`}>
                 {state === "done"
                   ? <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><path d="M5 12l5 5L20 6" /></svg>
                   : state === "current" ? "▶" : i + 1}
               </div>
-              <span className={`cp-label ${state}`}>{r.roleLabel}</span>
+              <span className={`cp-label ${state}`}>{l.levelName}</span>
             </div>
-            {i < sorted.length - 1 && (
+            {i < levels.length - 1 && (
               <div className={`cp-connector${i < curIdx ? " done" : i === curIdx - 1 ? " active" : ""}`} />
             )}
           </div>
@@ -136,12 +152,13 @@ function CareerPathDisplay({ roles, currentRole }: { roles: RoleReadiness[]; cur
 // ── Main component ─────────────────────────────────────
 export function SkillsClient({ isManager, currentEmployeeId }: { isManager: boolean; currentEmployeeId: number }) {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [memberSearch, setMemberSearch] = useState("");
   const [selId, setSelId] = useState(currentEmployeeId);
   const [skills, setSkills] = useState<SkillItem[]>([]);
   const [catalog, setCatalog] = useState<{ id: number; name: string; category: string | null }[]>([]);
-  const [careerData, setCareerData] = useState<RoleReadiness[]>([]);
+  const [careerData, setCareerData] = useState<CareerPathResult | null>(null);
   const [loadingMain, setLoadingMain] = useState(true);
-  const [adminTab, setAdminTab] = useState<"none" | "catalog" | "roles">("none");
+  const [adminTab, setAdminTab] = useState<"none" | "catalog" | "career">("none");
 
   // Load employees list for manager
   useEffect(() => {
@@ -150,12 +167,16 @@ export function SkillsClient({ isManager, currentEmployeeId }: { isManager: bool
       return;
     }
     fetch("/api/employees?status=ACTIVE")
-      .then(r => r.json())
+      .then(r => { const text = r.text().catch(() => ""); return text.then(t => { try { return t ? JSON.parse(t) : {}; } catch { return {}; } }); })
       .then(d => {
-        const emps: Employee[] = (d.data ?? []).map((e: any) => ({
-          id: e.id, fullName: e.fullName, avatarUrl: e.avatarUrl,
-          department: e.department, role: e.role,
-        }));
+        const emps: Employee[] = (d.data ?? [])
+          .filter((e: any) => e.role?.name !== "SUPER_ADMIN")
+          .map((e: any) => ({
+            id: e.id, fullName: e.fullName, avatarUrl: e.avatarUrl,
+            department: e.department, role: e.role,
+            careerTrack: e.careerTrack ?? null,
+            careerLevel: e.careerLevel ?? null,
+          }));
         setEmployees(emps);
       })
       .catch(() => {});
@@ -164,14 +185,22 @@ export function SkillsClient({ isManager, currentEmployeeId }: { isManager: bool
   const loadSkills = useCallback(async (empId: number) => {
     setLoadingMain(true);
     try {
+      const safeJson = async (r: Response) => {
+        const text = await r.text().catch(() => "");
+        if (!text) return {};
+        try { return JSON.parse(text); } catch (e) {
+          console.error("[skills] JSON parse error", r.url, r.status, text.slice(0, 200));
+          return {};
+        }
+      };
       const [skillsRes, catalogRes, careerRes] = await Promise.all([
-        fetch(`/api/employee-skills?employeeId=${empId}`).then(r => r.json()),
-        fetch("/api/skills").then(r => r.json()),
-        fetch(`/api/skills/career-path?employeeId=${empId}`).then(r => r.json()),
+        fetch(`/api/employee-skills?employeeId=${empId}`).then(safeJson),
+        fetch("/api/skills").then(safeJson),
+        fetch(`/api/skills/career-path?employeeId=${empId}`).then(safeJson),
       ]);
       setSkills(skillsRes.data ?? []);
       setCatalog(catalogRes.data ?? []);
-      setCareerData(careerRes.data?.candidates ?? []);
+      setCareerData(careerRes.data ?? null);
     } finally {
       setLoadingMain(false);
     }
@@ -193,11 +222,11 @@ export function SkillsClient({ isManager, currentEmployeeId }: { isManager: bool
     : 0;
   const expertCount = skills.filter(s => s.currentLevel >= 5).length;
   const verifiedSkills = skills.filter(s => s.verifiedAt);
-  const totalGaps = careerData.reduce((a, r) => a + r.gaps.filter(g => !g.met).length, 0);
-
-  const currentRole = careerData.find(r => r.isCurrent)?.roleLabel ?? null;
-  const nextRole = [...careerData].sort((a, b) => a.seniority - b.seniority)
-    .find(r => !r.isCurrent && r.seniority > (careerData.find(r2 => r2.isCurrent)?.seniority ?? -1))?.roleLabel ?? null;
+  const totalGaps = (careerData?.levels ?? []).reduce((a, r) => a + r.gaps.filter(g => !g.met).length, 0);
+  const currentLevelName = careerData?.currentLevelName ?? null;
+  const levels = careerData?.levels ?? [];
+  const curIdx = levels.findIndex(l => l.isCurrent);
+  const nextLevelName = curIdx >= 0 && curIdx < levels.length - 1 ? levels[curIdx + 1].levelName : null;
 
   const ownedSkillIds = new Set(skills.map(s => s.skillId));
   const availableToAdd = catalog.filter(c => !ownedSkillIds.has(c.id));
@@ -239,7 +268,7 @@ export function SkillsClient({ isManager, currentEmployeeId }: { isManager: bool
   const selEmployee = employees.find(e => e.id === selId);
   const selName = selEmployee?.fullName ?? "Tôi";
   const selDept = selEmployee?.department ?? "";
-  const selRole = selEmployee?.role?.label ?? currentRole ?? "";
+  const selRole = selEmployee?.role?.label ?? currentLevelName ?? "";
 
   const isOwner = selId === currentEmployeeId;
 
@@ -274,11 +303,11 @@ export function SkillsClient({ isManager, currentEmployeeId }: { isManager: bool
                 <BookOpen size={14} /> Catalog skill
               </button>
               <button
-                className={`abtn ghost${adminTab === "roles" ? " on" : ""}`}
+                className={`abtn ghost${adminTab === "career" ? " on" : ""}`}
                 style={{ height: 36, fontSize: ".82rem", gap: 6 }}
-                onClick={() => setAdminTab(t => t === "roles" ? "none" : "roles")}
+                onClick={() => setAdminTab(t => t === "career" ? "none" : "career")}
               >
-                <Settings size={14} /> Yêu cầu role
+                <Settings size={14} /> Career Tracks
               </button>
             </>
           )}
@@ -292,10 +321,15 @@ export function SkillsClient({ isManager, currentEmployeeId }: { isManager: bool
           <div className="sc-card-body"><CatalogTab /></div>
         </div>
       )}
-      {adminTab === "roles" && (
+      {adminTab === "career" && (
         <div className="sc-card" style={{ marginBottom: 20 }}>
-          <div className="sc-card-head"><h3>Yêu cầu theo vai trò</h3></div>
-          <div className="sc-card-body"><RoleRequirementsTab /></div>
+          <div className="sc-card-head">
+            <h3>Career Tracks</h3>
+            <span className="sub">Tạo lộ trình nghề nghiệp theo chuyên ngành (Frontend, Backend, Design…)</span>
+          </div>
+          <div className="sc-card-body">
+            <CareerTrackAdmin allSkills={catalog} />
+          </div>
         </div>
       )}
 
@@ -323,43 +357,85 @@ export function SkillsClient({ isManager, currentEmployeeId }: { isManager: bool
         </div>
       </div>
 
-      {/* Member tabs (manager sees whole team) */}
-      {isManager && employees.length > 0 && (
-        <div className="member-tabs">
-          {employees.slice(0, 8).map((e, idx) => (
-            <button
-              key={e.id}
-              className={`mtab${selId === e.id ? " on" : ""}`}
-              onClick={() => setSelId(e.id)}
-            >
-              <div className="mav" style={{ background: avColor(e.fullName) }}>{initials(e.fullName)}</div>
-              <div>
-                <div className="mname">{e.fullName}</div>
-                <div className="mrole">{e.department ?? "—"}</div>
-              </div>
-              <span className="mlevel">{e.role?.label?.split(" ").pop() ?? "—"}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {loadingMain ? (
+      {loadingMain && !isManager ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0", color: "var(--text-3)" }}>
           <Loader2 size={18} className="animate-spin" style={{ marginRight: 8 }} /> Đang tải kỹ năng…
         </div>
       ) : (
+        <div style={{ display: "grid", gridTemplateColumns: isManager && employees.length > 0 ? "220px 1fr" : "1fr", gap: 16, alignItems: "start" }}>
+
+          {/* ── Member sidebar ── */}
+          {isManager && employees.length > 0 && (
+            <div style={{ background: "var(--elev)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", overflow: "hidden", position: "sticky", top: 16 }}>
+              {/* Search */}
+              <div style={{ padding: "8px 10px", borderBottom: "1px solid var(--border)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--content)", border: "1px solid var(--border-2)", borderRadius: 7, padding: "5px 9px" }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={13} height={13} style={{ color: "var(--text-3)", flexShrink: 0 }}><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                  <input
+                    value={memberSearch}
+                    onChange={e => setMemberSearch(e.target.value)}
+                    placeholder="Tìm thành viên…"
+                    style={{ background: "none", border: "none", outline: "none", fontSize: ".8rem", color: "var(--text)", width: "100%", fontFamily: "inherit" }}
+                  />
+                </div>
+              </div>
+              {/* List */}
+              <div style={{ maxHeight: "calc(100vh - 280px)", overflowY: "auto" }}>
+                {employees
+                  .filter(e => !memberSearch || e.fullName.toLowerCase().includes(memberSearch.toLowerCase()))
+                  .map(e => (
+                    <button
+                      key={e.id}
+                      onClick={() => setSelId(e.id)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 9, width: "100%",
+                        padding: "9px 12px", border: "none", borderBottom: "1px solid var(--border)",
+                        cursor: "pointer", textAlign: "left", transition: "background .1s",
+                        background: selId === e.id ? "var(--accent-soft)" : "transparent",
+                      }}
+                    >
+                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: avColor(e.fullName), display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".72rem", fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                        {initials(e.fullName)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: ".83rem", fontWeight: selId === e.id ? 700 : 500, color: selId === e.id ? "var(--accent-ink)" : "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {e.fullName}
+                        </div>
+                        <div style={{ fontSize: ".72rem", color: "var(--text-3)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+                          {e.careerTrack
+                            ? <><span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: e.careerTrack.color ?? "var(--accent)", flexShrink: 0 }} />{e.careerLevel ? `${e.careerTrack.name} · ${e.careerLevel.name}` : e.careerTrack.name}</>
+                            : (e.role?.label ?? "—")}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                {employees.filter(e => !memberSearch || e.fullName.toLowerCase().includes(memberSearch.toLowerCase())).length === 0 && (
+                  <div style={{ padding: "16px 12px", fontSize: ".8rem", color: "var(--text-3)", textAlign: "center" }}>Không tìm thấy</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Main content ── */}
+          {loadingMain ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0", color: "var(--text-3)" }}>
+              <Loader2 size={18} className="animate-spin" style={{ marginRight: 8 }} /> Đang tải kỹ năng…
+            </div>
+          ) : (
         <div className="sc-layout">
           {/* ── LEFT column ── */}
           <div>
             {/* Career path */}
             <div className="sc-card">
               <div className="sc-card-head">
-                <h3>Lộ trình career</h3>
+                <h3>Lộ trình career{careerData ? ` · ${careerData.trackName}` : ""}</h3>
                 <span className="sub">
-                  {currentRole ? `Hiện tại: ${currentRole}${nextRole ? ` → ${nextRole}` : ""}` : "Chưa xác định vai trò"}
+                  {currentLevelName
+                    ? `Cấp hiện tại: ${currentLevelName}${nextLevelName ? ` → Tiếp theo: ${nextLevelName}` : ""}`
+                    : "Chưa gán Career Track"}
                 </span>
               </div>
-              <CareerPathDisplay roles={careerData} currentRole={currentRole} />
+              <CareerPathDisplay careerData={careerData} />
             </div>
 
             {/* Skill map */}
@@ -468,45 +544,12 @@ export function SkillsClient({ isManager, currentEmployeeId }: { isManager: bool
               </div>
             </div>
 
-            {/* Career gaps as goals */}
-            {careerData.some(r => r.gaps.some(g => !g.met)) && (
-              <div className="sc-card">
-                <div className="sc-card-head">
-                  <h3>Mục tiêu phát triển</h3>
-                  <span className="sub">Gap kỹ năng cần cải thiện</span>
-                </div>
-                <div className="sc-card-body">
-                  <div className="goal-list">
-                    {careerData
-                      .filter(r => r.gaps.some(g => !g.met))
-                      .slice(0, 6)
-                      .flatMap(r => r.gaps.filter(g => !g.met).map(g => ({ role: r.roleLabel, gap: g })))
-                      .slice(0, 8)
-                      .map(({ role, gap }) => (
-                        <div key={`${role}-${gap.skillId}`} className="goal-item">
-                          <div className="goal-check">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="11" height="11"><path d="M5 12l5 5L20 6" /></svg>
-                          </div>
-                          <div className="goal-body">
-                            <div className="goal-title">Nâng kỹ năng {gap.skillName} lên {LEVEL_LABELS[gap.requiredLevel]}</div>
-                            <div className="goal-meta">
-                              <span className="goal-tag">{role}</span>
-                              <span className="goal-tag">{LEVEL_LABELS[gap.currentLevel] || "Chưa có"} → {LEVEL_LABELS[gap.requiredLevel]}</span>
-                            </div>
-                            <div className="goal-progress">
-                              <i style={{ width: `${Math.round((gap.currentLevel / gap.requiredLevel) * 100)}%` }} />
-                            </div>
-                          </div>
-                          <span style={{ fontFamily: "var(--font-mono)", fontSize: ".76rem", fontWeight: 700, color: "var(--text-3)" }}>
-                            {Math.round((gap.currentLevel / gap.requiredLevel) * 100)}%
-                          </span>
-                        </div>
-                      ))
-                    }
-                  </div>
-                </div>
+            {/* Development Goals */}
+            <div className="sc-card">
+              <div className="sc-card-body">
+                <GoalsTab employeeId={selId} isOwner={isOwner} isManager={isManager} />
               </div>
-            )}
+            </div>
           </div>
 
           {/* ── RIGHT column ── */}
@@ -518,7 +561,7 @@ export function SkillsClient({ isManager, currentEmployeeId }: { isManager: bool
               </div>
               <div className="sr-name">{selName}</div>
               <div className="sr-role">{selDept || selRole || "—"}</div>
-              {currentRole && <div className="sr-level">{currentRole}</div>}
+              {currentLevelName && <div className="sr-level">{currentLevelName}</div>}
               <SkScoreRing score={avgSkill} />
               <div style={{ fontSize: ".76rem", color: "var(--text-3)" }}>Điểm kỹ năng trung bình</div>
             </div>
@@ -544,25 +587,25 @@ export function SkillsClient({ isManager, currentEmployeeId }: { isManager: bool
             </div>
 
             {/* Career readiness */}
-            {careerData.length > 0 && (
+            {careerData && careerData.levels.length > 0 && (
               <div className="sc-card">
-                <div className="sc-card-head"><h3>Career readiness</h3></div>
+                <div className="sc-card-head"><h3>Career readiness · {careerData.trackName}</h3></div>
                 <div className="sc-card-body" style={{ padding: "12px 18px" }}>
-                  {[...careerData].sort((a, b) => a.seniority - b.seniority).map(r => (
-                    <div key={r.roleId} style={{ marginBottom: 12 }}>
+                  {careerData.levels.map(l => (
+                    <div key={l.levelId} style={{ marginBottom: 12 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ fontSize: ".82rem", fontWeight: r.isCurrent ? 700 : 500, color: r.isCurrent ? "var(--accent-ink)" : "var(--text-2)" }}>
-                          {r.roleLabel}{r.isCurrent && " ✦"}
+                        <span style={{ fontSize: ".82rem", fontWeight: l.isCurrent ? 700 : 500, color: l.isCurrent ? "var(--accent-ink)" : "var(--text-2)" }}>
+                          {l.levelName}{l.isCurrent && " ✦"}
                         </span>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: ".76rem", fontWeight: 700, color: r.readinessPct >= 90 ? "var(--ok)" : r.readinessPct >= 60 ? "var(--accent)" : "var(--warn)" }}>
-                          {r.readinessPct}%
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: ".76rem", fontWeight: 700, color: l.readinessPct >= 90 ? "var(--ok)" : l.readinessPct >= 60 ? "var(--accent)" : "var(--warn)" }}>
+                          {l.readinessPct}%
                         </span>
                       </div>
                       <div style={{ height: 5, background: "var(--border)", borderRadius: 99, overflow: "hidden" }}>
                         <div style={{
                           height: "100%", borderRadius: 99, transition: "width .5s var(--ease)",
-                          width: `${r.readinessPct}%`,
-                          background: r.readinessPct >= 90 ? "var(--ok)" : r.readinessPct >= 60 ? "var(--accent)" : "var(--warn)",
+                          width: `${l.readinessPct}%`,
+                          background: l.readinessPct >= 90 ? "var(--ok)" : l.readinessPct >= 60 ? "var(--accent)" : "var(--warn)",
                         }} />
                       </div>
                     </div>
@@ -603,6 +646,8 @@ export function SkillsClient({ isManager, currentEmployeeId }: { isManager: bool
               </div>
             )}
           </div>
+        </div>
+          )}
         </div>
       )}
     </div>

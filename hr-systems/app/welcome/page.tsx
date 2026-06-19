@@ -44,10 +44,30 @@ export default async function WelcomePage() {
     );
   }
 
-  // Case 3: on tenant subdomain — verify membership
-  const employee = await prisma.employee.findFirst({
+  // Case 3: on tenant subdomain — verify membership (also auto-link by email for new signups)
+  let employee = await prisma.employee.findFirst({
     where: { clerkUserId: user.id, organizationId: org.id },
   });
+
+  // Auto-link: if not linked yet, find pending employee record by email
+  if (!employee) {
+    const userEmail = user.emailAddresses[0]?.emailAddress;
+    if (userEmail) {
+      const pending = await prisma.employee.findFirst({
+        where: {
+          organizationId: org.id,
+          emailCompany: userEmail,
+          clerkUserId: { startsWith: "pending:" },
+        },
+      });
+      if (pending) {
+        employee = await prisma.employee.update({
+          where: { id: pending.id },
+          data: { clerkUserId: user.id, status: "ACTIVE" },
+        });
+      }
+    }
+  }
 
   if (!employee) {
     const userOwnOrg = await prisma.employee.findFirst({
