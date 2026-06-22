@@ -25,6 +25,7 @@ export interface CurrentUserData {
     trialEndsAt: string | null;
     memberCount: number;
   };
+  messagesUnread: number;
 }
 
 const CurrentUserContext = createContext<CurrentUserData | null>(null);

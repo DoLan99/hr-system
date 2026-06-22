@@ -97,7 +97,7 @@ function useNavSections(): NavSection[] {
       title: t("nav.customers"),
       items: [
         { label: t("nav.customers"), href: "/customers", icon: Users,         roles: [...MANAGER_UP, "ACCOUNTANT"] },
-        { label: t("nav.messages"),  href: "/messages",  icon: MessageSquare, roles: ALL_STAFF, badge: "2" },
+        { label: t("nav.messages"),  href: "/messages",  icon: MessageSquare, roles: ALL_STAFF, badge: user.messagesUnread > 0 ? String(user.messagesUnread) : undefined },
       ],
     },
     {

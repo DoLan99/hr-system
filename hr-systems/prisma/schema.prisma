@@ -1027,6 +1027,7 @@ model Message {
   replyTo        Message?            @relation("MessageReplies", fields: [replyToId], references: [id])
   replies        Message[]           @relation("MessageReplies")
   attachments    MessageAttachment[]
+  readAt         DateTime?
   createdAt      DateTime            @default(now())
 
   auditLogs MessageAuditLog[]
@@ -1536,32 +1537,38 @@ enum PerfReviewStatus {
 // ─────────────────────────────────────────────────────────────
 
 model WorkflowTemplate {
-  id             String             @id @default(cuid())
-  organizationId String
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name           String
-  description    String?
-  targetType     WorkflowTargetType
-  isActive       Boolean            @default(true)
-  steps          WorkflowStep[]
-  instances      WorkflowInstance[]
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id                  String             @id @default(cuid())
+  organizationId      String
+  organization        Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name                String
+  description         String?
+  targetType          WorkflowTargetType
+  isActive            Boolean            @default(true)
+  triggers            String[]           @default([])
+  conditions          Json               @default("[]")
+  notificationsConfig Json               @default("{\"onSubmit\":true,\"onApprove\":true,\"onReject\":true,\"onDeadline\":false}")
+  steps               WorkflowStep[]
+  instances           WorkflowInstance[]
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
   @@index([organizationId])
   @@map("workflow_templates")
 }
 
 model WorkflowStep {
-  id           Int                @id @default(autoincrement())
-  templateId   String
-  template     WorkflowTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  stepOrder    Int
-  name         String
-  approverType WorkflowApprover
-  approverRef  String? // roleId (số) hoặc employeeId (số), tuỳ approverType
-  slaHours     Int? // null = không giới hạn
-  approvals    WorkflowApproval[]
+  id             Int                @id @default(autoincrement())
+  templateId     String
+  template       WorkflowTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  stepOrder      Int
+  name           String
+  approverType   WorkflowApprover
+  approverRef    String?
+  slaHours       Int?
+  stepType       String             @default("any")
+  notifyOnReject Boolean            @default(true)
+  approverRefs   String[]           @default([])
+  approvals      WorkflowApproval[]
 
   @@unique([templateId, stepOrder])
   @@map("workflow_steps")

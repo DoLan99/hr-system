@@ -15,29 +15,5 @@ export default async function DocumentsPage() {
     select: { msUserEmail: true, msUserName: true },
   });
 
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Tài liệu</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Quản lý file từ Microsoft OneDrive
-          </p>
-        </div>
-        {token && (
-          <div className="text-xs text-muted-foreground text-right">
-            <span className="text-green-500 font-medium">● Đã kết nối</span>
-            <br />
-            {token.msUserName} · {token.msUserEmail}
-          </div>
-        )}
-      </div>
-
-      {!token ? (
-        <MicrosoftConnectBanner isManager={isManager} />
-      ) : (
-        <FileBrowser isManager={isManager} />
-      )}
-    </div>
-  );
+  return <FileBrowser isManager={isManager} connected={!!token} />;
 }

@@ -23,7 +23,12 @@ export const GET = withContext(async () => {
     },
     include: {
       instance: {
-        include: {
+        select: {
+          id: true,
+          status: true,
+          currentStep: true,
+          startedAt: true,
+          organizationId: true,
           template: { select: { name: true, targetType: true } },
           initiator: { select: { id: true, fullName: true, department: true } },
         },

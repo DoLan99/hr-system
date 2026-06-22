@@ -21,9 +21,22 @@ export default async function DashboardLayout({
     (e) => e.id === clerkUser.primaryEmailAddressId,
   );
 
-  const memberCount = await rawPrisma.employee.count({
-    where: { organizationId: organization.id, status: { not: "INACTIVE" } },
-  });
+  const [memberCount, messagesUnread] = await Promise.all([
+    rawPrisma.employee.count({
+      where: { organizationId: organization.id, status: { not: "INACTIVE" } },
+    }),
+    rawPrisma.message.count({
+      where: {
+        organizationId: organization.id,
+        readAt: null,
+        NOT: { senderEmployeeId: employee.id },
+        OR: [
+          { assignedToId: employee.id },
+          { customerId: { not: null } },
+        ],
+      },
+    }),
+  ]);
 
   const userData: CurrentUserData = {
     employeeId: employee.id,
@@ -48,6 +61,7 @@ export default async function DashboardLayout({
       trialEndsAt: organization.trialEndsAt?.toISOString() ?? null,
       memberCount,
     },
+    messagesUnread,
   };
 
   return (

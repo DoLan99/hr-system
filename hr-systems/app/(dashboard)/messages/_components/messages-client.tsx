@@ -6,7 +6,7 @@ import { format, isToday, isYesterday, differenceInDays } from "date-fns";
 import { vi as viLocale } from "date-fns/locale";
 import { MessageFormModal } from "./message-form-modal";
 
-interface Employee { id: number; fullName: string; emailCompany?: string | null; department?: string | null }
+interface Employee { id: number; fullName: string; emailCompany?: string | null; department?: string | null; mobileCompany?: string | null }
 interface CustomerOption { id: number; customerName?: string | null; businessName?: string | null }
 
 interface MessageBubble {
@@ -33,6 +33,7 @@ interface Conversation {
   phone: string | null;
   otherEmployeeId: number | null;
   unread: number;
+  unreadMessageIds: number[];
   lastMessageId: number;
   lastDate: string;
   messages: MessageBubble[];
@@ -129,6 +130,7 @@ export function MessagesClient({ conversations: initialConversations, employees,
   const [showInfoMobile, setShowInfoMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
   const threadBodyRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -215,6 +217,7 @@ export function MessagesClient({ conversations: initialConversations, employees,
       phone: null,
       otherEmployeeId: emp.id,
       unread: 0,
+      unreadMessageIds: [],
       lastMessageId: 0,
       lastDate: new Date().toISOString(),
       messages: [],
@@ -281,6 +284,7 @@ export function MessagesClient({ conversations: initialConversations, employees,
         return;
       }
       setComposer("");
+      if (composerRef.current) { composerRef.current.style.height = "auto"; }
       router.refresh();
     } finally {
       setSending(false);
@@ -290,6 +294,15 @@ export function MessagesClient({ conversations: initialConversations, employees,
   function selectConversation(key: string) {
     setActiveKey(key);
     setShowInfoMobile(false);
+    const convo = conversations.find(c => c.key === key);
+    if (convo && convo.unread > 0 && convo.unreadMessageIds.length > 0) {
+      setConversations(prev => prev.map(c => c.key === key ? { ...c, unread: 0, unreadMessageIds: [] } : c));
+      fetch("/api/messages/mark-read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messageIds: convo.unreadMessageIds }),
+      }).catch(() => {});
+    }
   }
 
   // Build day-grouped bubbles for active conversation
@@ -383,8 +396,8 @@ export function MessagesClient({ conversations: initialConversations, employees,
         .day-div::before,.day-div::after{content:"";flex:1;height:1px;background:var(--border)}
         .day-div span{font-family:var(--font-mono);font-size:.68rem;color:var(--text-3);padding:0 8px}
 
-        .bubble-group{display:flex;flex-direction:column;align-self:flex-start;max-width:78%;margin-top:8px}
-        .bubble-group.me{align-self:flex-end}
+        .bubble-group{display:flex;flex-direction:column;align-self:flex-start;max-width:78%;margin-top:8px;width:fit-content}
+        .bubble-group.me{align-self:flex-end;margin-left:auto}
         .msg-grp{display:flex;gap:10px}
         .bubble-group.me .msg-grp{flex-direction:row-reverse}
         .mg-av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:.7rem;font-weight:700;flex-shrink:0;align-self:flex-end}
@@ -437,9 +450,10 @@ export function MessagesClient({ conversations: initialConversations, employees,
         .info-file .if-ic svg{width:15px;height:15px}
         .info-file .if-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
         .info-file .if-size{font-size:.7rem;color:var(--text-3);font-family:var(--font-mono)}
+        main:has(.msg-wrap){overflow:hidden!important}
       ` }} />
 
-      <div style={{ position: "relative", height: "calc(100vh - 100px)", minHeight: 400 }}>
+      <div style={{ position: "relative", height: "100%", minHeight: 400 }}>
       <div className={`msg-wrap`}>
       <div className={`msg-app${showInfoMobile ? " show-thread" : ""}`}>
         {/* LEFT — conversation list */}
@@ -643,8 +657,14 @@ export function MessagesClient({ conversations: initialConversations, employees,
               <form className="composer" onSubmit={handleSend}>
                 <div className="composer-box">
                   <textarea
+                    ref={composerRef}
                     value={composer}
-                    onChange={e => setComposer(e.target.value)}
+                    onChange={e => {
+                      setComposer(e.target.value);
+                      const el = e.target;
+                      el.style.height = "auto";
+                      el.style.height = `${el.scrollHeight}px`;
+                    }}
                     onKeyDown={e => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
@@ -653,6 +673,7 @@ export function MessagesClient({ conversations: initialConversations, employees,
                     }}
                     rows={1}
                     placeholder="Nhập tin nhắn… (Enter để gửi, Shift+Enter xuống dòng)"
+                    style={{ height: "auto", overflowY: "hidden" }}
                   />
                   <button type="submit" className="send-btn" disabled={!composer.trim() || sending} aria-label="Gửi">
                     {sending ? (
@@ -670,7 +691,13 @@ export function MessagesClient({ conversations: initialConversations, employees,
         </div>
 
         {/* RIGHT — info pane */}
-        {active && (
+        {active && (() => {
+          const empInfo = active.type === "team" && active.otherEmployeeId
+            ? employees.find(e => e.id === active.otherEmployeeId) ?? null
+            : null;
+          const displayEmail = active.email ?? empInfo?.emailCompany ?? null;
+          const displayPhone = active.phone ?? empInfo?.mobileCompany ?? null;
+          return (
           <div className="msg-info">
             <div className="info-hero">
               <div className="info-av" style={{ background: gradientFor(active.avatarSeed) }}>
@@ -679,13 +706,13 @@ export function MessagesClient({ conversations: initialConversations, employees,
               <div className="info-name">{active.name}</div>
               <div className="info-role">{active.role}</div>
               <div className="info-quick">
-                {active.phone && (
-                  <a href={`tel:${active.phone}`} title="Gọi">
+                {displayPhone && (
+                  <a href={`tel:${displayPhone}`} title="Gọi">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" /></svg>
                   </a>
                 )}
-                {active.email && (
-                  <a href={`mailto:${active.email}`} title="Email">
+                {displayEmail && (
+                  <a href={`mailto:${displayEmail}`} title="Email">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M2 6l10 7L22 6" /></svg>
                   </a>
                 )}
@@ -694,6 +721,12 @@ export function MessagesClient({ conversations: initialConversations, employees,
 
             <div className="info-sec">
               <h4>Thông tin</h4>
+              {empInfo?.department && (
+                <div className="info-field">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+                  <span><b>{empInfo.department}</b></span>
+                </div>
+              )}
               {active.channel && (
                 <div className="info-field">
                   <SourceIcon channel={active.channel} size={15} />
@@ -706,16 +739,16 @@ export function MessagesClient({ conversations: initialConversations, employees,
                   <span><b>{active.senderContact}</b></span>
                 </div>
               )}
-              {active.email && (
+              {displayEmail && (
                 <div className="info-field">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M2 6l10 7L22 6" /></svg>
-                  <span><b>{active.email}</b></span>
+                  <span><b>{displayEmail}</b></span>
                 </div>
               )}
-              {active.phone && (
+              {displayPhone && (
                 <div className="info-field">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" /></svg>
-                  <span><b>{active.phone}</b></span>
+                  <span><b>{displayPhone}</b></span>
                 </div>
               )}
             </div>
@@ -735,7 +768,8 @@ export function MessagesClient({ conversations: initialConversations, employees,
               </div>
             )}
           </div>
-        )}
+        );
+        })()}
       </div>
       </div>
       </div>

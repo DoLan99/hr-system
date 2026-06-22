@@ -34,7 +34,7 @@ export default async function MessagesPage() {
     }),
     prisma.employee.findMany({
       where: { organizationId: organization.id, status: "ACTIVE", id: { not: userId } },
-      select: { id: true, fullName: true, emailCompany: true, department: true },
+      select: { id: true, fullName: true, emailCompany: true, department: true, mobileCompany: true },
       orderBy: { fullName: "asc" },
     }),
     prisma.customer.findMany({
@@ -64,6 +64,7 @@ export default async function MessagesPage() {
     phone: string | null;
     otherEmployeeId: number | null;
     unread: number;
+    unreadMessageIds: number[];
     lastMessageId: number;
     lastDate: string;
     messages: any[];
@@ -149,6 +150,7 @@ export default async function MessagesPage() {
         phone: m.customer?.phone ?? null,
         otherEmployeeId,
         unread: 0,
+        unreadMessageIds: [],
         lastMessageId: m.id,
         lastDate: m.date.toISOString(),
         messages: [],
@@ -173,7 +175,7 @@ export default async function MessagesPage() {
     for (const a of m.attachments) {
       convo.attachments.push({ name: a.name, size: a.size, url: a.url });
     }
-    if (m.status === "OPEN" && !isMine) convo.unread += 1;
+    if (!isMine && !m.readAt) { convo.unread += 1; convo.unreadMessageIds.push(m.id); }
     convo.lastMessageId = m.id;
     convo.lastDate = m.date.toISOString();
   }
