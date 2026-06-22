@@ -17,7 +17,7 @@ interface HeatmapData {
 }
 
 interface Props {
-  employeeId: number;
+  employeeId: number | "all";
   days?: number;
   /** Bắt đầu hiển thị từ giờ thứ X (mặc định 6 — bỏ giờ ngủ) */
   startHour?: number;

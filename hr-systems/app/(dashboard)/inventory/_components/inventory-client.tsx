@@ -22,8 +22,6 @@ type InventoryItem = {
   _count: { assignments: number };
 };
 
-type Employee = { id: number; fullName: string; department: string | null };
-
 type Tx = {
   id: string;
   type: "IN" | "OUT" | "ADJUST" | "RETURN";
@@ -108,6 +106,40 @@ const STATUS_COLOR: Record<StockStatus, string> = {
   out: "var(--danger)",
 };
 
+function fmtVN(v: number | string | null | undefined): string {
+  if (v === "" || v == null) return "";
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n)) return "";
+  return n.toLocaleString("vi-VN");
+}
+
+function parseVNDigits(s: string): string {
+  return s.replace(/\D/g, "");
+}
+
+function NumberInput({
+  value, onChange, placeholder, allowEmpty = false,
+}: {
+  value: number | string;
+  onChange: (v: number | "") => void;
+  placeholder?: string;
+  allowEmpty?: boolean;
+}) {
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={fmtVN(value)}
+      placeholder={placeholder}
+      onChange={(e) => {
+        const digits = parseVNDigits(e.target.value);
+        if (digits === "") onChange(allowEmpty ? "" : 0);
+        else onChange(Number(digits));
+      }}
+    />
+  );
+}
+
 function fmtRelative(iso: string): string {
   const d = new Date(iso);
   const diff = (Date.now() - d.getTime()) / 1000;
@@ -121,11 +153,9 @@ function fmtRelative(iso: string): string {
 
 export function InventoryClient({
   initialCategories,
-  employees,
   isManager,
 }: {
   initialCategories: Category[];
-  employees: Employee[];
   isManager: boolean;
 }) {
   const [selTab, setSelTab] = useState<string>("all");
@@ -147,7 +177,7 @@ export function InventoryClient({
     staleTime: 30_000,
   });
 
-  const items = data?.data ?? [];
+  const items = useMemo(() => data?.data ?? [], [data]);
 
   // ── Aggregates ──
   const totals = useMemo(() => {
@@ -611,7 +641,7 @@ function MoveModal({
           <div className="im-row">
             <div className="im-field">
               <label>{dir === "ADJUST" ? "Số lượng thực tế *" : "Số lượng *"}</label>
-              <input type="number" min={1} value={qty} onChange={(e) => setQty(Number(e.target.value) || 0)} />
+              <NumberInput value={qty} onChange={(v) => setQty(v === "" ? 0 : v)} />
               {current && (
                 <span style={{ fontSize: ".7rem", color: "var(--text-3)", marginTop: 4 }}>
                   Tồn hiện tại: {current.quantity} {current.unit}
@@ -738,7 +768,7 @@ function ProductFormModal({
             </div>
             <div className="im-field">
               <label>Giá nhập (đ)</label>
-              <input type="number" min={0} step={1000} value={form.costPrice as string | number} onChange={(e) => set("costPrice", e.target.value)} placeholder="vd. 500000"/>
+              <NumberInput value={form.costPrice} allowEmpty onChange={(v) => set("costPrice", v === "" ? "" : String(v))} placeholder="vd. 500.000"/>
             </div>
           </div>
 
@@ -746,12 +776,12 @@ function ProductFormModal({
             {!isEdit && (
               <div className="im-field">
                 <label>Tồn ban đầu</label>
-                <input type="number" min={0} value={form.quantity} onChange={(e) => set("quantity", Number(e.target.value))}/>
+                <NumberInput value={form.quantity} onChange={(v) => set("quantity", v === "" ? 0 : v)}/>
               </div>
             )}
             <div className="im-field">
               <label>Tồn tối thiểu</label>
-              <input type="number" min={0} value={form.minQuantity} onChange={(e) => set("minQuantity", Number(e.target.value))}/>
+              <NumberInput value={form.minQuantity} onChange={(v) => set("minQuantity", v === "" ? 0 : v)}/>
             </div>
             <div className="im-field">
               <label>Vị trí kho</label>

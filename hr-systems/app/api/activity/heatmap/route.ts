@@ -32,17 +32,34 @@ export const GET = withContext(async (req: NextRequest) => {
 
   const userId = auth.actorId;
   const role = auth.roleName;
-  const targetEmployeeId = employeeIdParam ? Number(employeeIdParam) : userId;
+  const isAdmin = ADMIN_ROLES.includes(role);
+  const isSubManager = SUB_MANAGER_ROLES.includes(role);
 
-  if (targetEmployeeId !== userId) {
-    if (!ADMIN_ROLES.includes(role)) {
-      if (SUB_MANAGER_ROLES.includes(role)) {
-        const managed = await getManagedEmployeeIds(userId, role);
-        if (managed !== null && !managed.includes(targetEmployeeId)) {
+  const isAllMode = !employeeIdParam || employeeIdParam === "all";
+  let allowedEmployeeIds: number[] | null = null;
+  let targetEmployeeId: number | null = null;
+
+  if (isAllMode) {
+    if (isAdmin) {
+      allowedEmployeeIds = null; // unrestricted across the org
+    } else if (isSubManager) {
+      const managed = await getManagedEmployeeIds(userId, role);
+      allowedEmployeeIds = managed === null ? null : [...managed, userId];
+    } else {
+      targetEmployeeId = userId;
+    }
+  } else {
+    targetEmployeeId = Number(employeeIdParam);
+    if (targetEmployeeId !== userId) {
+      if (!isAdmin) {
+        if (isSubManager) {
+          const managed = await getManagedEmployeeIds(userId, role);
+          if (managed !== null && !managed.includes(targetEmployeeId)) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+          }
+        } else {
           return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
-      } else {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
   }
@@ -52,17 +69,41 @@ export const GET = withContext(async (req: NextRequest) => {
   since.setDate(since.getDate() - days + 1);
 
   // Gom theo ngày + giờ. Cast tránh BigInt return type.
-  const rows = await prisma.$queryRaw<{ day: Date; hour: number; cnt: bigint }[]>`
-    SELECT
-      date_trunc('day', "createdAt") AS day,
-      EXTRACT(HOUR FROM "createdAt")::int AS hour,
-      COUNT(*)::bigint AS cnt
-    FROM api_access_log
-    WHERE "employeeId" = ${targetEmployeeId}
-      AND "createdAt" >= ${since}
-    GROUP BY 1, 2
-    ORDER BY 1, 2
-  `;
+  const rows = targetEmployeeId !== null
+    ? await prisma.$queryRaw<{ day: Date; hour: number; cnt: bigint }[]>`
+        SELECT
+          date_trunc('day', "createdAt") AS day,
+          EXTRACT(HOUR FROM "createdAt")::int AS hour,
+          COUNT(*)::bigint AS cnt
+        FROM api_access_log
+        WHERE "employeeId" = ${targetEmployeeId}
+          AND "createdAt" >= ${since}
+        GROUP BY 1, 2
+        ORDER BY 1, 2
+      `
+    : allowedEmployeeIds === null
+      ? await prisma.$queryRaw<{ day: Date; hour: number; cnt: bigint }[]>`
+          SELECT
+            date_trunc('day', "createdAt") AS day,
+            EXTRACT(HOUR FROM "createdAt")::int AS hour,
+            COUNT(*)::bigint AS cnt
+          FROM api_access_log
+          WHERE "createdAt" >= ${since}
+            AND "employeeId" IS NOT NULL
+          GROUP BY 1, 2
+          ORDER BY 1, 2
+        `
+      : await prisma.$queryRaw<{ day: Date; hour: number; cnt: bigint }[]>`
+          SELECT
+            date_trunc('day', "createdAt") AS day,
+            EXTRACT(HOUR FROM "createdAt")::int AS hour,
+            COUNT(*)::bigint AS cnt
+          FROM api_access_log
+          WHERE "createdAt" >= ${since}
+            AND "employeeId" = ANY(${allowedEmployeeIds}::int[])
+          GROUP BY 1, 2
+          ORDER BY 1, 2
+        `;
 
   const cells = rows.map((r) => ({
     date: new Date(r.day).toISOString().slice(0, 10),
@@ -74,6 +115,7 @@ export const GET = withContext(async (req: NextRequest) => {
   return NextResponse.json({
     data: {
       employeeId: targetEmployeeId,
+      scope: targetEmployeeId !== null ? "single" : (allowedEmployeeIds === null ? "all" : "managed"),
       days,
       cells,
       max,

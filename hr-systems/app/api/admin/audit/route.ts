@@ -61,7 +61,7 @@ export const GET = withContext(async (req: NextRequest) => {
     };
   }
 
-  const [rows, total] = await prisma.$transaction([
+  const [rows, total, byActionRaw] = await prisma.$transaction([
     prisma.auditLog.findMany({
       where,
       include: { changedBy: { select: { id: true, fullName: true, avatarUrl: true } } },
@@ -70,7 +70,11 @@ export const GET = withContext(async (req: NextRequest) => {
       take: limit,
     }),
     prisma.auditLog.count({ where }),
+    prisma.auditLog.groupBy({ by: ["action"], where, _count: true }),
   ]);
+
+  const byAction: Record<string, number> = {};
+  for (const r of byActionRaw) byAction[r.action] = r._count;
 
   return NextResponse.json({
     data: rows,
@@ -78,5 +82,6 @@ export const GET = withContext(async (req: NextRequest) => {
     page,
     limit,
     totalPages: Math.ceil(total / limit),
+    byAction,
   });
 });
