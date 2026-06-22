@@ -218,12 +218,8 @@ export function Sidebar() {
             j
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-semibold leading-tight truncate" style={{ color: "var(--dash-text)" }}>
-              {user.organization.name}
-            </p>
-            <p className="text-[11px] leading-tight truncate" style={{ color: "var(--dash-text-3)" }}>
-              Workspace · {user.fullName}
-            </p>
+            <p className="text-[13px] font-semibold leading-tight truncate" style={{ color: "var(--dash-text)" }} suppressHydrationWarning>{user.organization.name}</p>
+            <p className="text-[11px] leading-tight truncate" style={{ color: "var(--dash-text-3)" }} suppressHydrationWarning>Workspace · {user.fullName}</p>
           </div>
           <button
             onClick={() => setMobileOpen(false)}
@@ -395,12 +391,8 @@ export function Sidebar() {
               </div>
             )}
             <div className="flex-1 text-left min-w-0">
-              <p className="text-[12px] font-semibold leading-tight truncate" style={{ color: "var(--dash-text)" }}>
-                {user.fullName}
-              </p>
-              <p className="text-[11px] leading-tight truncate" style={{ color: "var(--dash-text-3)" }}>
-                {user.role.label}
-              </p>
+              <p className="text-[12px] font-semibold leading-tight truncate" style={{ color: "var(--dash-text)" }} suppressHydrationWarning>{user.fullName}</p>
+              <p className="text-[11px] leading-tight truncate" style={{ color: "var(--dash-text-3)" }} suppressHydrationWarning>{user.role.label}</p>
             </div>
             <ChevronUp className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--dash-text-3)" }} />
           </button>

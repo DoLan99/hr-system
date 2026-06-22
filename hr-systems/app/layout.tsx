@@ -92,7 +92,7 @@ export default async function RootLayout({
         <head>
           <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         </head>
-        <body className={`${inter.variable} ${plusJakarta.variable} ${beVietnamPro.variable} font-sans antialiased`}>
+        <body className={`${inter.variable} ${plusJakarta.variable} ${beVietnamPro.variable} font-sans antialiased`} suppressHydrationWarning>
           <Providers locale={locale}>{children}</Providers>
         </body>
       </html>

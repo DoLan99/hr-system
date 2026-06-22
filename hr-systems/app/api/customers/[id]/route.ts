@@ -20,23 +20,48 @@ const updateSchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE", "PROSPECT"]).optional(),
   responsibleStaffId: z.number().int().nullable().optional(),
   lastContactDate: z.string().nullable().optional(),
+  customerSince: z.string().nullable().optional(),
+  contractRenewDate: z.string().nullable().optional(),
   notes: z.string().optional(),
 });
+
+function nullableDate(v: string | null | undefined) {
+  if (v === undefined) return undefined;
+  if (v === null || v === "") return null;
+  return new Date(v);
+}
 
 export const GET = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {
   const auth = await requireApiAuth();
   if (!auth.ok) return auth.response;
 
-  const customer = await prisma.customer.findFirst({
-    where: { id: Number(params.id) },
-    include: {
-      responsibleStaff: { select: { id: true, fullName: true } },
-      _count: { select: { tasks: true, messages: true } },
-    },
-  });
+  const customerId = Number(params.id);
+  const [customer, activeTaskCount, activities] = await Promise.all([
+    prisma.customer.findFirst({
+      where: { id: customerId, organizationId: auth.orgId },
+      include: {
+        responsibleStaff: { select: { id: true, fullName: true } },
+        contacts: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] },
+        _count: { select: { tasks: true, messages: true, contacts: true } },
+      },
+    }),
+    prisma.task.count({
+      where: {
+        customerId,
+        organizationId: auth.orgId,
+        status: { in: ["BACKLOG", "IN_PROGRESS", "REVIEW"] },
+      },
+    }),
+    prisma.customerActivity.findMany({
+      where: { customerId, organizationId: auth.orgId },
+      include: { actor: { select: { id: true, fullName: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+  ]);
 
   if (!customer) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
-  return NextResponse.json({ data: customer });
+  return NextResponse.json({ data: { ...customer, activeTaskCount, activities } });
 });
 
 export const PUT = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
@@ -53,7 +78,9 @@ export const PUT = withContext(async (req: NextRequest, { params }: { params: { 
     data: {
       ...d,
       email: d.email === "" ? null : d.email,
-      lastContactDate: d.lastContactDate ? new Date(d.lastContactDate) : d.lastContactDate === null ? null : undefined,
+      lastContactDate: nullableDate(d.lastContactDate),
+      customerSince: nullableDate(d.customerSince),
+      contractRenewDate: nullableDate(d.contractRenewDate),
     },
     include: {
       responsibleStaff: { select: { id: true, fullName: true } },

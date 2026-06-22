@@ -13,6 +13,8 @@ const TENANT_SCOPED_MODELS = new Set<string>([
   "Employee",
   "SalaryHistory",
   "Customer",
+  "CustomerContact",
+  "CustomerActivity",
   "TaskTemplate",
   "Task",
   "TimeLog",

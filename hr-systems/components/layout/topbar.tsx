@@ -176,12 +176,8 @@ export function Topbar() {
               </div>
             )}
             <div className="text-left hidden sm:block">
-              <p className="text-[12px] font-medium leading-tight" style={{ color: "var(--dash-text)" }}>
-                {user.fullName}
-              </p>
-              <p className="text-[11px] leading-tight" style={{ color: "var(--dash-text-3)" }}>
-                {user.role.label}
-              </p>
+              <p className="text-[12px] font-medium leading-tight" style={{ color: "var(--dash-text)" }} suppressHydrationWarning>{user.fullName}</p>
+              <p className="text-[11px] leading-tight" style={{ color: "var(--dash-text-3)" }} suppressHydrationWarning>{user.role.label}</p>
             </div>
             <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--dash-text-3)" }} />
           </button>
@@ -200,18 +196,13 @@ export function Topbar() {
                   className="px-3.5 py-2.5"
                   style={{ borderBottom: "1px solid var(--dash-border)" }}
                 >
-                  <p className="text-[13px] font-semibold leading-tight" style={{ color: "var(--dash-text)" }}>
-                    {user.fullName}
-                  </p>
-                  <p className="text-[11px] mt-0.5 leading-tight" style={{ color: "var(--dash-text-3)" }}>
-                    {user.email}
-                  </p>
+                  <p className="text-[13px] font-semibold leading-tight" style={{ color: "var(--dash-text)" }} suppressHydrationWarning>{user.fullName}</p>
+                  <p className="text-[11px] mt-0.5 leading-tight" style={{ color: "var(--dash-text-3)" }} suppressHydrationWarning>{user.email}</p>
                   <span
                     className="inline-block mt-1.5 text-[10.5px] font-medium px-2 py-0.5 rounded-full"
                     style={{ background: roleBadge.bg, color: roleBadge.text }}
-                  >
-                    {user.role.label}
-                  </span>
+                    suppressHydrationWarning
+                  >{user.role.label}</span>
                 </div>
                 <DropdownItem icon={User} label={t("topbar.profile")} onClick={() => setDropdownOpen(false)} />
                 <DropdownItem

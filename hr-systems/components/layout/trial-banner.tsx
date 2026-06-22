@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, Crown } from "lucide-react";
 import { useCurrentUser } from "@/lib/contexts/current-user-context";
@@ -13,6 +14,12 @@ function daysUntilDate(iso: string | null): number {
 export function TrialBanner() {
   const user = useCurrentUser();
   const { organization: org } = user;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  // SUSPENDED + seat-limit branches don't use Date.now() — safe to render on SSR.
+  // TRIAL branch uses Date.now() → render only after mount to avoid hydration mismatch.
+  if (org.status === "TRIAL" && !mounted) return null;
 
   if (org.status === "SUSPENDED") {
     return (

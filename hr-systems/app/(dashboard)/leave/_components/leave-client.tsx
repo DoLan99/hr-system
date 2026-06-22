@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { useCurrentUser } from "@/lib/contexts/current-user-context";
 import { format } from "date-fns";
 import { vi as viLocale } from "date-fns/locale";
@@ -35,10 +36,17 @@ interface Kpis {
   totalRequests: number;
 }
 
+interface TabCounts { ALL: number; PENDING: number; APPROVED: number; REJECTED: number }
+
 interface Props {
   initialLeaves: LeaveItem[];
-  initialMonth: number;
-  initialYear: number;
+  viewedMonth: number;
+  viewedYear: number;
+  viewedPage: number;
+  pageSize: number;
+  totalInView: number;
+  statusFilter: string | null;
+  tabCounts: TabCounts;
   employees: Employee[];
   currentUserId: number;
   todayLeaves: LeaveItem[];
@@ -61,45 +69,55 @@ function statusLabel(s: string) {
 }
 
 export function LeaveClient({
-  initialLeaves, initialMonth, initialYear, employees,
-  currentUserId, todayLeaves, kpis,
+  initialLeaves, viewedMonth, viewedYear, viewedPage, pageSize, totalInView,
+  statusFilter, tabCounts, employees, currentUserId, todayLeaves, kpis,
 }: Props) {
   const user = useCurrentUser();
   const isManager = MANAGER_ROLES.includes(user.role.name);
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const [leaves, setLeaves] = useState<LeaveItem[]>(initialLeaves);
-  const [tab, setTab] = useState<string>("PENDING");
   const [creating, setCreating] = useState(false);
   const [editingItem, setEditingItem] = useState<LeaveItem | null>(null);
   const [reviewingItem, setReviewingItem] = useState<LeaveItem | null>(null);
 
-  function upsert(item: LeaveItem) {
-    setLeaves(prev => {
-      const idx = prev.findIndex(l => l.id === item.id);
-      if (idx >= 0) { const next = [...prev]; next[idx] = item; return next; }
-      return [item, ...prev];
-    });
+  const leaves = initialLeaves;
+  const totalPages = Math.max(1, Math.ceil(totalInView / pageSize));
+  const currentTab: "ALL" | "PENDING" | "APPROVED" | "REJECTED" =
+    (statusFilter as any) ?? "ALL";
+
+  function buildUrl(next: { month?: number; year?: number; page?: number; status?: string | null }) {
+    const params = new URLSearchParams();
+    const m = next.month ?? viewedMonth;
+    const y = next.year ?? viewedYear;
+    const p = next.page ?? 1;
+    const s = "status" in next ? next.status : statusFilter;
+    params.set("month", String(m));
+    params.set("year", String(y));
+    if (p > 1) params.set("page", String(p));
+    if (s) params.set("status", s);
+    return `${pathname}?${params.toString()}`;
+  }
+
+  function go(next: Parameters<typeof buildUrl>[0]) {
+    router.push(buildUrl(next));
+  }
+
+  function changeMonth(delta: number) {
+    let m = viewedMonth + delta;
+    let y = viewedYear;
+    if (m < 1) { m = 12; y -= 1; }
+    else if (m > 12) { m = 1; y += 1; }
+    go({ month: m, year: y, page: 1 });
   }
 
   async function handleDelete(id: number) {
     if (!confirm("Xóa đơn nghỉ này?")) return;
     await fetch(`/api/leave/${id}`, { method: "DELETE" });
-    setLeaves(prev => prev.filter(l => l.id !== id));
+    router.refresh();
   }
 
-  const counts = useMemo(() => ({
-    ALL: leaves.length,
-    PENDING: leaves.filter(l => l.status === "PENDING").length,
-    APPROVED: leaves.filter(l => l.status === "APPROVED").length,
-    REJECTED: leaves.filter(l => l.status === "REJECTED").length,
-  }), [leaves]);
-
-  const filtered = useMemo(() =>
-    tab === "ALL" ? leaves : leaves.filter(l => l.status === tab),
-    [leaves, tab]
-  );
-
-  const tabs = [
+  const tabs: { k: "PENDING" | "APPROVED" | "REJECTED" | "ALL"; l: string }[] = [
     { k: "PENDING", l: "Chờ duyệt" },
     { k: "APPROVED", l: "Đã duyệt" },
     { k: "REJECTED", l: "Từ chối" },
@@ -108,14 +126,14 @@ export function LeaveClient({
 
   return (
     <>
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .lv-layout{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
         @media(max-width:1050px){.lv-layout{grid-template-columns:1fr}}
         .lt-annual{--c:#3B5BDB;--cs:rgba(59,91,219,.13)}
         .lt-sick{--c:#fbbf24;--cs:rgba(251,191,36,.13)}
         .lt-unpaid{--c:#94a3b8;--cs:rgba(148,163,184,.14)}
         .lt-personal{--c:#a78bfa;--cs:rgba(167,139,250,.14)}
-        .lv-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+        .lv-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:20px 0}
         .lv-tabs{display:flex;gap:4px;flex-wrap:wrap}
         .lv-tab{height:34px;padding:0 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--elev);font-size:.82rem;font-weight:600;color:var(--text-2);cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
         .lv-tab:hover{border-color:var(--border-2);color:var(--text)}
@@ -164,18 +182,39 @@ export function LeaveClient({
         .who-out .wo-name{font-size:.83rem;font-weight:600;color:var(--text)}
         .who-out .wo-when{font-size:.72rem;color:var(--text-3);font-family:var(--font-mono)}
         .who-out .wo-tag{font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:99px;flex-shrink:0}
-      `}</style>
+        .month-nav{display:inline-flex;align-items:center;gap:6px;background:var(--elev);border:1px solid var(--border);border-radius:9px;padding:4px}
+        .mn-btn{width:30px;height:30px;border-radius:7px;border:none;background:transparent;color:var(--text-2);cursor:pointer;display:grid;place-items:center;font-family:inherit;transition:background .15s,color .15s}
+        .mn-btn:hover:not(:disabled){background:var(--content);color:var(--text)}
+        .mn-btn:disabled{opacity:.35;cursor:not-allowed}
+        .mn-label{font-family:var(--font-mono);font-size:.8rem;font-weight:700;color:var(--text);padding:0 8px;min-width:110px;text-align:center}
+        .lv-page{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:10px 14px;background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);flex-wrap:wrap}
+        .lv-page-info{font-size:.82rem;color:var(--text-3)}
+        .lv-page-info b{color:var(--text);font-weight:700;font-family:var(--font-mono)}
+        .lv-page-ctrl{display:inline-flex;align-items:center;gap:4px}
+        .lv-page-ctrl .mn-label{min-width:70px;font-size:.78rem}
+      ` }} />
 
       {/* Page head */}
       <div className="page-head" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"16px", flexWrap:"wrap", marginBottom:"22px" }}>
         <div>
           <h1>Leave</h1>
-          <p>Quản lý nghỉ phép · <b>{kpis.pendingCount}</b> đơn chờ duyệt · Tháng {initialMonth}/{initialYear}</p>
+          <p>Quản lý nghỉ phép · <b>{kpis.pendingCount}</b> đơn chờ duyệt · Tháng {viewedMonth}/{viewedYear}</p>
         </div>
-        <button className="abtn primary" onClick={() => setCreating(true)} style={{ gap:"7px" }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>
-          Tạo đơn nghỉ
-        </button>
+        <div style={{ display:"flex", alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
+          <div className="month-nav">
+            <button type="button" className="mn-btn" onClick={() => changeMonth(-1)} aria-label="Tháng trước">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" width="14" height="14"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <span className="mn-label">Tháng {String(viewedMonth).padStart(2,"0")}/{viewedYear}</span>
+            <button type="button" className="mn-btn" onClick={() => changeMonth(1)} aria-label="Tháng sau">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" width="14" height="14"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+          <button className="abtn primary" onClick={() => setCreating(true)} style={{ gap:"7px" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>
+            Tạo đơn nghỉ
+          </button>
+        </div>
       </div>
 
       {/* KPIs */}
@@ -211,31 +250,36 @@ export function LeaveClient({
         ))}
       </div>
 
+      {/* Tabs (above grid, spans full width so both columns start at the same Y) */}
+      <div className="lv-bar">
+        <div className="lv-tabs">
+          {tabs.map(t => (
+            <button
+              key={t.k}
+              className={`lv-tab${currentTab === t.k ? " on" : ""}`}
+              onClick={() => go({ status: t.k === "ALL" ? null : t.k, page: 1 })}
+            >
+              {t.l}<span className="tcnt">{tabCounts[t.k]}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Layout */}
       <div className="lv-layout">
         {/* LEFT: requests */}
         <div>
-          <div className="lv-bar">
-            <div className="lv-tabs">
-              {tabs.map(t => (
-                <button key={t.k} className={`lv-tab${tab === t.k ? " on" : ""}`} onClick={() => setTab(t.k)}>
-                  {t.l}<span className="tcnt">{counts[t.k as keyof typeof counts]}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="req-list">
-            {filtered.length === 0 ? (
+            {leaves.length === 0 ? (
               <div className="req-empty">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width:46, height:46, margin:"0 auto 14px", opacity:.3 }}>
                   <rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <p style={{ fontSize:".92rem", fontWeight:600, color:"var(--text-2)" }}>Không có đơn nào</p>
-                <span style={{ fontSize:".83rem" }}>Mọi đơn nghỉ phép đã được xử lý.</span>
+                <span style={{ fontSize:".83rem" }}>Không có đơn nghỉ nào trong tháng {viewedMonth}/{viewedYear}.</span>
               </div>
             ) : (
-              filtered.map(item => {
+              leaves.map((item: LeaveItem) => {
                 const t = LEAVE_TYPES[item.type] ?? LEAVE_TYPES.OTHER;
                 const canEdit = item.status === "PENDING" && (isManager || item.employee.id === currentUserId);
                 const canReview = isManager && item.status === "PENDING";
@@ -286,6 +330,36 @@ export function LeaveClient({
               })
             )}
           </div>
+
+          {totalPages > 1 && (
+            <div className="lv-page">
+              <span className="lv-page-info">
+                Hiển thị <b>{(viewedPage - 1) * pageSize + 1}</b>–
+                <b>{Math.min(viewedPage * pageSize, totalInView)}</b> / {totalInView} đơn
+              </span>
+              <div className="lv-page-ctrl">
+                <button
+                  type="button"
+                  className="mn-btn"
+                  disabled={viewedPage <= 1}
+                  onClick={() => go({ page: viewedPage - 1 })}
+                  aria-label="Trang trước"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" width="14" height="14"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <span className="mn-label">{viewedPage} / {totalPages}</span>
+                <button
+                  type="button"
+                  className="mn-btn"
+                  disabled={viewedPage >= totalPages}
+                  onClick={() => go({ page: viewedPage + 1 })}
+                  aria-label="Trang sau"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" width="14" height="14"><path d="M9 6l6 6-6 6"/></svg>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* RIGHT */}
@@ -355,7 +429,7 @@ export function LeaveClient({
           isManager={isManager}
           currentUserId={currentUserId}
           onClose={() => { setCreating(false); setEditingItem(null); }}
-          onSaved={item => { upsert(item); setCreating(false); setEditingItem(null); }}
+          onSaved={() => { setCreating(false); setEditingItem(null); router.refresh(); }}
         />
       )}
 
@@ -363,7 +437,7 @@ export function LeaveClient({
         <LeaveReviewModal
           item={reviewingItem}
           onClose={() => setReviewingItem(null)}
-          onSaved={item => { upsert(item); setReviewingItem(null); }}
+          onSaved={() => { setReviewingItem(null); router.refresh(); }}
         />
       )}
     </>

@@ -5,30 +5,40 @@ import { LeaveClient } from "./_components/leave-client";
 
 export const dynamic = "force-dynamic";
 
-export default async function LeavePage() {
+const PAGE_SIZE = 20;
+const VALID_STATUS = new Set(["PENDING", "APPROVED", "REJECTED"]);
+
+export default async function LeavePage({
+  searchParams,
+}: {
+  searchParams: { month?: string; year?: string; page?: string; status?: string };
+}) {
   const { employee, organization, role } = await requireAuth();
   const userId = employee.id;
   const isManager = MANAGER_ROLES.includes(role.name);
 
   const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
+  const viewedMonth = clampMonth(Number(searchParams.month) || now.getMonth() + 1);
+  const viewedYear = clampYear(Number(searchParams.year) || now.getFullYear());
+  const viewedPage = Math.max(1, Number(searchParams.page) || 1);
+  const statusFilter = searchParams.status && VALID_STATUS.has(searchParams.status)
+    ? searchParams.status
+    : null;
 
-  const startOfMonth = new Date(year, month - 1, 1);
-  const endOfMonth = new Date(year, month, 1);
+  const viewStart = new Date(viewedYear, viewedMonth - 1, 1);
+  const viewEnd = new Date(viewedYear, viewedMonth, 1);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const whereAll: any = { organizationId: organization.id };
-  if (!isManager) whereAll.employeeId = userId;
+  const whereScope: any = { organizationId: organization.id };
+  if (!isManager) whereScope.employeeId = userId;
 
-  const whereMonth: any = {
-    organizationId: organization.id,
-    date: { gte: startOfMonth, lt: endOfMonth },
-  };
-  if (!isManager) whereMonth.employeeId = userId;
+  const whereView: any = { ...whereScope, date: { gte: viewStart, lt: viewEnd } };
+  const whereViewWithStatus = statusFilter
+    ? { ...whereView, status: statusFilter }
+    : whereView;
 
   const whereToday: any = {
     organizationId: organization.id,
@@ -36,14 +46,33 @@ export default async function LeavePage() {
     status: "APPROVED",
   };
 
-  const [leaves, employees, todayLeaves] = await Promise.all([
+  const [
+    leaves,
+    totalInView,
+    countsByStatus,
+    approvedAgg,
+    employees,
+    todayLeaves,
+  ] = await Promise.all([
     prisma.leave.findMany({
-      where: whereAll,
+      where: whereViewWithStatus,
       include: {
         employee: { select: { id: true, fullName: true, department: true } },
         approvedBy: { select: { id: true, fullName: true } },
       },
       orderBy: { createdAt: "desc" },
+      skip: (viewedPage - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.leave.count({ where: whereViewWithStatus }),
+    prisma.leave.groupBy({
+      by: ["status"],
+      where: whereView,
+      _count: { _all: true },
+    }),
+    prisma.leave.aggregate({
+      where: { ...whereView, status: "APPROVED" },
+      _sum: { requestedHours: true },
     }),
     isManager
       ? prisma.employee.findMany({
@@ -60,36 +89,42 @@ export default async function LeavePage() {
     }),
   ]);
 
-  // Compute KPIs
-  const pendingCount = leaves.filter((l) => l.status === "PENDING").length;
-  const approvedMonth = leaves.filter(
-    (l) =>
-      l.status === "APPROVED" &&
-      l.date >= startOfMonth &&
-      l.date < endOfMonth
-  );
-  const approvedMonthHours = approvedMonth.reduce(
-    (sum, l) => sum + Number(l.requestedHours),
-    0
-  );
-  const onLeaveToday = todayLeaves.length;
-  const totalRequests = leaves.length;
+  const counts = { PENDING: 0, APPROVED: 0, REJECTED: 0 };
+  for (const c of countsByStatus) {
+    counts[c.status as keyof typeof counts] = c._count._all;
+  }
+  const totalInMonth = counts.PENDING + counts.APPROVED + counts.REJECTED;
+  const approvedHours = Math.round(Number(approvedAgg._sum.requestedHours ?? 0));
 
   return (
     <LeaveClient
       initialLeaves={JSON.parse(JSON.stringify(leaves))}
-      initialMonth={month}
-      initialYear={year}
+      viewedMonth={viewedMonth}
+      viewedYear={viewedYear}
+      viewedPage={viewedPage}
+      pageSize={PAGE_SIZE}
+      totalInView={totalInView}
+      statusFilter={statusFilter}
+      tabCounts={{ ALL: totalInMonth, ...counts }}
       employees={employees}
       currentUserId={userId}
       todayLeaves={JSON.parse(JSON.stringify(todayLeaves))}
       kpis={{
-        pendingCount,
-        approvedMonthCount: approvedMonth.length,
-        approvedMonthHours: Math.round(approvedMonthHours),
-        onLeaveToday,
-        totalRequests,
+        pendingCount: counts.PENDING,
+        approvedMonthCount: counts.APPROVED,
+        approvedMonthHours: approvedHours,
+        onLeaveToday: todayLeaves.length,
+        totalRequests: totalInMonth,
       }}
     />
   );
+}
+
+function clampMonth(m: number) {
+  if (!Number.isFinite(m) || m < 1 || m > 12) return new Date().getMonth() + 1;
+  return Math.floor(m);
+}
+function clampYear(y: number) {
+  if (!Number.isFinite(y) || y < 2000 || y > 2100) return new Date().getFullYear();
+  return Math.floor(y);
 }

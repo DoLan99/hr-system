@@ -34,6 +34,21 @@ export const POST = withContext(async (req: NextRequest, { params }: { params: {
   const replyBody = parsed.data.body;
   const channel = message.channel as MessageChannel | null;
 
+  // Look up the original to find the "other party" employee for assignedToId
+  const original = await prisma.message.findFirst({
+    where: { id: Number(params.id), organizationId: auth.orgId },
+    select: { assignedToId: true, senderEmployeeId: true, customerId: true },
+  });
+  // For internal team chats, route the reply back to the other party
+  let replyAssignedToId: number | undefined;
+  if (original && !original.customerId) {
+    if (original.senderEmployeeId && original.senderEmployeeId !== auth.actorId) {
+      replyAssignedToId = original.senderEmployeeId;
+    } else if (original.assignedToId && original.assignedToId !== auth.actorId) {
+      replyAssignedToId = original.assignedToId;
+    }
+  }
+
   // Lưu reply vào DB trước
   const reply = await prisma.message.create({
     data: {
@@ -44,6 +59,8 @@ export const POST = withContext(async (req: NextRequest, { params }: { params: {
       messageSummary: replyBody.slice(0, 500),
       replyToId: message.id,
       externalThread: message.externalThread,
+      senderEmployeeId: auth.actorId,
+      assignedToId: replyAssignedToId,
       status: "CLOSED",
       netTime: 0,
     },

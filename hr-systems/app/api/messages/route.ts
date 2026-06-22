@@ -106,6 +106,7 @@ export const POST = withContext(async (req: NextRequest) => {
       messageSummary: d.messageSummary,
       actionRequired: d.actionRequired,
       assignedToId: d.assignedToId ?? auth.actorId,
+      senderEmployeeId: auth.actorId,
       dueDate: d.dueDate ? new Date(d.dueDate) : null,
       status: d.status ?? "OPEN",
       linkFile: d.linkFile,
