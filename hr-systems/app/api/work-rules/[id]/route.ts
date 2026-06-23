@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withContext } from "@/lib/with-context";
 import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
@@ -9,6 +10,7 @@ const updateSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().min(1).optional(),
   effectiveDate: z.string().nullable().optional(),
+  config: z.record(z.unknown()).optional(),
 });
 
 export const PUT = withContext(async (req: NextRequest, { params }: { params: { id: string } }) => {
@@ -23,17 +25,24 @@ export const PUT = withContext(async (req: NextRequest, { params }: { params: { 
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
   const d = parsed.data;
-  const updated = await prisma.workRule.update({
-    where: { id: Number(params.id) },
-    data: {
-      ...(d.ruleNo !== undefined && { ruleNo: d.ruleNo }),
-      ...(d.title !== undefined && { title: d.title }),
-      ...(d.description !== undefined && { description: d.description }),
-      ...(d.effectiveDate !== undefined && { effectiveDate: d.effectiveDate ? new Date(d.effectiveDate) : null }),
-    },
-  });
+  const ruleId = Number(params.id);
 
-  return NextResponse.json({ data: updated });
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateData: Record<string, any> = {};
+    if (d.ruleNo !== undefined) updateData.ruleNo = d.ruleNo;
+    if (d.title !== undefined) updateData.title = d.title;
+    if (d.description !== undefined) updateData.description = d.description;
+    if (d.effectiveDate !== undefined) updateData.effectiveDate = d.effectiveDate ? new Date(d.effectiveDate) : null;
+    if (d.config !== undefined) updateData.config = d.config;
+
+    const updated = await prisma.workRule.update({ where: { id: ruleId }, data: updateData });
+    return NextResponse.json({ data: updated });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[work-rules PUT]", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 });
 
 export const DELETE = withContext(async (_req: NextRequest, { params }: { params: { id: string } }) => {

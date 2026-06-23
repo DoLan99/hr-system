@@ -8,99 +8,88 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─────────────────────────────────────────────────────────────
-// ORGANIZATIONS (Multi-tenant root)
-// ─────────────────────────────────────────────────────────────
-
 model Organization {
-  id         String    @id @default(cuid())
-  clerkOrgId String    @unique
-  slug       String    @unique
-  name       String
-  logoUrl    String?
-  plan       Plan      @default(FREE)
-  status     OrgStatus @default(ACTIVE)
-  seatLimit  Int       @default(1)
-
-  stripeCustomerId     String?   @unique
-  stripeSubscriptionId String?   @unique
-  trialEndsAt          DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations to all tenant-scoped models
-  employees             Employee[]
-  roles                 Role[]
-  departments           Department[]
-  teams                 Team[]
-  teamDepartments       TeamDepartment[]
-  salaryHistory         SalaryHistory[]
-  customers             Customer[]
-  customerContacts      CustomerContact[]
-  customerActivities    CustomerActivity[]
-  taskTemplates         TaskTemplate[]
-  tasks                 Task[]
-  sprints               Sprint[]
-  timeLogs              TimeLog[]
-  officeTimes           OfficeTime[]
-  templateSuggestions   TemplateSuggestion[]
-  estimateFlags         EstimateFlag[]
-  salarySummaries       SalarySummary[]
-  payments              Payment[]
-  leaves                Leave[]
-  messages              Message[]
-  messageAuditLogs      MessageAuditLog[]
-  passwordVaults        PasswordVault[]
-  vaultAccessLogs       VaultAccessLog[]
-  workRules             WorkRule[]
-  userSessions          UserSession[]
-  userActivities        UserActivity[]
-  apiAccessLogs         ApiAccessLog[]
+  id                    String                 @id @default(cuid())
+  clerkOrgId            String                 @unique
+  slug                  String                 @unique
+  name                  String
+  logoUrl               String?
+  plan                  Plan                   @default(FREE)
+  status                OrgStatus              @default(ACTIVE)
+  seatLimit             Int                    @default(1)
+  stripeCustomerId      String?                @unique
+  stripeSubscriptionId  String?                @unique
+  trialEndsAt           DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
   anomalyAlerts         AnomalyAlert[]
+  apiAccessLogs         ApiAccessLog[]
   auditLogs             AuditLog[]
-  systemLabels          SystemLabel[]
-  reviewCycles          ReviewCycle[]
-  performanceReviews    PerformanceReview[]
-  skills                Skill[]
-  employeeSkills        EmployeeSkill[]
-  roleSkillRequirements RoleSkillRequirement[]
-  microsoftToken        MicrosoftToken?
+  careerLevelSkills     CareerLevelSkill[]
+  careerLevels          CareerLevel[]
+  careerTracks          CareerTrack[]
+  channelIntegrations   ChannelIntegration[]
+  customerActivities    CustomerActivity[]
+  customerContacts      CustomerContact[]
+  customers             Customer[]
+  departments           Department[]
+  developmentGoals      DevelopmentGoal[]
   drivePermissions      DrivePermission[]
-  workflowTemplates     WorkflowTemplate[]
-  workflowInstances     WorkflowInstance[]
+  employeeSkills        EmployeeSkill[]
+  employees             Employee[]
+  estimateFlags         EstimateFlag[]
+  inventoryAssignments  InventoryAssignment[]
   inventoryCategories   InventoryCategory[]
   inventoryItems        InventoryItem[]
   inventoryTransactions InventoryTransaction[]
-  inventoryAssignments  InventoryAssignment[]
-  channelIntegrations   ChannelIntegration[]
+  leaves                Leave[]
+  messageAuditLogs      MessageAuditLog[]
+  messages              Message[]
+  microsoftToken        MicrosoftToken?
+  officeTimes           OfficeTime[]
+  passwordVaults        PasswordVault[]
+  payments              Payment[]
+  performanceReviews    PerformanceReview[]
+  reviewCycles          ReviewCycle[]
+  roleSkillRequirements RoleSkillRequirement[]
+  roles                 Role[]
+  salaryHistory         SalaryHistory[]
+  salarySummaries       SalarySummary[]
+  skills                Skill[]
+  sprints               Sprint[]
+  systemLabels          SystemLabel[]
+  taskTemplates         TaskTemplate[]
   taskTypeConfigs       TaskTypeConfig[]
-  developmentGoals      DevelopmentGoal[]
-  careerTracks          CareerTrack[]
-  careerLevels          CareerLevel[]
-  careerLevelSkills     CareerLevelSkill[]
+  tasks                 Task[]
+  teamDepartments       TeamDepartment[]
+  teams                 Team[]
+  templateSuggestions   TemplateSuggestion[]
+  timeLogs              TimeLog[]
+  userActivities        UserActivity[]
+  userSessions          UserSession[]
+  vaultAccessLogs       VaultAccessLog[]
+  workRules             WorkRule[]
+  upgradeRequests       UpgradeRequest[]
+  workflowInstances     WorkflowInstance[]
+  workflowTemplates     WorkflowTemplate[]
 
   @@map("organizations")
 }
 
-// ─────────────────────────────────────────────────────────────
-// ROLES & EMPLOYEES
-// ─────────────────────────────────────────────────────────────
-
 model Role {
   id                Int                    @id @default(autoincrement())
   organizationId    String
-  organization      Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name              String
   label             String
   description       String?
   color             String?
   permissions       Json                   @default("{}")
   seniority         Int                    @default(0)
-  employees         Employee[]
-  skillRequirements RoleSkillRequirement[]
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @default(now()) @updatedAt
+  employees         Employee[]
+  skillRequirements RoleSkillRequirement[]
+  organization      Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -108,20 +97,19 @@ model Role {
 }
 
 model Department {
-  id             Int          @id @default(autoincrement())
+  id             Int              @id @default(autoincrement())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
   code           String?
   description    String?
   headId         Int?
-  head           Employee?    @relation("DeptHead", fields: [headId], references: [id])
-  isActive       Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  teams     TeamDepartment[]
-  employees Employee[]       @relation("EmployeeDept")
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  head           Employee?        @relation("DeptHead", fields: [headId], references: [id])
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employees      Employee[]       @relation("EmployeeDept")
+  teams          TeamDepartment[]
 
   @@unique([organizationId, name])
   @@unique([organizationId, code])
@@ -132,18 +120,17 @@ model Department {
 model Team {
   id             Int              @id @default(autoincrement())
   organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
   code           String?
-  departments    TeamDepartment[]
   leadId         Int?
-  lead           Employee?        @relation("TeamLead", fields: [leadId], references: [id])
   description    String?
   isActive       Boolean          @default(true)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
-
-  employees Employee[] @relation("EmployeeTeam")
+  employees      Employee[]       @relation("EmployeeTeam")
+  departments    TeamDepartment[]
+  lead           Employee?        @relation("TeamLead", fields: [leadId], references: [id])
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -152,11 +139,11 @@ model Team {
 
 model TeamDepartment {
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   teamId         Int
-  team           Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
   departmentId   Int
   department     Department   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  team           Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@id([teamId, departmentId])
   @@index([organizationId])
@@ -164,160 +151,122 @@ model TeamDepartment {
 }
 
 model Employee {
-  id             Int            @id @default(autoincrement())
-  organizationId String
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  clerkUserId    String // Link to Clerk user (no FK — Clerk is source of truth)
-  membershipRole MembershipRole @default(MEMBER)
-  isOwner        Boolean        @default(false)
-
-  employeeCode  String?
-  fullName      String
-  avatarUrl     String?
-  department    String?
-  departmentId  Int?
-  dept          Department? @relation("EmployeeDept", fields: [departmentId], references: [id])
-  teamId        Int?
-  team          Team?       @relation("EmployeeTeam", fields: [teamId], references: [id])
-  roleId        Int
-  role          Role        @relation(fields: [roleId], references: [id])
-  company       String?
-  emailCompany  String
-  emailGoogle   String?
-  emailPrivate  String?
-  mobileCompany String?
-  payType       PayType     @default(HOURLY)
-  hourlyRate    Decimal?    @db.Decimal(10, 2)
-  monthlySalary Decimal?    @db.Decimal(10, 2)
-  maxHoursMonth Int         @default(160)
-  bonusMPct     Decimal     @default(0) @db.Decimal(5, 2)
-  bonusAPct     Decimal     @default(0) @db.Decimal(5, 2)
-  bonusTPct     Decimal     @default(0) @db.Decimal(5, 2)
-  driveLink1    String?
-  driveLink2    String?
-  driveLink3    String?
-  driveLink4    String?
-  startDate     DateTime?
-
-  // Personal info
-  dob           DateTime?
-  gender        String?
-  nationality   String?
-  permanentAddr String?
-  currentAddr   String?
-
-  // ID card (CCCD)
-  cccd      String?
-  cccdDate  DateTime?
-  cccdPlace String?
-
-  // Contract
-  contractType  String?
-  contractNo    String?
-  contractStart DateTime?
-  contractEnd   DateTime?
-
-  // Bank account
-  bankName    String?
-  bankBranch  String?
-  bankAccount String?
-  bankHolder  String?
-
-  // Emergency contact
-  emergencyName  String?
-  emergencyRel   String?
-  emergencyPhone String?
-
-  // Identity photos
-  photoPortrait  String?
-  photoCccdFront String?
-  photoCccdBack  String?
-
-  managerId    Int?
-  manager      Employee?      @relation("ManagerEmployee", fields: [managerId], references: [id])
-  subordinates Employee[]     @relation("ManagerEmployee")
-  status       EmployeeStatus @default(ACTIVE)
-  locale       String         @default("en")
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-
-  // Department/Team head relations
-  departmentsLed Department[] @relation("DeptHead")
-  teamsLed       Team[]       @relation("TeamLead")
-
-  // Tasks & Time Logs
-  tasksAssigned    Task[]    @relation("TaskAssignee")
-  tasksCreated     Task[]    @relation("TaskCreator")
-  tasksSupporting  Task[]    @relation("TaskSupport")
-  timeLogs         TimeLog[] @relation("TimeLogEmployee")
-  approvedTimeLogs TimeLog[] @relation("TimeLogApprover")
-
-  // Templates & Reviews
-  templatesCreated    TaskTemplate[]       @relation("TemplateCreator")
-  templatesAssigned   TaskTemplate[]       @relation("TemplateAssignee")
-  templateSuggestions TemplateSuggestion[] @relation("SuggestionEmployee")
-  reviewedSuggestions TemplateSuggestion[] @relation("SuggestionReviewer")
-  reviewedFlags       EstimateFlag[]       @relation("FlagReviewer")
-
-  // Other relations
-  officeTimes         OfficeTime[]
-  salarySummaries     SalarySummary[]
-  payments            Payment[]          @relation("PaymentEmployee")
-  paymentsCreated     Payment[]          @relation("PaymentCreator")
-  leaves              Leave[]
-  messages            Message[]
-  messagesSent        Message[]          @relation("MessagesSent")
-  messageAuditLogs    MessageAuditLog[]  @relation("MessageAuditActor")
-  salaryHistory       SalaryHistory[]
-  auditLogs           AuditLog[]
-  vaultAccesses       VaultAccessLog[]
-  passwordVaultOwned  PasswordVault[]    @relation("VaultOwner")
-  customersManaged    Customer[]         @relation("CustomerStaff")
-  customerActivities  CustomerActivity[] @relation("CustomerActivityActor")
-  approvedOfficeTimes OfficeTime[]       @relation("ApprovedBy")
-  approvedLeaves      Leave[]            @relation("LeaveApprover")
-  confirmedSummaries  SalarySummary[]    @relation("SummaryConfirmer")
-  salaryHistoryMaker  SalaryHistory[]    @relation("SalaryHistoryChanger")
-
-  // Performance Reviews
-  reviewCyclesCreated         ReviewCycle[]       @relation("ReviewCycleCreator")
-  performanceReviews          PerformanceReview[] @relation("PerfReviewEmployee")
-  performanceReviewsAsManager PerformanceReview[] @relation("PerfReviewManager")
-
-  // Career Track (independent of system role)
-  careerTrackId Int?
-  careerTrack   CareerTrack? @relation(fields: [careerTrackId], references: [id])
-  careerLevelId Int?
-  careerLevel   CareerLevel? @relation(fields: [careerLevelId], references: [id])
-
-  // Skills
-  employeeSkills          EmployeeSkill[]   @relation("EmpSkillEmployee")
-  verifiedEmployeeSkills  EmployeeSkill[]   @relation("EmpSkillVerifier")
-  developmentGoals        DevelopmentGoal[] @relation("EmpGoals")
-  developmentGoalsCreated DevelopmentGoal[] @relation("EmpGoalCreator")
-
-  // Drive permissions
-  drivePermissions DrivePermission[]
-
-  // Workflow
-  workflowsInitiated        WorkflowInstance[] @relation("WorkflowInitiator")
-  workflowApprovalsAssigned WorkflowApproval[] @relation("WorkflowApprover")
-
-  // Task comments & watchers
-  taskComments    TaskComment[]
-  taskWatches     TaskWatcher[]
-  taskAttachments TaskAttachment[]
-
-  // Inventory
-  inventoryTransactions InventoryTransaction[]
-  inventoryAssignments  InventoryAssignment[]
-
-  // Tracking layer
-  userSessions    UserSession[]
-  apiAccessLogs   ApiAccessLog[]
-  userActivities  UserActivity[]
-  anomalyAlerts   AnomalyAlert[] @relation("AnomalyAlertEmployee")
-  anomalyAcksMade AnomalyAlert[] @relation("AnomalyAlertAcknowledger")
+  id                          Int                    @id @default(autoincrement())
+  organizationId              String
+  clerkUserId                 String
+  membershipRole              MembershipRole         @default(MEMBER)
+  isOwner                     Boolean                @default(false)
+  employeeCode                String?
+  fullName                    String
+  avatarUrl                   String?
+  department                  String?
+  departmentId                Int?
+  teamId                      Int?
+  roleId                      Int
+  company                     String?
+  emailCompany                String
+  emailGoogle                 String?
+  emailPrivate                String?
+  mobileCompany               String?
+  payType                     PayType                @default(HOURLY)
+  hourlyRate                  Decimal?               @db.Decimal(10, 2)
+  monthlySalary               Decimal?               @db.Decimal(10, 2)
+  maxHoursMonth               Int                    @default(160)
+  bonusMPct                   Decimal                @default(0) @db.Decimal(5, 2)
+  bonusAPct                   Decimal                @default(0) @db.Decimal(5, 2)
+  bonusTPct                   Decimal                @default(0) @db.Decimal(5, 2)
+  driveLink1                  String?
+  driveLink2                  String?
+  driveLink3                  String?
+  driveLink4                  String?
+  startDate                   DateTime?
+  managerId                   Int?
+  status                      EmployeeStatus         @default(ACTIVE)
+  locale                      String                 @default("en")
+  createdAt                   DateTime               @default(now())
+  updatedAt                   DateTime               @updatedAt
+  bankAccount                 String?
+  bankBranch                  String?
+  bankHolder                  String?
+  bankName                    String?
+  cccd                        String?
+  cccdDate                    DateTime?
+  cccdPlace                   String?
+  contractEnd                 DateTime?
+  contractNo                  String?
+  contractStart               DateTime?
+  contractType                String?
+  currentAddr                 String?
+  dob                         DateTime?
+  emergencyName               String?
+  emergencyPhone              String?
+  emergencyRel                String?
+  gender                      String?
+  nationality                 String?
+  permanentAddr               String?
+  photoCccdBack               String?
+  photoCccdFront              String?
+  photoPortrait               String?
+  careerLevelId               Int?
+  careerTrackId               Int?
+  anomalyAcksMade             AnomalyAlert[]         @relation("AnomalyAlertAcknowledger")
+  anomalyAlerts               AnomalyAlert[]         @relation("AnomalyAlertEmployee")
+  apiAccessLogs               ApiAccessLog[]
+  auditLogs                   AuditLog[]
+  customerActivities          CustomerActivity[]     @relation("CustomerActivityActor")
+  customersManaged            Customer[]             @relation("CustomerStaff")
+  departmentsLed              Department[]           @relation("DeptHead")
+  developmentGoalsCreated     DevelopmentGoal[]      @relation("EmpGoalCreator")
+  developmentGoals            DevelopmentGoal[]      @relation("EmpGoals")
+  drivePermissions            DrivePermission[]
+  employeeSkills              EmployeeSkill[]        @relation("EmpSkillEmployee")
+  verifiedEmployeeSkills      EmployeeSkill[]        @relation("EmpSkillVerifier")
+  careerLevel                 CareerLevel?           @relation(fields: [careerLevelId], references: [id])
+  careerTrack                 CareerTrack?           @relation(fields: [careerTrackId], references: [id])
+  dept                        Department?            @relation("EmployeeDept", fields: [departmentId], references: [id])
+  manager                     Employee?              @relation("ManagerEmployee", fields: [managerId], references: [id])
+  subordinates                Employee[]             @relation("ManagerEmployee")
+  organization                Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role                        Role                   @relation(fields: [roleId], references: [id])
+  team                        Team?                  @relation("EmployeeTeam", fields: [teamId], references: [id])
+  reviewedFlags               EstimateFlag[]         @relation("FlagReviewer")
+  inventoryAssignments        InventoryAssignment[]
+  inventoryTransactions       InventoryTransaction[]
+  approvedLeaves              Leave[]                @relation("LeaveApprover")
+  leaves                      Leave[]
+  messageAuditLogs            MessageAuditLog[]      @relation("MessageAuditActor")
+  messages                    Message[]
+  messagesSent                Message[]              @relation("MessagesSent")
+  approvedOfficeTimes         OfficeTime[]           @relation("ApprovedBy")
+  officeTimes                 OfficeTime[]
+  passwordVaultOwned          PasswordVault[]        @relation("VaultOwner")
+  paymentsCreated             Payment[]              @relation("PaymentCreator")
+  payments                    Payment[]              @relation("PaymentEmployee")
+  performanceReviews          PerformanceReview[]    @relation("PerfReviewEmployee")
+  performanceReviewsAsManager PerformanceReview[]    @relation("PerfReviewManager")
+  reviewCyclesCreated         ReviewCycle[]          @relation("ReviewCycleCreator")
+  salaryHistoryMaker          SalaryHistory[]        @relation("SalaryHistoryChanger")
+  salaryHistory               SalaryHistory[]
+  confirmedSummaries          SalarySummary[]        @relation("SummaryConfirmer")
+  salarySummaries             SalarySummary[]
+  taskAttachments             TaskAttachment[]
+  taskComments                TaskComment[]
+  templatesCreated            TaskTemplate[]         @relation("TemplateCreator")
+  templatesAssigned           TaskTemplate[]         @relation("TemplateAssignee")
+  taskWatches                 TaskWatcher[]
+  tasksCreated                Task[]                 @relation("TaskCreator")
+  tasksAssigned               Task[]                 @relation("TaskAssignee")
+  tasksSupporting             Task[]                 @relation("TaskSupport")
+  teamsLed                    Team[]                 @relation("TeamLead")
+  templateSuggestions         TemplateSuggestion[]   @relation("SuggestionEmployee")
+  reviewedSuggestions         TemplateSuggestion[]   @relation("SuggestionReviewer")
+  approvedTimeLogs            TimeLog[]              @relation("TimeLogApprover")
+  timeLogs                    TimeLog[]              @relation("TimeLogEmployee")
+  userActivities              UserActivity[]
+  userSessions                UserSession[]
+  vaultAccesses               VaultAccessLog[]
+  workflowApprovalsAssigned   WorkflowApproval[]     @relation("WorkflowApprover")
+  workflowsInitiated          WorkflowInstance[]     @relation("WorkflowInitiator")
 
   @@unique([organizationId, emailCompany])
   @@unique([organizationId, employeeCode])
@@ -330,28 +279,23 @@ model Employee {
 model SalaryHistory {
   id             Int          @id @default(autoincrement())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   employeeId     Int
-  employee       Employee     @relation(fields: [employeeId], references: [id])
   field          String
   oldValue       String?
   newValue       String?
   changedById    Int
-  changedBy      Employee     @relation("SalaryHistoryChanger", fields: [changedById], references: [id])
   changedAt      DateTime     @default(now())
+  changedBy      Employee     @relation("SalaryHistoryChanger", fields: [changedById], references: [id])
+  employee       Employee     @relation(fields: [employeeId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@map("salary_history")
 }
 
-// ─────────────────────────────────────────────────────────────
-// CUSTOMERS
-// ─────────────────────────────────────────────────────────────
-
 model Customer {
-  id                 Int            @id @default(autoincrement())
+  id                 Int                @id @default(autoincrement())
   organizationId     String
-  organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   custId             String?
   customerName       String?
   businessName       String?
@@ -364,20 +308,20 @@ model Customer {
   website            String?
   vatTaxId           String?
   preferredLanguage  String?
-  status             CustomerStatus @default(ACTIVE)
+  status             CustomerStatus     @default(ACTIVE)
   responsibleStaffId Int?
-  responsibleStaff   Employee?      @relation("CustomerStaff", fields: [responsibleStaffId], references: [id])
   lastContactDate    DateTime?
-  customerSince      DateTime?
-  contractRenewDate  DateTime?
   notes              String?
-  createdAt          DateTime       @default(now())
-
-  tasks         Task[]
-  messages      Message[]
-  passwordVault PasswordVault[]
-  contacts      CustomerContact[]
-  activities    CustomerActivity[]
+  createdAt          DateTime           @default(now())
+  contractRenewDate  DateTime?
+  customerSince      DateTime?
+  activities         CustomerActivity[]
+  contacts           CustomerContact[]
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  responsibleStaff   Employee?          @relation("CustomerStaff", fields: [responsibleStaffId], references: [id])
+  messages           Message[]
+  passwordVault      PasswordVault[]
+  tasks              Task[]
 
   @@unique([organizationId, custId])
   @@index([organizationId])
@@ -387,9 +331,7 @@ model Customer {
 model CustomerContact {
   id             Int          @id @default(autoincrement())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customerId     Int
-  customer       Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
   name           String
   role           String?
   email          String?
@@ -397,161 +339,127 @@ model CustomerContact {
   isPrimary      Boolean      @default(false)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  customer       Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([customerId])
   @@map("customer_contacts")
 }
 
-enum CustomerActivityType {
-  NOTE
-  TASK
-  MESSAGE
-  PAYMENT
-  MEETING
-  CONTRACT
-  OTHER
-}
-
 model CustomerActivity {
   id             Int                  @id @default(autoincrement())
   organizationId String
-  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customerId     Int
-  customer       Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
   type           CustomerActivityType @default(NOTE)
   content        String
   actorId        Int?
-  actor          Employee?            @relation("CustomerActivityActor", fields: [actorId], references: [id])
   createdAt      DateTime             @default(now())
+  actor          Employee?            @relation("CustomerActivityActor", fields: [actorId], references: [id])
+  customer       Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([customerId, createdAt])
   @@map("customer_activities")
 }
 
-// ─────────────────────────────────────────────────────────────
-// TASK TEMPLATES
-// ─────────────────────────────────────────────────────────────
-
 model TaskTemplate {
-  id                   Int          @id @default(autoincrement())
+  id                   Int            @id @default(autoincrement())
   organizationId       String
-  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   code                 String
   title                String
-  description          String?      @db.Text
-  defaultTaskType      String       @default("NORMAL")
+  description          String?
   defaultEstimatedTime Int?
-  defaultPriority      Priority     @default(NORMAL)
+  defaultPriority      Priority       @default(NORMAL)
   requiresVideo        Boolean?
   department           String?
   linkTemplate         String?
+  usageCount           Int            @default(0)
+  isActive             Boolean        @default(true)
+  createdById          Int?
+  createdAt            DateTime       @default(now())
   defaultChecklist     Json?
   defaultLabels        Json?
+  defaultTaskType      String         @default("NORMAL")
   defaultAssigneeId    Int?
-  defaultAssignee      Employee?    @relation("TemplateAssignee", fields: [defaultAssigneeId], references: [id])
-  usageCount           Int          @default(0)
-  isActive             Boolean      @default(true)
-  createdById          Int?
-  createdBy            Employee?    @relation("TemplateCreator", fields: [createdById], references: [id])
-  createdAt            DateTime     @default(now())
-
-  tasks         Task[]
-  estimateFlags EstimateFlag[]
+  estimateFlags        EstimateFlag[]
+  createdBy            Employee?      @relation("TemplateCreator", fields: [createdById], references: [id])
+  defaultAssignee      Employee?      @relation("TemplateAssignee", fields: [defaultAssigneeId], references: [id])
+  organization         Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tasks                Task[]
 
   @@unique([organizationId, code])
   @@index([organizationId, isActive])
   @@map("task_templates")
 }
 
-// ─────────────────────────────────────────────────────────────
-// TASKS
-// ─────────────────────────────────────────────────────────────
-
 model Sprint {
   id             Int          @id @default(autoincrement())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
-  goal           String?      @db.Text
+  goal           String?
   status         SprintStatus @default(PLANNING)
   startDate      DateTime?
   endDate        DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @default(now()) @updatedAt
-
-  tasks Task[]
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tasks          Task[]
 
   @@index([organizationId, status])
   @@map("sprints")
 }
 
-enum SprintStatus {
-  PLANNING
-  ACTIVE
-  COMPLETED
-  CANCELLED
-}
-
 model Task {
-  id              Int          @id @default(autoincrement())
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  code            String
-  title           String
-  description     String?      @db.Text
-  taskType        String       @default("NORMAL")
-  priority        Priority     @default(NORMAL)
-  status          TaskStatus   @default(BACKLOG)
-  estimatedTime   Int?
-  actualTimeTotal Int          @default(0)
-  progressPct     Int          @default(0)
-  storyPoints     Int?
-
-  parentTaskId Int?
-  parentTask   Task?  @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: SetNull)
-  subTasks     Task[] @relation("TaskHierarchy")
-
-  templateId Int?
-  template   TaskTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-
-  assignedToId Int
-  assignedTo   Employee @relation("TaskAssignee", fields: [assignedToId], references: [id])
-  assignedById Int
-  assignedBy   Employee @relation("TaskCreator", fields: [assignedById], references: [id])
-
-  supportId Int?
-  support   Employee? @relation("TaskSupport", fields: [supportId], references: [id])
-
-  customerId Int?
-  customer   Customer? @relation(fields: [customerId], references: [id])
-  projectId  Int?
-
-  billable           Boolean  @default(false)
-  hourlyRateOverride Decimal? @db.Decimal(10, 2)
-  requiresVideo      Boolean  @default(false)
+  id                 Int                 @id @default(autoincrement())
+  organizationId     String
+  code               String
+  title              String
+  description        String?
+  priority           Priority            @default(NORMAL)
+  status             TaskStatus          @default(BACKLOG)
+  estimatedTime      Int?
+  actualTimeTotal    Int                 @default(0)
+  progressPct        Int                 @default(0)
+  parentTaskId       Int?
+  templateId         Int?
+  assignedToId       Int
+  assignedById       Int
+  supportId          Int?
+  customerId         Int?
+  projectId          Int?
+  billable           Boolean             @default(false)
+  hourlyRateOverride Decimal?            @db.Decimal(10, 2)
+  requiresVideo      Boolean             @default(false)
   videoLink          String?
-
-  dateCreated      DateTime  @default(now())
-  dateStarted      DateTime?
-  dueDate          DateTime?
-  dateCompleted    DateTime?
-  isOverdue        Boolean   @default(false)
-  lastUpdate       DateTime  @default(now()) @updatedAt
-  reasonNextAction String?
-
-  sprintId Int?
-  sprint   Sprint? @relation(fields: [sprintId], references: [id], onDelete: SetNull)
-
-  timeLogs       TimeLog[]
-  comments       TaskComment[]
-  checklistItems TaskChecklistItem[]
-  watchers       TaskWatcher[]
-  blockingDeps   TaskDependency[]    @relation("DependencyTask")
-  blockedByDeps  TaskDependency[]    @relation("DependencyDependsOn")
-  attachments    TaskAttachment[]
-  recurrence     TaskRecurrence?
+  dateCreated        DateTime            @default(now())
+  dateStarted        DateTime?
+  dueDate            DateTime?
+  dateCompleted      DateTime?
+  isOverdue          Boolean             @default(false)
+  lastUpdate         DateTime            @default(now()) @updatedAt
+  reasonNextAction   String?
+  sprintId           Int?
+  storyPoints        Int?
+  taskType           String              @default("NORMAL")
+  attachments        TaskAttachment[]
+  checklistItems     TaskChecklistItem[]
+  comments           TaskComment[]
+  blockedByDeps      TaskDependency[]    @relation("DependencyDependsOn")
+  blockingDeps       TaskDependency[]    @relation("DependencyTask")
+  recurrence         TaskRecurrence?
+  watchers           TaskWatcher[]
+  assignedBy         Employee            @relation("TaskCreator", fields: [assignedById], references: [id])
+  assignedTo         Employee            @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  customer           Customer?           @relation(fields: [customerId], references: [id])
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parentTask         Task?               @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
+  subTasks           Task[]              @relation("TaskHierarchy")
+  sprint             Sprint?             @relation(fields: [sprintId], references: [id])
+  support            Employee?           @relation("TaskSupport", fields: [supportId], references: [id])
+  template           TaskTemplate?       @relation(fields: [templateId], references: [id])
+  timeLogs           TimeLog[]
 
   @@unique([organizationId, code])
   @@index([organizationId, sprintId])
@@ -562,43 +470,35 @@ model Task {
   @@map("tasks")
 }
 
-// ─────────────────────────────────────────────────────────────
-// TIME LOGS
-// ─────────────────────────────────────────────────────────────
-
 model TimeLog {
-  id             Int          @id @default(autoincrement())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  taskId         Int
-  task           Task         @relation(fields: [taskId], references: [id], onDelete: Restrict)
-  employeeId     Int
-  employee       Employee     @relation("TimeLogEmployee", fields: [employeeId], references: [id])
-
+  id                 Int                   @id @default(autoincrement())
+  organizationId     String
+  taskId             Int
+  employeeId         Int
   date               DateTime
   startTime          DateTime?
   endTime            DateTime?
   durationMinutes    Int
-  quantity           Int         @default(1)
-  note               String?     @db.Text
+  quantity           Int                   @default(1)
+  note               String?
   completionPctAfter Int?
   taskStatusAfter    TaskStatus?
-
-  videoCount    Int     @default(0)
-  videoDuration Int     @default(0)
-  videoLink     String?
-  proofLinks    Json    @default("[]")
-
-  creditedMinutes Int?
-  approvalStatus  TimeLogApprovalStatus @default(PENDING)
-  approvedById    Int?
-  approvedBy      Employee?             @relation("TimeLogApprover", fields: [approvedById], references: [id])
-  approvedMinutes Int?
-  approvedAt      DateTime?
-  rejectionReason String?
-  rating          Int?
-
-  createdAt DateTime @default(now())
+  videoCount         Int                   @default(0)
+  videoDuration      Int                   @default(0)
+  videoLink          String?
+  proofLinks         Json                  @default("[]")
+  creditedMinutes    Int?
+  approvalStatus     TimeLogApprovalStatus @default(PENDING)
+  approvedById       Int?
+  approvedMinutes    Int?
+  approvedAt         DateTime?
+  rejectionReason    String?
+  rating             Int?
+  createdAt          DateTime              @default(now())
+  approvedBy         Employee?             @relation("TimeLogApprover", fields: [approvedById], references: [id])
+  employee           Employee              @relation("TimeLogEmployee", fields: [employeeId], references: [id])
+  organization       Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  task               Task                  @relation(fields: [taskId], references: [id])
 
   @@index([organizationId, taskId])
   @@index([organizationId, employeeId, date])
@@ -606,17 +506,11 @@ model TimeLog {
   @@map("time_logs")
 }
 
-// ─────────────────────────────────────────────────────────────
-// OFFICE TIME
-// ─────────────────────────────────────────────────────────────
-
 model OfficeTime {
   id                  Int            @id @default(autoincrement())
   organizationId      String
-  organization        Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   date                DateTime
   employeeId          Int
-  employee            Employee       @relation(fields: [employeeId], references: [id])
   startWork1          DateTime?
   startLunch          DateTime?
   startWork2          DateTime?
@@ -629,43 +523,41 @@ model OfficeTime {
   explanation         String?
   approvalStatus      ApprovalStatus @default(PENDING)
   approvedById        Int?
-  approvedBy          Employee?      @relation("ApprovedBy", fields: [approvedById], references: [id])
   approvedDelta       Int?
   approvedAt          DateTime?
   createdAt           DateTime       @default(now())
+  approvedBy          Employee?      @relation("ApprovedBy", fields: [approvedById], references: [id])
+  employee            Employee       @relation(fields: [employeeId], references: [id])
+  organization        Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, date, employeeId])
   @@index([organizationId])
   @@map("office_time")
 }
 
-// ─────────────────────────────────────────────────────────────
-// TASK REVIEWS
-// ─────────────────────────────────────────────────────────────
-
 model TemplateSuggestion {
   id                Int            @id @default(autoincrement())
   organizationId    String
-  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   date              DateTime       @default(now())
   employeeId        Int
-  employee          Employee       @relation("SuggestionEmployee", fields: [employeeId], references: [id])
   proposedCode      String
   proposedTitle     String
-  description       String         @db.Text
-  proposedTaskType  String         @default("NORMAL")
+  description       String
   proposedEstimate  Int
   evidenceVideoLink String
   exampleTaskIds    Json           @default("[]")
-  reasonNote        String         @db.Text
+  reasonNote        String
   status            ApprovalStatus @default(PENDING)
   reviewedById      Int?
-  reviewedBy        Employee?      @relation("SuggestionReviewer", fields: [reviewedById], references: [id])
   createdTemplateId Int?
   decisionNote      String?
   bonusTime         Int            @default(0)
   reviewedAt        DateTime?
   createdAt         DateTime       @default(now())
+  proposedTaskType  String         @default("NORMAL")
+  employee          Employee       @relation("SuggestionEmployee", fields: [employeeId], references: [id])
+  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reviewedBy        Employee?      @relation("SuggestionReviewer", fields: [reviewedById], references: [id])
 
   @@index([organizationId])
   @@map("template_suggestions")
@@ -674,32 +566,26 @@ model TemplateSuggestion {
 model EstimateFlag {
   id                Int                @id @default(autoincrement())
   organizationId    String
-  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   templateId        Int
-  template          TaskTemplate       @relation(fields: [templateId], references: [id], onDelete: Cascade)
   flaggedAt         DateTime           @default(now())
   currentEstimate   Int
   suggestedEstimate Int
   sampleSize        Int
   status            EstimateFlagStatus @default(OPEN)
   reviewedById      Int?
-  reviewedBy        Employee?          @relation("FlagReviewer", fields: [reviewedById], references: [id])
   reviewedAt        DateTime?
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reviewedBy        Employee?          @relation("FlagReviewer", fields: [reviewedById], references: [id])
+  template          TaskTemplate       @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@map("estimate_flags")
 }
 
-// ─────────────────────────────────────────────────────────────
-// SUMMARY & PAYMENTS
-// ─────────────────────────────────────────────────────────────
-
 model SalarySummary {
   id                 Int          @id @default(autoincrement())
   organizationId     String
-  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   employeeId         Int
-  employee           Employee     @relation(fields: [employeeId], references: [id])
   month              Int
   year               Int
   creditedHours      Decimal      @default(0) @db.Decimal(8, 2)
@@ -730,10 +616,12 @@ model SalarySummary {
   completionRate     Decimal      @default(0) @db.Decimal(5, 2)
   tasksByType        Json?
   confirmedById      Int?
-  confirmedBy        Employee?    @relation("SummaryConfirmer", fields: [confirmedById], references: [id])
   confirmedAt        DateTime?
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
+  confirmedBy        Employee?    @relation("SummaryConfirmer", fields: [confirmedById], references: [id])
+  employee           Employee     @relation(fields: [employeeId], references: [id])
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, employeeId, month, year])
   @@index([organizationId])
@@ -743,95 +631,83 @@ model SalarySummary {
 model Payment {
   id             Int          @id @default(autoincrement())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   date           DateTime
   employeeId     Int
-  employee       Employee     @relation("PaymentEmployee", fields: [employeeId], references: [id])
   type           PaymentType
   amount         Decimal      @db.Decimal(10, 2)
   notes          String?
   summaryMonth   Int?
   summaryYear    Int?
   createdById    Int?
-  createdBy      Employee?    @relation("PaymentCreator", fields: [createdById], references: [id])
   createdAt      DateTime     @default(now())
+  createdBy      Employee?    @relation("PaymentCreator", fields: [createdById], references: [id])
+  employee       Employee     @relation("PaymentEmployee", fields: [employeeId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@map("payments")
 }
 
-// ─────────────────────────────────────────────────────────────
-// PERFORMANCE REVIEWS
-// ─────────────────────────────────────────────────────────────
-
 model ReviewCycle {
-  id             Int               @id @default(autoincrement())
+  id             Int                 @id @default(autoincrement())
   organizationId String
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
-  periodType     ReviewPeriodType  @default(QUARTERLY)
+  periodType     ReviewPeriodType    @default(QUARTERLY)
   periodStart    DateTime
   periodEnd      DateTime
   selfDueDate    DateTime?
   managerDueDate DateTime?
-  status         ReviewCycleStatus @default(DRAFT)
+  status         ReviewCycleStatus   @default(DRAFT)
   createdById    Int
-  createdBy      Employee          @relation("ReviewCycleCreator", fields: [createdById], references: [id])
   openedAt       DateTime?
   closedAt       DateTime?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-
-  reviews PerformanceReview[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  reviews        PerformanceReview[]
+  createdBy      Employee            @relation("ReviewCycleCreator", fields: [createdById], references: [id])
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, status])
   @@map("review_cycles")
 }
 
 model PerformanceReview {
-  id             Int              @id @default(autoincrement())
-  organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  cycleId        Int
-  cycle          ReviewCycle      @relation(fields: [cycleId], references: [id], onDelete: Cascade)
-  employeeId     Int
-  employee       Employee         @relation("PerfReviewEmployee", fields: [employeeId], references: [id])
-  status         PerfReviewStatus @default(PENDING)
-
-  // Auto-KPI snapshot (frozen at cycle creation)
-  kpiSnapshot Json?
-
-  // Self review section
-  selfScoreWorkSpeed  Decimal?  @db.Decimal(5, 2)
-  selfScoreQuality    Decimal?  @db.Decimal(5, 2)
-  selfScoreLearning   Decimal?  @db.Decimal(5, 2)
-  selfScoreDeadlines  Decimal?  @db.Decimal(5, 2)
-  selfScoreInitiative Decimal?  @db.Decimal(5, 2)
-  selfTotalScore      Decimal?  @db.Decimal(5, 2)
-  selfHighlights      String?   @db.Text
-  selfChallenges      String?   @db.Text
-  selfGoalsNext       String?   @db.Text
-  selfSubmittedAt     DateTime?
-
-  // Manager review section
-  mgrScoreWorkSpeed          Decimal?  @db.Decimal(5, 2)
-  mgrScoreQuality            Decimal?  @db.Decimal(5, 2)
-  mgrScoreLearning           Decimal?  @db.Decimal(5, 2)
-  mgrScoreDeadlines          Decimal?  @db.Decimal(5, 2)
-  mgrScoreInitiative         Decimal?  @db.Decimal(5, 2)
-  mgrTotalScore              Decimal?  @db.Decimal(5, 2)
-  mgrStrengths               String?   @db.Text
-  mgrAreasToImprove          String?   @db.Text
-  mgrActionItems             String?   @db.Text
-  recommendedSalaryAdjustPct Decimal?  @db.Decimal(5, 2)
-  recommendedPromotion       String?   @db.Text
+  id                         Int              @id @default(autoincrement())
+  organizationId             String
+  cycleId                    Int
+  employeeId                 Int
+  status                     PerfReviewStatus @default(PENDING)
+  kpiSnapshot                Json?
+  selfScoreWorkSpeed         Decimal?         @db.Decimal(5, 2)
+  selfScoreQuality           Decimal?         @db.Decimal(5, 2)
+  selfScoreLearning          Decimal?         @db.Decimal(5, 2)
+  selfScoreDeadlines         Decimal?         @db.Decimal(5, 2)
+  selfScoreInitiative        Decimal?         @db.Decimal(5, 2)
+  selfTotalScore             Decimal?         @db.Decimal(5, 2)
+  selfHighlights             String?
+  selfChallenges             String?
+  selfGoalsNext              String?
+  selfSubmittedAt            DateTime?
+  mgrScoreWorkSpeed          Decimal?         @db.Decimal(5, 2)
+  mgrScoreQuality            Decimal?         @db.Decimal(5, 2)
+  mgrScoreLearning           Decimal?         @db.Decimal(5, 2)
+  mgrScoreDeadlines          Decimal?         @db.Decimal(5, 2)
+  mgrScoreInitiative         Decimal?         @db.Decimal(5, 2)
+  mgrTotalScore              Decimal?         @db.Decimal(5, 2)
+  mgrStrengths               String?
+  mgrAreasToImprove          String?
+  mgrActionItems             String?
+  recommendedSalaryAdjustPct Decimal?         @db.Decimal(5, 2)
+  recommendedPromotion       String?
   mgrReviewerId              Int?
-  mgrReviewer                Employee? @relation("PerfReviewManager", fields: [mgrReviewerId], references: [id])
   mgrSubmittedAt             DateTime?
   finalizedAt                DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @updatedAt
+  cycle                      ReviewCycle      @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  employee                   Employee         @relation("PerfReviewEmployee", fields: [employeeId], references: [id])
+  mgrReviewer                Employee?        @relation("PerfReviewManager", fields: [mgrReviewerId], references: [id])
+  organization               Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, cycleId, employeeId])
   @@index([organizationId, employeeId])
@@ -839,25 +715,20 @@ model PerformanceReview {
   @@map("performance_reviews")
 }
 
-// ─────────────────────────────────────────────────────────────
-// SKILLS & CAREER PATH
-// ─────────────────────────────────────────────────────────────
-
 model Skill {
-  id             Int          @id @default(autoincrement())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name           String
-  category       String?
-  description    String?      @db.Text
-  isActive       Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  employeeSkills    EmployeeSkill[]
-  roleRequirements  RoleSkillRequirement[]
+  id                Int                    @id @default(autoincrement())
+  organizationId    String
+  name              String
+  category          String?
+  description       String?
+  isActive          Boolean                @default(true)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
   careerLevelSkills CareerLevelSkill[]
   developmentGoals  DevelopmentGoal[]
+  employeeSkills    EmployeeSkill[]
+  roleRequirements  RoleSkillRequirement[]
+  organization      Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, name])
   @@index([organizationId, category])
@@ -867,19 +738,19 @@ model Skill {
 model EmployeeSkill {
   id             Int          @id @default(autoincrement())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   employeeId     Int
-  employee       Employee     @relation("EmpSkillEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
   skillId        Int
-  skill          Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
   currentLevel   Int          @default(1)
   targetLevel    Int?
-  notes          String?      @db.Text
+  notes          String?
   verifiedById   Int?
-  verifiedBy     Employee?    @relation("EmpSkillVerifier", fields: [verifiedById], references: [id])
   verifiedAt     DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  employee       Employee     @relation("EmpSkillEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  skill          Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  verifiedBy     Employee?    @relation("EmpSkillVerifier", fields: [verifiedById], references: [id])
 
   @@unique([organizationId, employeeId, skillId])
   @@index([organizationId, employeeId])
@@ -889,35 +760,31 @@ model EmployeeSkill {
 model RoleSkillRequirement {
   id             Int             @id @default(autoincrement())
   organizationId String
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   roleId         Int
-  role           Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
   skillId        Int
-  skill          Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
   requiredLevel  Int             @default(3)
   importance     SkillImportance @default(IMPORTANT)
   createdAt      DateTime        @default(now())
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  skill          Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, roleId, skillId])
   @@index([organizationId, roleId])
   @@map("role_skill_requirements")
 }
 
-// ─────────────────────────────────────────────────────────────
-// CAREER TRACK  (tách biệt hoàn toàn với system Role/quyền hạn)
-// ─────────────────────────────────────────────────────────────
-
 model CareerTrack {
   id             Int           @id @default(autoincrement())
   organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name           String // "Frontend Developer", "Backend Developer", "Design"
-  description    String?       @db.Text
+  name           String
+  description    String?
   color          String?
-  levels         CareerLevel[]
-  employees      Employee[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+  levels         CareerLevel[]
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employees      Employee[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -927,14 +794,14 @@ model CareerTrack {
 model CareerLevel {
   id                Int                @id @default(autoincrement())
   organizationId    String
-  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   trackId           Int
-  track             CareerTrack        @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  name              String // "Intern", "Junior", "Mid", "Senior", "Lead", "Principal"
-  seniority         Int                @default(0) // thứ tự trong track
-  skillRequirements CareerLevelSkill[]
-  employees         Employee[]
+  name              String
+  seniority         Int                @default(0)
   createdAt         DateTime           @default(now())
+  skillRequirements CareerLevelSkill[]
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  track             CareerTrack        @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  employees         Employee[]
 
   @@unique([trackId, seniority])
   @@index([organizationId, trackId])
@@ -944,31 +811,25 @@ model CareerLevel {
 model CareerLevelSkill {
   id             Int             @id @default(autoincrement())
   organizationId String
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   levelId        Int
-  level          CareerLevel     @relation(fields: [levelId], references: [id], onDelete: Cascade)
   skillId        Int
-  skill          Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
   requiredLevel  Int             @default(3)
   importance     SkillImportance @default(IMPORTANT)
   createdAt      DateTime        @default(now())
+  level          CareerLevel     @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  skill          Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@unique([levelId, skillId])
   @@index([organizationId, levelId])
   @@map("career_level_skills")
 }
 
-// ─────────────────────────────────────────────────────────────
-// LEAVE MANAGEMENT
-// ─────────────────────────────────────────────────────────────
-
 model Leave {
   id             Int            @id @default(autoincrement())
   organizationId String
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   date           DateTime
   employeeId     Int
-  employee       Employee       @relation(fields: [employeeId], references: [id])
   type           LeaveType
   requestedHours Decimal        @db.Decimal(5, 2)
   reason         String?
@@ -977,60 +838,56 @@ model Leave {
   approvedHours  Decimal?       @db.Decimal(5, 2)
   approvalNote   String?
   approvedById   Int?
-  approvedBy     Employee?      @relation("LeaveApprover", fields: [approvedById], references: [id])
   approvedAt     DateTime?
   money          Decimal?       @db.Decimal(10, 2)
   createdAt      DateTime       @default(now())
+  approvedBy     Employee?      @relation("LeaveApprover", fields: [approvedById], references: [id])
+  employee       Employee       @relation(fields: [employeeId], references: [id])
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@map("leaves")
 }
 
-// ─────────────────────────────────────────────────────────────
-// MESSAGES
-// ─────────────────────────────────────────────────────────────
-
 model Message {
-  id             Int                 @id @default(autoincrement())
-  organizationId String
-  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  date           DateTime
-  time           DateTime?
-  channel        MessageChannel?
-  customerId     Int?
-  customer       Customer?           @relation(fields: [customerId], references: [id])
-  subject        String?
-  messageSummary String?
-  actionRequired String?
-  assignedToId   Int?
-  assignedTo     Employee?           @relation(fields: [assignedToId], references: [id])
+  id               Int                 @id @default(autoincrement())
+  organizationId   String
+  date             DateTime
+  time             DateTime?
+  channel          MessageChannel?
+  customerId       Int?
+  subject          String?
+  messageSummary   String?
+  actionRequired   String?
+  assignedToId     Int?
+  dueDate          DateTime?
+  status           MessageStatus       @default(OPEN)
+  linkFile         String?
+  followUpNote     String?
+  closedDate       DateTime?
+  tags             String?
+  valueType        MessageValue?
+  companyAnswer    String?
+  supportTime      Int?
+  benefitTime      Int?
+  netTime          Int?
+  externalId       String?
+  externalThread   String?
+  senderName       String?
+  senderContact    String?
+  rawPayload       Json?
+  replyToId        Int?
+  createdAt        DateTime            @default(now())
   senderEmployeeId Int?
-  senderEmployee Employee?           @relation("MessagesSent", fields: [senderEmployeeId], references: [id])
-  dueDate        DateTime?
-  status         MessageStatus       @default(OPEN)
-  linkFile       String?
-  followUpNote   String?
-  closedDate     DateTime?
-  tags           String?
-  valueType      MessageValue?
-  companyAnswer  String?
-  supportTime    Int?
-  benefitTime    Int?
-  netTime        Int?
-  // Hub fields (Sprint 4A)
-  externalId     String? // ID tin nhắn trên kênh gốc
-  externalThread String? // Thread/conversation ID
-  senderName     String? // Tên người gửi bên ngoài
-  senderContact  String? // Email/phone/zaloId
-  rawPayload     Json? // Payload gốc từ webhook
-  replyToId      Int?
-  replyTo        Message?            @relation("MessageReplies", fields: [replyToId], references: [id])
-  replies        Message[]           @relation("MessageReplies")
-  attachments    MessageAttachment[]
-  readAt         DateTime?
-  createdAt      DateTime            @default(now())
-
-  auditLogs MessageAuditLog[]
+  readAt           DateTime?
+  attachments      MessageAttachment[]
+  auditLogs        MessageAuditLog[]
+  assignedTo       Employee?           @relation(fields: [assignedToId], references: [id])
+  customer         Customer?           @relation(fields: [customerId], references: [id])
+  organization     Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  replyTo          Message?            @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies          Message[]           @relation("MessageReplies")
+  senderEmployee   Employee?           @relation("MessagesSent", fields: [senderEmployeeId], references: [id])
 
   @@index([organizationId, status])
   @@index([organizationId, assignedToId])
@@ -1043,12 +900,12 @@ model Message {
 model MessageAttachment {
   id        String   @id @default(cuid())
   messageId Int
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
   name      String
   url       String
   size      Int?
   mimeType  String?
   createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@map("message_attachments")
 }
@@ -1056,13 +913,13 @@ model MessageAttachment {
 model ChannelIntegration {
   id             String         @id @default(cuid())
   organizationId String
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   channel        MessageChannel
-  config         Json // { webhookUrl?, botToken?, appId?, appSecret?, ... } — stored as-is
+  config         Json
   isActive       Boolean        @default(true)
   lastSyncAt     DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, channel])
   @@map("channel_integrations")
@@ -1071,38 +928,32 @@ model ChannelIntegration {
 model MessageAuditLog {
   id             Int          @id @default(autoincrement())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   messageId      Int?
-  message        Message?     @relation(fields: [messageId], references: [id], onDelete: SetNull)
   actorId        Int?
-  actor          Employee?    @relation("MessageAuditActor", fields: [actorId], references: [id])
   action         String
   changes        Json?
   ipAddress      String?
-  userAgent      String?      @db.Text
+  userAgent      String?
   sessionId      String?
   requestId      String?
   endpoint       String?
   method         String?
   createdAt      DateTime     @default(now())
+  actor          Employee?    @relation("MessageAuditActor", fields: [actorId], references: [id])
+  message        Message?     @relation(fields: [messageId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, messageId])
   @@index([organizationId, requestId])
   @@map("message_audit_logs")
 }
 
-// ─────────────────────────────────────────────────────────────
-// PASSWORD VAULT
-// ─────────────────────────────────────────────────────────────
-
 model PasswordVault {
-  id                Int          @id @default(autoincrement())
+  id                Int              @id @default(autoincrement())
   organizationId    String
-  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   scope             VaultScope
   entityName        String?
   customerId        Int?
-  customer          Customer?    @relation(fields: [customerId], references: [id])
   serviceApp        String?
   loginUrl          String?
   username          String?
@@ -1111,13 +962,14 @@ model PasswordVault {
   twoFaMethod       String?
   twoFaBackup       String?
   ownerId           Int?
-  owner             Employee?    @relation("VaultOwner", fields: [ownerId], references: [id])
-  createdDate       DateTime     @default(now())
-  lastUpdated       DateTime     @updatedAt
+  createdDate       DateTime         @default(now())
+  lastUpdated       DateTime         @updatedAt
   rotationDays      Int?
   notes             String?
-
-  accessLogs VaultAccessLog[]
+  customer          Customer?        @relation(fields: [customerId], references: [id])
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner             Employee?        @relation("VaultOwner", fields: [ownerId], references: [id])
+  accessLogs        VaultAccessLog[]
 
   @@index([organizationId])
   @@map("password_vault")
@@ -1126,66 +978,119 @@ model PasswordVault {
 model VaultAccessLog {
   id             Int           @id @default(autoincrement())
   organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   vaultId        Int
-  vault          PasswordVault @relation(fields: [vaultId], references: [id])
   accessedById   Int
-  accessedBy     Employee      @relation(fields: [accessedById], references: [id])
   accessedAt     DateTime      @default(now())
   action         String?
+  accessedBy     Employee      @relation(fields: [accessedById], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vault          PasswordVault @relation(fields: [vaultId], references: [id])
 
   @@index([organizationId])
   @@map("vault_access_log")
 }
 
-// ─────────────────────────────────────────────────────────────
-// WORK RULES
-// ─────────────────────────────────────────────────────────────
-
 model WorkRule {
   id             Int          @id @default(autoincrement())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   ruleNo         Int
   title          String
   description    String
   effectiveDate  DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  config         Json?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, ruleNo])
   @@index([organizationId])
   @@map("work_rules")
 }
 
-// ─────────────────────────────────────────────────────────────
-// USER SESSIONS & API ACCESS LOG
-// ─────────────────────────────────────────────────────────────
-
-model UserSession {
-  id             String       @id @default(uuid())
+model UpgradeRequest {
+  id             Int          @id @default(autoincrement())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  orgName        String
+  orgSlug        String
+  requesterEmail String
+  requesterName  String
+  currentPlan    String
+  targetPlan     String
+  priceVnd       Int
+  transferNote   String
+  status         UpgradeRequestStatus @default(PENDING)
+  note           String?
+  approvedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("upgrade_requests")
+}
+
+enum UpgradeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model AdminUser {
+  id           Int           @id @default(autoincrement())
+  username     String        @unique
+  passwordHash String
+  fullName     String
+  email        String?
+  type         AdminUserType @default(SUPPORT)
+  isActive     Boolean       @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("admin_users")
+}
+
+enum AdminUserType {
+  SUPER_ADMIN
+  SUPPORT
+  FINANCE
+}
+
+model PlanConfig {
+  id          String   @id // "FREE" | "STARTER" | "TEAM"
+  name        String
+  priceVnd    Int      @default(0)
+  seatLimit   Int      @default(1)
+  features    Json     @default("[]")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+
+  @@map("plan_configs")
+}
+
+model UserSession {
+  id             String               @id @default(uuid())
+  organizationId String
   employeeId     Int
-  employee       Employee     @relation(fields: [employeeId], references: [id])
-
-  loginAt        DateTime  @default(now())
+  loginAt        DateTime             @default(now())
   logoutAt       DateTime?
-  lastActivityAt DateTime  @default(now())
-
-  ipAddress String?
-  userAgent String? @db.Text
-  device    String?
-  browser   String?
-  os        String?
-  country   String?
-  city      String?
-
-  loginMethod  SessionLoginMethod   @default(CREDENTIALS)
-  logoutReason SessionLogoutReason?
-
-  apiAccessLogs ApiAccessLog[]
-  activities    UserActivity[]
+  lastActivityAt DateTime             @default(now())
+  ipAddress      String?
+  userAgent      String?
+  device         String?
+  browser        String?
+  os             String?
+  country        String?
+  city           String?
+  loginMethod    SessionLoginMethod   @default(CREDENTIALS)
+  logoutReason   SessionLogoutReason?
+  apiAccessLogs  ApiAccessLog[]
+  activities     UserActivity[]
+  employee       Employee             @relation(fields: [employeeId], references: [id])
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, employeeId, loginAt])
   @@index([organizationId, lastActivityAt])
@@ -1193,26 +1098,21 @@ model UserSession {
 }
 
 model UserActivity {
-  id             BigInt       @id @default(autoincrement())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  employeeId     Int
-  employee       Employee     @relation(fields: [employeeId], references: [id])
-  sessionId      String
-  session        UserSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  date DateTime @db.Date
-
-  activeSeconds Int @default(0)
-  idleSeconds   Int @default(0)
-
-  pageViews Json @default("[]")
-
+  id              BigInt       @id @default(autoincrement())
+  organizationId  String
+  employeeId      Int
+  sessionId       String
+  date            DateTime     @db.Date
+  activeSeconds   Int          @default(0)
+  idleSeconds     Int          @default(0)
+  pageViews       Json         @default("[]")
   firstActivityAt DateTime
   lastActivityAt  DateTime
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  employee        Employee     @relation(fields: [employeeId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  session         UserSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, date])
   @@index([organizationId, employeeId, date])
@@ -1222,24 +1122,21 @@ model UserActivity {
 model ApiAccessLog {
   id             BigInt        @id @default(autoincrement())
   organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   employeeId     Int?
-  employee       Employee?     @relation(fields: [employeeId], references: [id])
   sessionId      String?
-  session        UserSession?  @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-
-  requestId  String?
-  endpoint   String
-  method     String
-  statusCode Int
-  durationMs Int
-
-  ipAddress    String?
-  userAgent    String? @db.Text
-  errorMessage String? @db.Text
-  responseSize Int?
-
-  createdAt DateTime @default(now())
+  requestId      String?
+  endpoint       String
+  method         String
+  statusCode     Int
+  durationMs     Int
+  ipAddress      String?
+  userAgent      String?
+  errorMessage   String?
+  responseSize   Int?
+  createdAt      DateTime      @default(now())
+  employee       Employee?     @relation(fields: [employeeId], references: [id])
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  session        UserSession?  @relation(fields: [sessionId], references: [id])
 
   @@index([organizationId, createdAt])
   @@index([organizationId, employeeId, createdAt])
@@ -1250,38 +1147,27 @@ model ApiAccessLog {
   @@map("api_access_log")
 }
 
-// ─────────────────────────────────────────────────────────────
-// ANOMALY ALERTS
-// ─────────────────────────────────────────────────────────────
-
 model AnomalyAlert {
-  id             Int             @id @default(autoincrement())
-  organizationId String
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  type           AnomalyType
-  severity       AnomalySeverity @default(WARNING)
-
-  employeeId Int?
-  employee   Employee? @relation("AnomalyAlertEmployee", fields: [employeeId], references: [id])
-
-  title       String
-  description String @db.Text
-
-  auditLogId     Int?
-  sessionId      String?
-  apiAccessLogId BigInt?
-
-  metadata Json?
-
-  status           AnomalyStatus @default(OPEN)
+  id               Int             @id @default(autoincrement())
+  organizationId   String
+  type             AnomalyType
+  severity         AnomalySeverity @default(WARNING)
+  employeeId       Int?
+  title            String
+  description      String
+  auditLogId       Int?
+  sessionId        String?
+  apiAccessLogId   BigInt?
+  metadata         Json?
+  status           AnomalyStatus   @default(OPEN)
   acknowledgedById Int?
-  acknowledgedBy   Employee?     @relation("AnomalyAlertAcknowledger", fields: [acknowledgedById], references: [id])
   acknowledgedAt   DateTime?
   notes            String?
-
-  dedupKey String?
-
-  createdAt DateTime @default(now())
+  dedupKey         String?
+  createdAt        DateTime        @default(now())
+  acknowledgedBy   Employee?       @relation("AnomalyAlertAcknowledger", fields: [acknowledgedById], references: [id])
+  employee         Employee?       @relation("AnomalyAlertEmployee", fields: [employeeId], references: [id])
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, dedupKey])
   @@index([organizationId, status, createdAt])
@@ -1290,21 +1176,15 @@ model AnomalyAlert {
   @@map("anomaly_alerts")
 }
 
-// ─────────────────────────────────────────────────────────────
-// AUDIT LOG
-// ─────────────────────────────────────────────────────────────
-
 model AuditLog {
   id             Int           @id @default(autoincrement())
   organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   tableName      String
   recordId       Int?
   action         String
   oldData        Json?
   newData        Json?
   changedById    Int?
-  changedBy      Employee?     @relation(fields: [changedById], references: [id])
   changedAt      DateTime      @default(now())
   ipAddress      String?
   userAgent      String?
@@ -1312,6 +1192,8 @@ model AuditLog {
   requestId      String?
   endpoint       String?
   method         String?
+  changedBy      Employee?     @relation(fields: [changedById], references: [id])
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId, tableName, recordId])
   @@index([organizationId, changedById, changedAt])
@@ -1319,14 +1201,9 @@ model AuditLog {
   @@map("audit_log")
 }
 
-// ─────────────────────────────────────────────────────────────
-// SYSTEM CONFIG
-// ─────────────────────────────────────────────────────────────
-
 model SystemLabel {
   id             Int          @id @default(autoincrement())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   category       String
   key            String
   label          String
@@ -1334,15 +1211,355 @@ model SystemLabel {
   sortOrder      Int          @default(0)
   isActive       Boolean      @default(true)
   updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, category, key])
   @@index([organizationId])
   @@map("system_label")
 }
 
-// ─────────────────────────────────────────────────────────────
-// ENUMS
-// ─────────────────────────────────────────────────────────────
+model TaskTypeConfig {
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  key            String
+  label          String
+  color          String       @default("#3B5BDB")
+  iconEmoji      String       @default("✦")
+  sortOrder      Int          @default(0)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+  @@map("task_type_configs")
+}
+
+model WorkflowTemplate {
+  id                  String             @id @default(cuid())
+  organizationId      String
+  name                String
+  description         String?
+  targetType          WorkflowTargetType
+  isActive            Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  conditions          Json               @default("[]")
+  notificationsConfig Json               @default("{\"onReject\": true, \"onSubmit\": true, \"onApprove\": true, \"onDeadline\": false}")
+  triggers            String[]           @default([])
+  instances           WorkflowInstance[]
+  steps               WorkflowStep[]
+  organization        Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("workflow_templates")
+}
+
+model WorkflowStep {
+  id             Int                @id @default(autoincrement())
+  templateId     String
+  stepOrder      Int
+  name           String
+  approverType   WorkflowApprover
+  approverRef    String?
+  slaHours       Int?
+  notifyOnReject Boolean            @default(true)
+  stepType       String             @default("any")
+  approverRefs   String[]           @default([])
+  approvals      WorkflowApproval[]
+  template       WorkflowTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, stepOrder])
+  @@map("workflow_steps")
+}
+
+model WorkflowInstance {
+  id             String             @id @default(cuid())
+  templateId     String
+  organizationId String
+  targetType     WorkflowTargetType
+  targetId       String
+  status         WorkflowStatus     @default(RUNNING)
+  currentStep    Int                @default(1)
+  initiatorId    Int
+  startedAt      DateTime           @default(now())
+  completedAt    DateTime?
+  approvals      WorkflowApproval[]
+  initiator      Employee           @relation("WorkflowInitiator", fields: [initiatorId], references: [id])
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template       WorkflowTemplate   @relation(fields: [templateId], references: [id])
+
+  @@index([organizationId, status])
+  @@index([targetType, targetId])
+  @@map("workflow_instances")
+}
+
+model WorkflowApproval {
+  id         String           @id @default(cuid())
+  instanceId String
+  stepId     Int
+  stepOrder  Int
+  approverId Int?
+  action     ApprovalAction?
+  comment    String?
+  actedAt    DateTime?
+  dueAt      DateTime?
+  approver   Employee?        @relation("WorkflowApprover", fields: [approverId], references: [id])
+  instance   WorkflowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  step       WorkflowStep     @relation(fields: [stepId], references: [id])
+
+  @@index([instanceId])
+  @@index([approverId, action])
+  @@map("workflow_approvals")
+}
+
+model InventoryCategory {
+  id             Int             @id @default(autoincrement())
+  organizationId String
+  name           String
+  code           String?
+  description    String?
+  createdAt      DateTime        @default(now())
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  items          InventoryItem[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("inventory_categories")
+}
+
+model InventoryItem {
+  id             String                 @id @default(cuid())
+  organizationId String
+  categoryId     Int
+  name           String
+  sku            String?
+  unit           String                 @default("cái")
+  quantity       Int                    @default(0)
+  minQuantity    Int                    @default(0)
+  costPrice      Decimal?               @db.Decimal(15, 2)
+  location       String?
+  description    String?
+  imageUrl       String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  assignments    InventoryAssignment[]
+  category       InventoryCategory      @relation(fields: [categoryId], references: [id])
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  transactions   InventoryTransaction[]
+
+  @@unique([organizationId, sku])
+  @@index([organizationId])
+  @@index([organizationId, categoryId])
+  @@map("inventory_items")
+}
+
+model InventoryTransaction {
+  id             String          @id @default(cuid())
+  organizationId String
+  itemId         String
+  type           InventoryTxType
+  quantity       Int
+  note           String?
+  referenceNo    String?
+  actorId        Int
+  createdAt      DateTime        @default(now())
+  actor          Employee        @relation(fields: [actorId], references: [id])
+  item           InventoryItem   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([itemId])
+  @@map("inventory_transactions")
+}
+
+model InventoryAssignment {
+  id             String        @id @default(cuid())
+  organizationId String
+  itemId         String
+  employeeId     Int
+  quantity       Int           @default(1)
+  assignedAt     DateTime      @default(now())
+  returnedAt     DateTime?
+  note           String?
+  employee       Employee      @relation(fields: [employeeId], references: [id])
+  item           InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([employeeId])
+  @@map("inventory_assignments")
+}
+
+model MicrosoftToken {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  accessToken    String
+  refreshToken   String
+  expiresAt      DateTime
+  scope          String
+  msUserId       String?
+  msUserEmail    String?
+  msUserName     String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("microsoft_tokens")
+}
+
+model DrivePermission {
+  id             String           @id @default(cuid())
+  organizationId String
+  driveItemId    String
+  grantedToId    Int?
+  grantedToRole  String?
+  level          DriveAccessLevel @default(VIEW)
+  createdAt      DateTime         @default(now())
+  grantedTo      Employee?        @relation(fields: [grantedToId], references: [id], onDelete: Cascade)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, driveItemId, grantedToId])
+  @@index([organizationId, driveItemId])
+  @@map("drive_permissions")
+}
+
+model TaskRecurrence {
+  id              Int                 @id @default(autoincrement())
+  taskId          Int                 @unique
+  frequency       RecurrenceFrequency
+  interval        Int                 @default(1)
+  daysOfWeek      Int[]
+  dayOfMonth      Int?
+  endDate         DateTime?
+  maxOccurrences  Int?
+  occurrenceCount Int                 @default(0)
+  nextRunAt       DateTime
+  lastRunAt       DateTime?
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @default(now()) @updatedAt
+  task            Task                @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([nextRunAt, isActive])
+  @@map("task_recurrences")
+}
+
+model TaskAttachment {
+  id           Int      @id @default(autoincrement())
+  taskId       Int
+  uploadedById Int
+  fileName     String
+  fileUrl      String
+  fileSize     Int?
+  mimeType     String?
+  driveItemId  String?
+  createdAt    DateTime @default(now())
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy   Employee @relation(fields: [uploadedById], references: [id])
+
+  @@index([taskId])
+  @@map("task_attachments")
+}
+
+model TaskDependency {
+  id          Int                @id @default(autoincrement())
+  taskId      Int
+  dependsOnId Int
+  type        TaskDependencyType @default(BLOCKS)
+  createdAt   DateTime           @default(now())
+  dependsOn   Task               @relation("DependencyDependsOn", fields: [dependsOnId], references: [id], onDelete: Cascade)
+  task        Task               @relation("DependencyTask", fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnId])
+  @@index([taskId])
+  @@index([dependsOnId])
+  @@map("task_dependencies")
+}
+
+model TaskChecklistItem {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  content   String
+  checked   Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_checklist_items")
+}
+
+model TaskWatcher {
+  taskId     Int
+  employeeId Int
+  createdAt  DateTime @default(now())
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, employeeId])
+  @@map("task_watchers")
+}
+
+model TaskComment {
+  id        Int           @id @default(autoincrement())
+  taskId    Int
+  authorId  Int
+  content   String
+  parentId  Int?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now()) @updatedAt
+  deletedAt DateTime?
+  author    Employee      @relation(fields: [authorId], references: [id])
+  parent    TaskComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   TaskComment[] @relation("CommentReplies")
+  task      Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_comments")
+}
+
+model DevelopmentGoal {
+  id             Int          @id @default(autoincrement())
+  organizationId String
+  employeeId     Int
+  title          String
+  description    String?
+  category       String?
+  targetDate     DateTime?
+  status         GoalStatus   @default(IN_PROGRESS)
+  progressPct    Int          @default(0)
+  skillId        Int?
+  targetLevel    Int?
+  createdById    Int
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  createdBy      Employee     @relation("EmpGoalCreator", fields: [createdById], references: [id])
+  employee       Employee     @relation("EmpGoals", fields: [employeeId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  skill          Skill?       @relation(fields: [skillId], references: [id])
+
+  @@index([organizationId, employeeId])
+  @@map("development_goals")
+}
+
+enum CustomerActivityType {
+  NOTE
+  TASK
+  MESSAGE
+  PAYMENT
+  MEETING
+  CONTRACT
+  OTHER
+}
+
+enum SprintStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
 
 enum Plan {
   FREE
@@ -1386,25 +1603,6 @@ enum Priority {
   HIGH
   NORMAL
   LOW
-}
-
-// TaskType values kept as String on models — configurable per org via TaskTypeConfig
-model TaskTypeConfig {
-  id             Int          @id @default(autoincrement())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  key            String // e.g. "NORMAL", "LEARNING", or custom "BUG_FIX"
-  label          String // Display: "Task", "Learning", "Bug Fix"
-  color          String       @default("#3B5BDB") // background color for icon
-  iconEmoji      String       @default("✦")
-  sortOrder      Int          @default(0)
-  isActive       Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@unique([organizationId, key])
-  @@index([organizationId])
-  @@map("task_type_configs")
 }
 
 enum TaskStatus {
@@ -1532,88 +1730,6 @@ enum PerfReviewStatus {
   COMPLETED
 }
 
-// ─────────────────────────────────────────────────────────────
-// APPROVAL WORKFLOW ENGINE (Sprint 2)
-// ─────────────────────────────────────────────────────────────
-
-model WorkflowTemplate {
-  id                  String             @id @default(cuid())
-  organizationId      String
-  organization        Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name                String
-  description         String?
-  targetType          WorkflowTargetType
-  isActive            Boolean            @default(true)
-  triggers            String[]           @default([])
-  conditions          Json               @default("[]")
-  notificationsConfig Json               @default("{\"onSubmit\":true,\"onApprove\":true,\"onReject\":true,\"onDeadline\":false}")
-  steps               WorkflowStep[]
-  instances           WorkflowInstance[]
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-
-  @@index([organizationId])
-  @@map("workflow_templates")
-}
-
-model WorkflowStep {
-  id             Int                @id @default(autoincrement())
-  templateId     String
-  template       WorkflowTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  stepOrder      Int
-  name           String
-  approverType   WorkflowApprover
-  approverRef    String?
-  slaHours       Int?
-  stepType       String             @default("any")
-  notifyOnReject Boolean            @default(true)
-  approverRefs   String[]           @default([])
-  approvals      WorkflowApproval[]
-
-  @@unique([templateId, stepOrder])
-  @@map("workflow_steps")
-}
-
-model WorkflowInstance {
-  id             String             @id @default(cuid())
-  templateId     String
-  template       WorkflowTemplate   @relation(fields: [templateId], references: [id])
-  organizationId String
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  targetType     WorkflowTargetType
-  targetId       String // ID của Leave / Document / ...
-  status         WorkflowStatus     @default(RUNNING)
-  currentStep    Int                @default(1)
-  initiatorId    Int
-  initiator      Employee           @relation("WorkflowInitiator", fields: [initiatorId], references: [id])
-  approvals      WorkflowApproval[]
-  startedAt      DateTime           @default(now())
-  completedAt    DateTime?
-
-  @@index([organizationId, status])
-  @@index([targetType, targetId])
-  @@map("workflow_instances")
-}
-
-model WorkflowApproval {
-  id         String           @id @default(cuid())
-  instanceId String
-  instance   WorkflowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-  stepId     Int
-  step       WorkflowStep     @relation(fields: [stepId], references: [id])
-  stepOrder  Int
-  approverId Int?
-  approver   Employee?        @relation("WorkflowApprover", fields: [approverId], references: [id])
-  action     ApprovalAction?
-  comment    String?
-  actedAt    DateTime?
-  dueAt      DateTime?
-
-  @@index([instanceId])
-  @@index([approverId, action])
-  @@map("workflow_approvals")
-}
-
 enum WorkflowTargetType {
   LEAVE
   DOCUMENT
@@ -1642,130 +1758,11 @@ enum ApprovalAction {
   DELEGATED
 }
 
-// ─────────────────────────────────────────────────────────────
-// INVENTORY MANAGEMENT (Sprint 3)
-// ─────────────────────────────────────────────────────────────
-
-model InventoryCategory {
-  id             Int             @id @default(autoincrement())
-  organizationId String
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name           String
-  code           String?
-  description    String?
-  items          InventoryItem[]
-  createdAt      DateTime        @default(now())
-
-  @@unique([organizationId, name])
-  @@index([organizationId])
-  @@map("inventory_categories")
-}
-
-model InventoryItem {
-  id             String                 @id @default(cuid())
-  organizationId String
-  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  categoryId     Int
-  category       InventoryCategory      @relation(fields: [categoryId], references: [id])
-  name           String
-  sku            String?
-  unit           String                 @default("cái")
-  quantity       Int                    @default(0)
-  minQuantity    Int                    @default(0)
-  costPrice      Decimal?               @db.Decimal(15, 2)
-  location       String?
-  description    String?
-  imageUrl       String?
-  transactions   InventoryTransaction[]
-  assignments    InventoryAssignment[]
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-
-  @@unique([organizationId, sku])
-  @@index([organizationId])
-  @@index([organizationId, categoryId])
-  @@map("inventory_items")
-}
-
-model InventoryTransaction {
-  id             String          @id @default(cuid())
-  organizationId String
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  itemId         String
-  item           InventoryItem   @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  type           InventoryTxType
-  quantity       Int
-  note           String?
-  referenceNo    String?
-  actorId        Int
-  actor          Employee        @relation(fields: [actorId], references: [id])
-  createdAt      DateTime        @default(now())
-
-  @@index([organizationId])
-  @@index([itemId])
-  @@map("inventory_transactions")
-}
-
-model InventoryAssignment {
-  id             String        @id @default(cuid())
-  organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  itemId         String
-  item           InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  employeeId     Int
-  employee       Employee      @relation(fields: [employeeId], references: [id])
-  quantity       Int           @default(1)
-  assignedAt     DateTime      @default(now())
-  returnedAt     DateTime?
-  note           String?
-
-  @@index([organizationId])
-  @@index([employeeId])
-  @@map("inventory_assignments")
-}
-
 enum InventoryTxType {
   IN
   OUT
   ADJUST
   RETURN
-}
-
-// ─────────────────────────────────────────────────────────────
-// MICROSOFT GRAPH / ONEDRIVE INTEGRATION (Sprint 1)
-// ─────────────────────────────────────────────────────────────
-
-model MicrosoftToken {
-  id             String       @id @default(cuid())
-  organizationId String       @unique
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  accessToken    String       @db.Text
-  refreshToken   String       @db.Text
-  expiresAt      DateTime
-  scope          String
-  msUserId       String?
-  msUserEmail    String?
-  msUserName     String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@map("microsoft_tokens")
-}
-
-model DrivePermission {
-  id             String           @id @default(cuid())
-  organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  driveItemId    String
-  grantedToId    Int?
-  grantedTo      Employee?        @relation(fields: [grantedToId], references: [id], onDelete: Cascade)
-  grantedToRole  String?
-  level          DriveAccessLevel @default(VIEW)
-  createdAt      DateTime         @default(now())
-
-  @@unique([organizationId, driveItemId, grantedToId])
-  @@index([organizationId, driveItemId])
-  @@map("drive_permissions")
 }
 
 enum DriveAccessLevel {
@@ -1780,64 +1777,11 @@ enum SkillImportance {
   NICE_TO_HAVE
 }
 
-model TaskRecurrence {
-  id              Int                 @id @default(autoincrement())
-  taskId          Int                 @unique
-  task            Task                @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  frequency       RecurrenceFrequency
-  interval        Int                 @default(1)
-  daysOfWeek      Int[]
-  dayOfMonth      Int?
-  endDate         DateTime?
-  maxOccurrences  Int?
-  occurrenceCount Int                 @default(0)
-  nextRunAt       DateTime
-  lastRunAt       DateTime?
-  isActive        Boolean             @default(true)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @default(now()) @updatedAt
-
-  @@index([nextRunAt, isActive])
-  @@map("task_recurrences")
-}
-
 enum RecurrenceFrequency {
   DAILY
   WEEKLY
   MONTHLY
   YEARLY
-}
-
-model TaskAttachment {
-  id           Int      @id @default(autoincrement())
-  taskId       Int
-  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  uploadedById Int
-  uploadedBy   Employee @relation(fields: [uploadedById], references: [id])
-  fileName     String
-  fileUrl      String   @db.Text
-  fileSize     Int?
-  mimeType     String?
-  driveItemId  String?
-  createdAt    DateTime @default(now())
-
-  @@index([taskId])
-  @@map("task_attachments")
-}
-
-model TaskDependency {
-  id          Int                @id @default(autoincrement())
-  taskId      Int
-  task        Task               @relation("DependencyTask", fields: [taskId], references: [id], onDelete: Cascade)
-  dependsOnId Int
-  dependsOn   Task               @relation("DependencyDependsOn", fields: [dependsOnId], references: [id], onDelete: Cascade)
-  type        TaskDependencyType @default(BLOCKS)
-  createdAt   DateTime           @default(now())
-
-  @@unique([taskId, dependsOnId])
-  @@index([taskId])
-  @@index([dependsOnId])
-  @@map("task_dependencies")
 }
 
 enum TaskDependencyType {
@@ -1846,79 +1790,9 @@ enum TaskDependencyType {
   DUPLICATES
 }
 
-model TaskChecklistItem {
-  id        Int      @id @default(autoincrement())
-  taskId    Int
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  content   String
-  checked   Boolean  @default(false)
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-
-  @@index([taskId])
-  @@map("task_checklist_items")
-}
-
-model TaskWatcher {
-  taskId     Int
-  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  employeeId Int
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-
-  @@id([taskId, employeeId])
-  @@map("task_watchers")
-}
-
-model TaskComment {
-  id        Int           @id @default(autoincrement())
-  taskId    Int
-  task      Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  authorId  Int
-  author    Employee      @relation(fields: [authorId], references: [id])
-  content   String        @db.Text
-  parentId  Int?
-  parent    TaskComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   TaskComment[] @relation("CommentReplies")
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @default(now()) @updatedAt
-  deletedAt DateTime?
-
-  @@index([taskId])
-  @@map("task_comments")
-}
-
-// ─────────────────────────────────────────────────────────────
-// DEVELOPMENT GOALS
-// ─────────────────────────────────────────────────────────────
-
 enum GoalStatus {
   NOT_STARTED
   IN_PROGRESS
   DONE
   CANCELLED
-}
-
-model DevelopmentGoal {
-  id             Int          @id @default(autoincrement())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  employeeId     Int
-  employee       Employee     @relation("EmpGoals", fields: [employeeId], references: [id], onDelete: Cascade)
-  title          String
-  description    String?      @db.Text
-  category       String?
-  targetDate     DateTime?
-  status         GoalStatus   @default(IN_PROGRESS)
-  progressPct    Int          @default(0)
-  skillId        Int?
-  skill          Skill?       @relation(fields: [skillId], references: [id], onDelete: SetNull)
-  targetLevel    Int?
-  createdById    Int
-  createdBy      Employee     @relation("EmpGoalCreator", fields: [createdById], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@index([organizationId, employeeId])
-  @@map("development_goals")
 }

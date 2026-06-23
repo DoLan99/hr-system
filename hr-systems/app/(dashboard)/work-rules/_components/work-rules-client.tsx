@@ -1,12 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/lib/contexts/current-user-context";
 import { useToast } from "@/lib/hooks/use-toast";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
 
-interface Rule { id: number; ruleNo: number; title: string; description: string; effectiveDate?: string | null; updatedAt: string; }
+interface RuleConfig {
+  workDays?: number[];
+  startTime?: string; endTime?: string; breakStart?: string; breakEnd?: string;
+  minHours?: number; minHoursWeek?: number; breakPaid?: boolean;
+  checkinOpen?: string; checkinClose?: string; checkoutOpen?: string;
+  graceIn?: number; graceOut?: number; calcMethod?: string;
+  autoCheckout?: boolean; autoCheckoutTime?: string;
+  penaltyLate?: boolean; lateThreshold?: number; lateDeduct?: number;
+  otEnabled?: boolean; otStart?: number; otMax?: number;
+  otTier1?: number; otTier2?: number; otWeekend?: number; otHoliday?: number;
+  leaveCarryover?: boolean; leaveAutoSick?: boolean;
+  customHolidays?: Array<{ date: string; name: string; type: string }>;
+}
+
+interface Rule { id: number; ruleNo: number; title: string; description: string; effectiveDate?: string | null; updatedAt: string; config?: RuleConfig | null; }
 interface Props { initialRules: Rule[] }
 
 const DAYS = ["T2","T3","T4","T5","T6","T7","CN"];
@@ -41,6 +55,7 @@ export function WorkRulesClient({ initialRules }: Props) {
   const activeRule = rules.find(r => r.id === activeRuleId);
 
   const [activeTab, setActiveTab] = useState<"schedule"|"attendance"|"overtime"|"leave"|"holidays">("schedule");
+  const [configSaving, setConfigSaving] = useState(false);
 
   // Schedule
   const [workDays, setWorkDays] = useState([0,1,2,3,4]);
@@ -79,10 +94,45 @@ export function WorkRulesClient({ initialRules }: Props) {
   const [leaveAutoSick, setLeaveAutoSick] = useState(false);
 
   // Holidays
-  const [customHolidays, setCustomHolidays] = useState([
-    { date: "2026-12-24", name: "Nghỉ Giáng Sinh (nội bộ)", type: "custom" },
-    { date: "2026-12-31", name: "Nghỉ Tất niên", type: "custom" },
-  ]);
+  const [customHolidays, setCustomHolidays] = useState<Array<{date:string;name:string;type:string}>>([]);
+
+  const loadConfig = useCallback((cfg: RuleConfig | null | undefined) => {
+    const c = cfg ?? {};
+    setWorkDays(c.workDays ?? [0,1,2,3,4]);
+    setStartTime(c.startTime ?? "08:00");
+    setEndTime(c.endTime ?? "17:00");
+    setBreakStart(c.breakStart ?? "12:00");
+    setBreakEnd(c.breakEnd ?? "13:00");
+    setMinHours(c.minHours ?? 8);
+    setMinHoursWeek(c.minHoursWeek ?? 40);
+    setBreakPaid(c.breakPaid ?? false);
+    setCheckinOpen(c.checkinOpen ?? "07:30");
+    setCheckinClose(c.checkinClose ?? "09:30");
+    setCheckoutOpen(c.checkoutOpen ?? "16:30");
+    setGraceIn(c.graceIn ?? 15);
+    setGraceOut(c.graceOut ?? 15);
+    setCalcMethod(c.calcMethod ?? "fixed");
+    setAutoCheckout(c.autoCheckout ?? true);
+    setAutoCheckoutTime(c.autoCheckoutTime ?? "21:00");
+    setPenaltyLate(c.penaltyLate ?? true);
+    setLateThreshold(c.lateThreshold ?? 15);
+    setLateDeduct(c.lateDeduct ?? 30);
+    setOtEnabled(c.otEnabled ?? true);
+    setOtStart(c.otStart ?? 8);
+    setOtMax(c.otMax ?? 4);
+    setOtTier1(c.otTier1 ?? 1.5);
+    setOtTier2(c.otTier2 ?? 2.0);
+    setOtWeekend(c.otWeekend ?? 2.0);
+    setOtHoliday(c.otHoliday ?? 3.0);
+    setLeaveCarryover(c.leaveCarryover ?? true);
+    setLeaveAutoSick(c.leaveAutoSick ?? false);
+    setCustomHolidays(c.customHolidays ?? []);
+  }, []);
+
+  useEffect(() => {
+    const rule = rules.find(r => r.id === activeRuleId);
+    loadConfig(rule?.config);
+  }, [activeRuleId, rules, loadConfig]);
   const [holDate, setHolDate] = useState("");
   const [holName, setHolName] = useState("");
 
@@ -527,10 +577,35 @@ export function WorkRulesClient({ initialRules }: Props) {
       {activeRule && (
         <div className="save-bar">
           <span style={{ fontSize: ".82rem", color: "var(--text-3)" }}>Thay đổi sẽ áp dụng cho tất cả nhân viên trong quy định này</span>
-          <button className="abtn ghost" style={{ height: 36 }}>Đặt lại</button>
-          <button className="abtn primary" style={{ height: 36 }} onClick={() => toast({ title: "Đã lưu cấu hình ✓", variant: "success" })}>
+          <button className="abtn ghost" style={{ height: 36 }} onClick={() => loadConfig(activeRule.config)}>Đặt lại</button>
+          <button className="abtn primary" style={{ height: 36 }} disabled={configSaving} onClick={async () => {
+            const config: RuleConfig = {
+              workDays, startTime, endTime, breakStart, breakEnd, minHours, minHoursWeek, breakPaid,
+              checkinOpen, checkinClose, checkoutOpen, graceIn, graceOut, calcMethod,
+              autoCheckout, autoCheckoutTime, penaltyLate, lateThreshold, lateDeduct,
+              otEnabled, otStart, otMax, otTier1, otTier2, otWeekend, otHoliday,
+              leaveCarryover, leaveAutoSick, customHolidays,
+            };
+            setConfigSaving(true);
+            try {
+              const res = await fetch(`/api/work-rules/${activeRule.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ config }),
+              });
+              const text = await res.text();
+              const json = text ? JSON.parse(text) : {};
+              if (res.ok) {
+                setRules(prev => prev.map(r => r.id === activeRule.id ? { ...r, config: json.data?.config } : r));
+                toast({ title: "Đã lưu cấu hình ✓", variant: "success" });
+              } else {
+                const msg = json?.error ? JSON.stringify(json.error) : `HTTP ${res.status}`;
+                toast({ title: `Lưu thất bại: ${msg}`, variant: "error" });
+              }
+            } finally { setConfigSaving(false); }
+          }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" width={14} height={14}><path d="M5 12l5 5L20 6"/></svg>
-            Lưu thay đổi
+            {configSaving ? "Đang lưu…" : "Lưu thay đổi"}
           </button>
         </div>
       )}

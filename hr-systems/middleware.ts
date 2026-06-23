@@ -1,5 +1,26 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminToken, COOKIE_NAME } from "@/lib/admin-auth";
+
+// ── System admin routes: bypass Clerk, use admin_session cookie ──────
+const isAdminRoute = createRouteMatcher(["/system(.*)", "/api/admin(.*)"]);
+const isAdminPublic = createRouteMatcher(["/system/login", "/api/admin/auth/login"]);
+
+async function adminMiddleware(req: NextRequest): Promise<NextResponse> {
+  if (isAdminPublic(req)) return NextResponse.next();
+
+  const token = req.cookies.get(COOKIE_NAME)?.value;
+  const payload = token ? await verifyAdminToken(token) : null;
+  if (!payload) {
+    if (req.nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const loginUrl = new URL("/system/login", req.url);
+    loginUrl.searchParams.set("next", req.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+  return NextResponse.next();
+}
 
 const isPublicRoute = createRouteMatcher([
   "/",
@@ -52,6 +73,9 @@ function extractSubdomain(host: string | null): string {
 }
 
 export default clerkMiddleware(async (auth, req) => {
+  // Admin routes bypass Clerk entirely
+  if (isAdminRoute(req)) return adminMiddleware(req);
+
   if (!isPublicRoute(req)) {
     await auth.protect();
   }

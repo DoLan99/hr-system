@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withContext } from "@/lib/with-context";
 import { requireApiAuth, MANAGER_ROLES } from "@/lib/api-auth";
@@ -9,6 +10,7 @@ const createSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
   effectiveDate: z.string().optional(),
+  config: z.record(z.unknown()).optional(),
 });
 
 export const GET = withContext(async (_req: NextRequest) => {
@@ -31,14 +33,15 @@ export const POST = withContext(async (req: NextRequest) => {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
   const d = parsed.data;
-  const rule = await prisma.workRule.create({
-    data: {
-      ruleNo: d.ruleNo,
-      title: d.title,
-      description: d.description,
-      effectiveDate: d.effectiveDate ? new Date(d.effectiveDate) : null,
-    },
-  });
+  const createData: Parameters<typeof prisma.workRule.create>[0]["data"] = {
+    organizationId: auth.orgId,
+    ruleNo: d.ruleNo,
+    title: d.title,
+    description: d.description,
+    effectiveDate: d.effectiveDate ? new Date(d.effectiveDate) : null,
+  };
+  if (d.config !== undefined) createData.config = d.config as Prisma.InputJsonValue;
+  const rule = await prisma.workRule.create({ data: createData });
 
   return NextResponse.json({ data: rule }, { status: 201 });
 });

@@ -3,6 +3,15 @@
 import { useEffect, useState } from "react";
 import { formatVnd, type PlanConfig, type PlanId } from "@/lib/pricing";
 
+interface UpgradeRequest {
+  id: number;
+  targetPlan: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  note: string | null;
+  createdAt: string;
+  approvedAt: string | null;
+}
+
 interface Props {
   currentPlan: PlanId;
   status: "ACTIVE" | "SUSPENDED" | "CANCELLED" | "TRIAL";
@@ -15,6 +24,9 @@ interface Props {
   plans: Record<PlanId, PlanConfig>;
   bankInfo: { bankName: string; accountNumber: string; accountHolder: string; branch: string };
   trialDaysLeft: number;
+  userEmail: string;
+  userName: string;
+  upgradeRequests: UpgradeRequest[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -49,6 +61,7 @@ const PLAN_AUDIT_DAYS: Record<PlanId, string> = {
 export function BillingClient({
   currentPlan, status, trialEndsAt, seatLimit, memberCount,
   orgSlug, orgName, isOwnerOrAdmin, plans, bankInfo, trialDaysLeft,
+  userEmail, userName, upgradeRequests,
 }: Props) {
   const current = plans[currentPlan];
 
@@ -244,25 +257,68 @@ export function BillingClient({
             </div>
           </div>
 
-          {/* Invoice history (placeholder — manual bank transfer) */}
+          {/* Upgrade request history */}
           <div className="bp">
             <div className="bp-head">
               <h3>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/></svg>
-                Lịch sử hóa đơn
+                Lịch sử yêu cầu nâng gói
               </h3>
             </div>
             <div className="bp-body" style={{ padding: 0 }}>
-              <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--text-3)" }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 40, height: 40, margin: "0 auto 12px", opacity: .3 }}>
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                </svg>
-                <p style={{ fontSize: ".88rem", fontWeight: 600, color: "var(--text-2)", marginBottom: 6 }}>Chưa có hóa đơn nào</p>
-                <p style={{ fontSize: ".82rem", lineHeight: 1.5 }}>
-                  jobihome thu phí qua chuyển khoản ngân hàng — sau khi chuyển khoản,<br />
-                  email cho <code style={{ fontFamily: "var(--font-mono)" }}>support@jobihome.vn</code> kèm biên lai để được kích hoạt.
-                </p>
-              </div>
+              {upgradeRequests.length === 0 ? (
+                <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--text-3)" }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 40, height: 40, margin: "0 auto 12px", opacity: .3 }}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <p style={{ fontSize: ".88rem", fontWeight: 600, color: "var(--text-2)", marginBottom: 6 }}>Chưa có yêu cầu nào</p>
+                  <p style={{ fontSize: ".82rem", lineHeight: 1.5 }}>
+                    Sau khi gửi yêu cầu nâng gói, trạng thái sẽ hiển thị tại đây.
+                  </p>
+                </div>
+              ) : (
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".84rem" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                      <th style={{ padding: "10px 20px", textAlign: "left", fontWeight: 600, color: "var(--text-3)", fontSize: ".78rem", textTransform: "uppercase", letterSpacing: ".04em" }}>Gói yêu cầu</th>
+                      <th style={{ padding: "10px 16px", textAlign: "left", fontWeight: 600, color: "var(--text-3)", fontSize: ".78rem", textTransform: "uppercase", letterSpacing: ".04em" }}>Ngày gửi</th>
+                      <th style={{ padding: "10px 16px", textAlign: "left", fontWeight: 600, color: "var(--text-3)", fontSize: ".78rem", textTransform: "uppercase", letterSpacing: ".04em" }}>Trạng thái</th>
+                      <th style={{ padding: "10px 20px", textAlign: "left", fontWeight: 600, color: "var(--text-3)", fontSize: ".78rem", textTransform: "uppercase", letterSpacing: ".04em" }}>Ghi chú</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {upgradeRequests.map((r, i) => {
+                      const statusConfig = {
+                        PENDING:  { label: "Đang chờ duyệt", bg: "rgba(234,179,8,.12)",   color: "#b45309" },
+                        APPROVED: { label: "Đã duyệt",       bg: "rgba(16,185,129,.12)",  color: "#059669" },
+                        REJECTED: { label: "Từ chối",         bg: "rgba(239,68,68,.12)",   color: "#dc2626" },
+                      }[r.status];
+                      return (
+                        <tr key={r.id} style={{ borderBottom: i < upgradeRequests.length - 1 ? "1px solid var(--border)" : "none" }}>
+                          <td style={{ padding: "12px 20px", fontWeight: 600 }}>
+                            {r.targetPlan}
+                          </td>
+                          <td style={{ padding: "12px 16px", color: "var(--text-2)" }}>
+                            {new Date(r.createdAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                          </td>
+                          <td style={{ padding: "12px 16px" }}>
+                            <span style={{
+                              display: "inline-block", padding: "3px 10px", borderRadius: 99,
+                              fontSize: ".76rem", fontWeight: 700,
+                              background: statusConfig.bg, color: statusConfig.color,
+                            }}>
+                              {statusConfig.label}
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px 20px", color: "var(--text-2)", fontSize: ".82rem" }}>
+                            {r.note ?? <span style={{ opacity: .4 }}>—</span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
 
@@ -379,7 +435,10 @@ export function BillingClient({
           current={current}
           target={upgradeTarget}
           orgSlug={orgSlug}
+          orgName={orgName}
           bankInfo={bankInfo}
+          userEmail={userEmail}
+          userName={userName}
           onClose={() => setUpgradeTarget(null)}
         />
       )}
@@ -393,16 +452,21 @@ export function BillingClient({
 // ── Upgrade modal ─────────────────────────────────────────────
 
 function UpgradeModal({
-  current, target, orgSlug, bankInfo, onClose,
+  current, target, orgSlug, orgName, bankInfo, userEmail, userName, onClose,
 }: {
   current: PlanConfig;
   target: PlanConfig;
   orgSlug: string;
+  orgName: string;
   bankInfo: Props["bankInfo"];
+  userEmail: string;
+  userName: string;
   onClose: () => void;
 }) {
   const transferNote = `JOBIHOME ${orgSlug.toUpperCase()} ${target.id}`;
   const [copied, setCopied] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
@@ -467,16 +531,49 @@ function UpgradeModal({
           ))}
         </div>
 
-        <p style={{ fontSize: ".82rem", color: "var(--text-2)", lineHeight: 1.5, margin: 0 }}>
-          Sau khi chuyển khoản, email biên lai về <b>support@jobihome.vn</b> — admin sẽ kích hoạt gói trong vòng 24 giờ.
-        </p>
+        {submitted ? (
+          <div style={{ background: "rgba(34,197,94,.1)", border: "1px solid rgba(34,197,94,.25)", borderRadius: 10, padding: "14px 16px", fontSize: ".85rem", color: "#22c55e", display: "flex", alignItems: "center", gap: 10 }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" width={18} height={18}><path d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+            <div>
+              <div style={{ fontWeight: 700 }}>Đã gửi thông báo cho admin!</div>
+              <div style={{ color: "rgba(34,197,94,.8)", marginTop: 2 }}>Admin sẽ xét duyệt và kích hoạt gói trong vòng 24 giờ.</div>
+            </div>
+          </div>
+        ) : (
+          <p style={{ fontSize: ".82rem", color: "var(--text-2)", lineHeight: 1.5, margin: 0 }}>
+            Sau khi chuyển khoản xong, bấm <b>"Đã chuyển khoản"</b> để thông báo admin — gói sẽ được kích hoạt trong 24 giờ.
+          </p>
+        )}
 
         <div className="bm-foot">
-          <button className="abtn ghost" onClick={onClose}>Đóng</button>
-          <a href={`mailto:support@jobihome.vn?subject=Upgrade ${target.name} — ${orgSlug}&body=Workspace: ${orgSlug}%0AGói mới: ${target.name}%0ASố tiền: ${formatVnd(target.priceVnd)}%0ANội dung CK: ${transferNote}`} className="abtn primary" style={{ gap: 7 }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 6l10 7L22 6"/></svg>
-            Email support
-          </a>
+          <button className="abtn ghost" onClick={onClose}>{submitted ? "Đóng" : "Hủy"}</button>
+          {!submitted && (
+            <button className="abtn primary" style={{ gap: 7 }} disabled={submitting}
+              onClick={async () => {
+                setSubmitting(true);
+                try {
+                  const res = await fetch("/api/billing/upgrade-request", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      targetPlan: target.id, currentPlan: current.id,
+                      priceVnd: target.priceVnd, transferNote,
+                      requesterName: userName, requesterEmail: userEmail,
+                      orgName, orgSlug,
+                    }),
+                  });
+                  if (res.ok) {
+                    setSubmitted(true);
+                  } else {
+                    const j = await res.json().catch(() => ({}));
+                    alert(`Gửi thất bại (${res.status}): ${JSON.stringify(j?.error ?? j)}`);
+                  }
+                } finally { setSubmitting(false); }
+              }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" width={13} height={13}><path d="M5 12l5 5L20 6"/></svg>
+              {submitting ? "Đang gửi…" : "Đã chuyển khoản, thông báo admin"}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -556,13 +653,13 @@ const STYLE = `
 .bp-head h3 svg{width:15px;height:15px;color:var(--accent-ink)}
 .bp-body{padding:18px}
 
-.plan-hero{background:linear-gradient(135deg,var(--accent),#1d4ed8);border-radius:var(--r-lg);padding:24px;color:#fff;position:relative;overflow:hidden;margin-bottom:16px}
-.plan-hero::after{content:"";position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.08);pointer-events:none}
-.ph-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:4px 11px;border-radius:99px;background:rgba(255,255,255,.18);color:#fff;margin-bottom:14px}
-.ph-name{font-size:1.6rem;font-weight:800;letter-spacing:-.03em;margin-bottom:4px}
-.ph-price{font-size:1rem;opacity:.85;margin-bottom:16px}
+.plan-hero{background:linear-gradient(135deg,#0d1a40 0%,#162554 100%);border:1px solid rgba(59,91,219,.3);border-radius:var(--r-lg);padding:24px;color:#fff;position:relative;overflow:hidden;margin-bottom:16px}
+.plan-hero::after{content:"";position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(59,91,219,.12);pointer-events:none}
+.ph-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:4px 11px;border-radius:99px;background:rgba(99,130,255,.2);border:1px solid rgba(99,130,255,.25);color:rgba(180,200,255,.9);margin-bottom:14px}
+.ph-name{font-size:1.6rem;font-weight:800;letter-spacing:-.03em;margin-bottom:4px;color:#e8eeff}
+.ph-price{font-size:1rem;color:rgba(180,200,255,.7);margin-bottom:16px}
 .ph-badges{display:flex;gap:8px;flex-wrap:wrap}
-.ph-tag{display:inline-flex;align-items:center;gap:5px;font-size:.76rem;font-weight:500;padding:4px 11px;border-radius:99px;background:rgba(255,255,255,.14);color:#fff}
+.ph-tag{display:inline-flex;align-items:center;gap:5px;font-size:.76rem;font-weight:500;padding:4px 11px;border-radius:99px;background:rgba(59,91,219,.2);border:1px solid rgba(99,130,255,.2);color:rgba(180,200,255,.85)}
 .ph-tag svg{width:12px;height:12px}
 
 .usage-list{display:flex;flex-direction:column;gap:14px}
