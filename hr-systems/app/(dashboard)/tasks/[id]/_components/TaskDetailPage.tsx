@@ -93,7 +93,7 @@ const STATUSES = [
   { value: "BACKLOG", label: "Backlog" },
   { value: "IN_PROGRESS", label: "In Progress" },
   { value: "BLOCKED", label: "Blocked" },
-  { value: "REVIEW", label: "Review" },
+  { value: "REVIEW", label: "Testing" },
   { value: "DONE", label: "Done" },
   { value: "CANCELLED", label: "Cancelled" },
 ];

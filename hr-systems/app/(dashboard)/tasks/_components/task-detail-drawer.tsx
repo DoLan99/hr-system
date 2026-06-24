@@ -94,6 +94,17 @@ const STATUS_CHIP_CLS: Record<string, string> = {
   CANCELLED: "backlogc",
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  BACKLOG: "BACKLOG",
+  IN_PROGRESS: "IN PROGRESS",
+  BLOCKED: "BLOCKED",
+  REVIEW: "TESTING",
+  DONE: "DONE",
+  CANCELLED: "CANCELLED",
+};
+
+const stLabel = (s: string) => STATUS_LABEL[s] ?? s.replace("_", " ");
+
 const PRIO_LABEL: Record<string, string> = {
   CRITICAL: "Khẩn cấp",
   HIGH: "Cao",
@@ -734,7 +745,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                         <div key={sub.id} className="td-st-item" onClick={() => onOpenTask?.(sub.id)} style={{ cursor: onOpenTask ? "pointer" : "default" }}>
                           <span className={`st-cb${sub.status === "DONE" ? " done" : ""}`} />
                           <span className={`st-name${sub.status === "DONE" ? " done" : ""}`}>{sub.code} · {sub.title}</span>
-                          <span className={`td-col-chip ${STATUS_CHIP_CLS[sub.status] ?? "backlogc"}`}>{sub.status.replace("_", " ")}</span>
+                          <span className={`td-col-chip ${STATUS_CHIP_CLS[sub.status] ?? "backlogc"}`}>{stLabel(sub.status)}</span>
                         </div>
                       ))}
                       {!task.subTasks?.length && !addingSubtask && (
@@ -765,7 +776,7 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                         <div className="stf-foot">
                           <select value={subTaskStatus} onChange={(e) => setSubTaskStatus(e.target.value)}>
                             {["BACKLOG", "IN_PROGRESS", "REVIEW", "DONE"].map((s) => (
-                              <option key={s} value={s}>{s.replace("_", " ")}</option>
+                              <option key={s} value={s}>{stLabel(s)}</option>
                             ))}
                           </select>
                           <button className="abtn ghost" onClick={() => setAddingSubtask(false)}>Hủy</button>
@@ -787,9 +798,9 @@ export function TaskDetailDrawer({ taskId, open, onClose, employees, customers, 
                 <div className="td-meta-row">
                   <span className="mrl">Trạng thái</span>
                   <span className="mrv" style={{ position: "relative" }}>
-                    <span className={`td-col-chip ${STATUS_CHIP_CLS[task.status] ?? "backlogc"}`}>{task.status.replace("_", " ")}</span>
+                    <span className={`td-col-chip ${STATUS_CHIP_CLS[task.status] ?? "backlogc"}`}>{stLabel(task.status)}</span>
                     <select value={task.status} onChange={(e) => patch({ status: e.target.value })} disabled={saving} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}>
-                      {STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+                      {STATUSES.map((s) => <option key={s} value={s}>{stLabel(s)}</option>)}
                     </select>
                   </span>
                 </div>

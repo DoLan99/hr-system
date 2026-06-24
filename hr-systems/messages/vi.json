@@ -56,7 +56,7 @@
     "BACKLOG": "Backlog",
     "IN_PROGRESS": "Đang làm",
     "BLOCKED": "Bị chặn",
-    "REVIEW": "Chờ review",
+    "REVIEW": "Testing",
     "DONE": "Xong",
     "CANCELLED": "Đã hủy"
   },

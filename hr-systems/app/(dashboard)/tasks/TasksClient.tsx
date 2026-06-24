@@ -68,7 +68,7 @@ const STATUS_TO_COL: Record<string, string> = {
   BACKLOG: "Backlog",
   TODO: "Backlog",
   IN_PROGRESS: "In Progress",
-  REVIEW: "Review",
+  REVIEW: "Testing",
   DONE: "Done",
   BLOCKED: "Blocked",
 };
@@ -76,7 +76,7 @@ const STATUS_TO_COL: Record<string, string> = {
 const COL_TO_STATUS: Record<string, string[]> = {
   Backlog: ["BACKLOG", "TODO"],
   "In Progress": ["IN_PROGRESS"],
-  Review: ["REVIEW"],
+  Testing: ["REVIEW"],
   Done: ["DONE"],
   Blocked: ["BLOCKED"],
 };
@@ -84,7 +84,7 @@ const COL_TO_STATUS: Record<string, string[]> = {
 const COLS: { label: string; cls: string; createStatus: string }[] = [
   { label: "Backlog",     cls: "backlogc",   createStatus: "BACKLOG" },
   { label: "In Progress", cls: "progressc",  createStatus: "IN_PROGRESS" },
-  { label: "Review",      cls: "reviewc",    createStatus: "REVIEW" },
+  { label: "Testing",     cls: "reviewc",    createStatus: "REVIEW" },
   { label: "Done",        cls: "donec",      createStatus: "DONE" },
   { label: "Blocked",     cls: "blockedc",   createStatus: "BLOCKED" },
 ];
@@ -112,7 +112,7 @@ const TASK_TYPE_LABEL: Record<string, string> = {
 const STATUS_CHIP: Record<string, string> = {
   Backlog:      "status todo",
   "In Progress":"status doing",
-  Review:       "status pending",
+  Testing:      "status pending",
   Done:         "status done",
   Blocked:      "status blocked",
 };
@@ -175,7 +175,7 @@ const STATUSES_VI: { value: string; label: string }[] = [
   { value: "BACKLOG",     label: "Backlog" },
   { value: "IN_PROGRESS", label: "In Progress" },
   { value: "BLOCKED",     label: "Blocked" },
-  { value: "REVIEW",      label: "Review" },
+  { value: "REVIEW",      label: "Testing" },
   { value: "DONE",        label: "Done" },
   { value: "CANCELLED",   label: "Cancelled" },
 ];

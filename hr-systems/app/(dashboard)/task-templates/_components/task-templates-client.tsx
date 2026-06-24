@@ -297,8 +297,8 @@ export function TaskTemplatesClient({ initialItems, canManage, taskTypes, employ
       </div>
 
       {/* ── Detail Drawer ── */}
-      <div className={`td-back${drawerItem ? " open" : ""}`} onClick={() => setDrawerItem(null)} />
-      <div className={`td-drawer${drawerItem ? " open" : ""}`}>
+      <div className={`tpl-td-back${drawerItem ? " open" : ""}`} onClick={() => setDrawerItem(null)} />
+      <div className={`tpl-td-drawer${drawerItem ? " open" : ""}`}>
         {drawerItem && (() => {
           const m = getIssueMeta(drawerItem.defaultTaskType);
           const prio = PRIO_DOT[drawerItem.defaultPriority] ?? PRIO_DOT.NORMAL;

@@ -56,7 +56,7 @@
     "BACKLOG": "Backlog",
     "IN_PROGRESS": "In Progress",
     "BLOCKED": "Blocked",
-    "REVIEW": "Pending Review",
+    "REVIEW": "Testing",
     "DONE": "Done",
     "CANCELLED": "Cancelled"
   },
