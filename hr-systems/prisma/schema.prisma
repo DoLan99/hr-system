@@ -36,6 +36,7 @@ model Organization {
   developmentGoals      DevelopmentGoal[]
   drivePermissions      DrivePermission[]
   employeeSkills        EmployeeSkill[]
+  systemDocuments       SystemDocument[]
   employees             Employee[]
   estimateFlags         EstimateFlag[]
   inventoryAssignments  InventoryAssignment[]
@@ -220,6 +221,8 @@ model Employee {
   developmentGoals            DevelopmentGoal[]      @relation("EmpGoals")
   drivePermissions            DrivePermission[]
   employeeSkills              EmployeeSkill[]        @relation("EmpSkillEmployee")
+  systemDocuments             SystemDocument[]       @relation("DocEmployee")
+  systemDocumentsUploaded     SystemDocument[]       @relation("DocUploader")
   verifiedEmployeeSkills      EmployeeSkill[]        @relation("EmpSkillVerifier")
   careerLevel                 CareerLevel?           @relation(fields: [careerLevelId], references: [id])
   careerTrack                 CareerTrack?           @relation(fields: [careerTrackId], references: [id])
@@ -1028,6 +1031,29 @@ model UpgradeRequest {
   @@index([organizationId])
   @@index([status])
   @@map("upgrade_requests")
+}
+
+model SystemDocument {
+  id             String              @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  fileUrl        String
+  fileKey        String
+  mimeType       String?
+  size           Int?
+  category       String?
+  employeeId     Int?
+  uploadedById   Int
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employee       Employee?           @relation("DocEmployee", fields: [employeeId], references: [id])
+  uploadedBy     Employee            @relation("DocUploader", fields: [uploadedById], references: [id])
+
+  @@index([organizationId])
+  @@index([employeeId])
+  @@map("system_documents")
 }
 
 enum UpgradeRequestStatus {

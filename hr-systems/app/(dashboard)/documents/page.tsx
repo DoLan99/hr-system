@@ -1,8 +1,7 @@
 import { requireAuth } from "@/lib/current-user";
 import { MANAGER_ROLES } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
-import { FileBrowser } from "./_components/file-browser";
-import { MicrosoftConnectBanner } from "./_components/microsoft-connect-banner";
+import { DocumentsShell } from "./_components/documents-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -15,5 +14,9 @@ export default async function DocumentsPage() {
     select: { msUserEmail: true, msUserName: true },
   });
 
-  return <FileBrowser isManager={isManager} connected={!!token} />;
+  return (
+    <div className="doc-page-wrap">
+      <DocumentsShell isManager={isManager} oneDriveConnected={!!token} />
+    </div>
+  );
 }

@@ -193,6 +193,7 @@ export const POST = withContext(async (req: NextRequest) => {
 
   // Try to send Clerk invitation (optional — failure does NOT block employee creation)
   let placeholderClerkId = `pending:${d.emailCompany}`;
+  let clerkInvitationId: string | null = null;
   try {
     if (inviter) {
       const protocol = req.headers.get("x-forwarded-proto") ?? "http";
@@ -206,6 +207,7 @@ export const POST = withContext(async (req: NextRequest) => {
         role: "org:member",
         redirectUrl,
       });
+      clerkInvitationId = invitation.id;
       placeholderClerkId = `pending:${invitation.id}`;
     }
   } catch (err) {
