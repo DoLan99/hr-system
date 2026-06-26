@@ -16,10 +16,13 @@ export const PATCH = withContext(async (req: NextRequest, { params }: { params: 
   if (!auth.ok) return auth.response;
 
   const isManager = MANAGER_ROLES.includes(auth.roleName);
-  if (!isManager) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Allow approver (who was designated) or managers
+  const leave = await prisma.leave.findFirst({ where: { id: Number(params.id) } });
+  const isDesignatedApprover = leave?.approverId === auth.actorId;
+  if (!isManager && !isDesignatedApprover) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const id = Number(params.id);
-  const existing = await prisma.leave.findFirst({ where: { id } });
+  const existing = leave ?? await prisma.leave.findFirst({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Không tìm thấy" }, { status: 404 });
 
   const body = await req.json();

@@ -14,27 +14,28 @@ const TYPE_OPTS = [
   { value: "SUPPORT",     label: "Support",     desc: "Duyệt upgrade, xem thông tin org" },
   { value: "FINANCE",     label: "Finance",     desc: "Xem báo cáo tài chính" },
 ];
-const TYPE_COLOR: Record<string, string> = { SUPER_ADMIN: "#6366f1", SUPPORT: "#22c55e", FINANCE: "#f59e0b" };
+const TYPE_COLOR: Record<string, string> = { SUPER_ADMIN: "var(--accent)", SUPPORT: "#22c55e", FINANCE: "#f59e0b" };
+const TYPE_BG: Record<string, string>    = { SUPER_ADMIN: "var(--accent-soft)", SUPPORT: "rgba(34,197,94,.12)", FINANCE: "rgba(245,158,11,.12)" };
 
 function fmt(d: string | null) {
   if (!d) return "Chưa đăng nhập";
   return new Date(d).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-const BLANK = { username: "", password: "", fullName: "", email: "", type: "SUPPORT" as const };
+type AdminUserType = "SUPER_ADMIN" | "SUPPORT" | "FINANCE";
+const BLANK = { username: "", password: "", fullName: "", email: "", type: "SUPPORT" as AdminUserType };
 
 export function AdminUsersClient({ initialUsers, currentId }: Props) {
   const [users, setUsers] = useState(initialUsers);
   const [showModal, setShowModal] = useState(false);
   const [editUser, setEditUser] = useState<AdminUser | null>(null);
-  const [form, setForm] = useState({ ...BLANK });
+  const [form, setForm] = useState<{ username: string; password: string; fullName: string; email: string; type: AdminUserType }>({ ...BLANK });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   function openCreate() { setEditUser(null); setForm({ ...BLANK }); setError(""); setShowModal(true); }
   function openEdit(u: AdminUser) {
-    setEditUser(u);
-    setForm({ username: u.username, password: "", fullName: u.fullName, email: u.email ?? "", type: u.type });
+    setEditUser(u); setForm({ username: u.username, password: "", fullName: u.fullName, email: u.email ?? "", type: u.type });
     setError(""); setShowModal(true);
   }
 
@@ -46,7 +47,6 @@ export function AdminUsersClient({ initialUsers, currentId }: Props) {
       const body: Record<string, unknown> = { fullName: form.fullName, email: form.email, type: form.type };
       if (!editUser) { body.username = form.username; body.password = form.password; }
       if (editUser && form.password) body.password = form.password;
-
       const url = editUser ? `/api/admin/users/${editUser.id}` : "/api/admin/users";
       const method = editUser ? "PUT" : "POST";
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -55,9 +55,7 @@ export function AdminUsersClient({ initialUsers, currentId }: Props) {
         const u = json.data;
         setUsers(prev => editUser ? prev.map(x => x.id === u.id ? u : x) : [u, ...prev]);
         setShowModal(false);
-      } else {
-        setError(typeof json.error === "string" ? json.error : JSON.stringify(json.error));
-      }
+      } else { setError(typeof json.error === "string" ? json.error : JSON.stringify(json.error)); }
     } finally { setSaving(false); }
   }
 
@@ -66,85 +64,63 @@ export function AdminUsersClient({ initialUsers, currentId }: Props) {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !u.isActive }),
     });
-    if (res.ok) {
-      const json = await res.json();
-      setUsers(prev => prev.map(x => x.id === u.id ? json.data : x));
-    }
+    if (res.ok) { const json = await res.json(); setUsers(prev => prev.map(x => x.id === u.id ? json.data : x)); }
   }
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: `
-        .au-table{width:100%;border-collapse:collapse}
-        .au-table th{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:rgba(180,200,255,.4);padding:8px 14px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)}
-        .au-table td{font-size:.86rem;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:middle;color:#e8eeff}
-        .au-table tr:last-child td{border-bottom:none}
-        .au-table tr:hover td{background:rgba(255,255,255,.03)}
-        .au-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px}
-        .au-scrim{position:absolute;inset:0;background:rgba(0,0,0,.7)}
-        .au-card{position:relative;z-index:1;background:#111827;border:1px solid rgba(255,255,255,.12);border-radius:16px;width:100%;max-width:440px;padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 25px 60px rgba(0,0,0,.7)}
-        .au-card h2{font-size:1rem;font-weight:800;color:#e8eeff;margin:0}
-        .au-sf{display:flex;flex-direction:column;gap:5px}
-        .au-sf label{font-size:.78rem;font-weight:600;color:rgba(180,200,255,.5)}
-        .au-sf input,.au-sf select{background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.12);border-radius:9px;padding:9px 12px;font-family:inherit;font-size:.88rem;color:#e8eeff;outline:none;width:100%;box-sizing:border-box}
-        .au-sf input:focus,.au-sf select:focus{border-color:rgba(99,130,255,.6)}
-        .au-sf select option{background:#111827}
-        .au-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-        .au-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)}
-        .au-btn{border:none;border-radius:9px;padding:8px 18px;font-family:inherit;font-size:.86rem;font-weight:700;cursor:pointer;transition:background .15s}
-        .au-btn.primary{background:#3B5BDB;color:#fff}
-        .au-btn.primary:hover{background:#4a6aec}
-        .au-btn.primary:disabled{background:rgba(59,91,219,.4);cursor:not-allowed}
-        .au-btn.ghost{background:rgba(255,255,255,.06);color:rgba(180,200,255,.7);border:1px solid rgba(255,255,255,.1)}
-        .au-btn.ghost:hover{background:rgba(255,255,255,.1)}
-        .au-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:9px 12px;font-size:.82rem;color:#f87171}
-      ` }} />
-
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#e8eeff", letterSpacing: "-.02em", margin: 0 }}>Admin Users</h1>
-          <p style={{ fontSize: ".84rem", color: "rgba(180,200,255,.4)", marginTop: 5 }}>Quản lý tài khoản truy cập system admin panel.</p>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text)", margin: 0 }}>Admin Users</h1>
+          <p style={{ fontSize: 13, color: "var(--text-3)", marginTop: 5 }}>Quản lý tài khoản truy cập system admin panel.</p>
         </div>
-        <button className="au-btn primary" onClick={openCreate}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" width={13} height={13} style={{ display: "inline", marginRight: 6 }}><path d="M12 5v14M5 12h14"/></svg>
+        <button onClick={openCreate} style={{
+          display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 16px",
+          background: "var(--accent)", color: "var(--accent-ink)", border: "none",
+          borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+        }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" width={14} height={14}><path d="M12 5v14M5 12h14"/></svg>
           Thêm admin
         </button>
       </div>
 
-      <div style={{ background: "#111827", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, overflow: "hidden" }}>
-        <table className="au-table">
+      {/* Table */}
+      <div style={{ background: "var(--elev)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
-            <tr>
-              <th>Tài khoản</th><th>Loại</th><th>Email</th><th>Đăng nhập lần cuối</th><th>Trạng thái</th><th>Thao tác</th>
+            <tr style={{ background: "var(--content)" }}>
+              {["Tài khoản","Loại","Email","Đăng nhập lần cuối","Trạng thái","Thao tác"].map(h => (
+                <th key={h} style={{ textAlign: "left", padding: "9px 16px", fontSize: 11, color: "var(--text-3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", borderBottom: "1px solid var(--border)" }}>{h}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {users.map(u => (
-              <tr key={u.id}>
-                <td>
-                  <div style={{ fontWeight: 700 }}>{u.fullName}</div>
-                  <div style={{ fontSize: ".76rem", color: "rgba(180,200,255,.4)", fontFamily: "monospace" }}>@{u.username}</div>
+              <tr key={u.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                <td style={{ padding: "12px 16px" }}>
+                  <div style={{ fontWeight: 700, color: "var(--text)" }}>{u.fullName}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "monospace" }}>@{u.username}</div>
                 </td>
-                <td>
-                  <span style={{ fontSize: ".74rem", fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: `${TYPE_COLOR[u.type]}22`, color: TYPE_COLOR[u.type] }}>
+                <td style={{ padding: "12px 16px" }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: TYPE_BG[u.type], color: TYPE_COLOR[u.type] }}>
                     {TYPE_OPTS.find(t => t.value === u.type)?.label}
                   </span>
                 </td>
-                <td style={{ color: "rgba(180,200,255,.6)", fontSize: ".84rem" }}>{u.email ?? "—"}</td>
-                <td style={{ fontSize: ".8rem", color: "rgba(180,200,255,.4)" }}>{fmt(u.lastLoginAt)}</td>
-                <td>
-                  <span style={{ fontSize: ".74rem", fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: u.isActive ? "rgba(34,197,94,.12)" : "rgba(239,68,68,.12)", color: u.isActive ? "#22c55e" : "#f87171" }}>
+                <td style={{ padding: "12px 16px", color: "var(--text-2)", fontSize: 13 }}>{u.email ?? "—"}</td>
+                <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--text-3)" }}>{fmt(u.lastLoginAt)}</td>
+                <td style={{ padding: "12px 16px" }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: u.isActive ? "rgba(34,197,94,.12)" : "rgba(239,68,68,.12)", color: u.isActive ? "#22c55e" : "#ef4444" }}>
                     {u.isActive ? "Hoạt động" : "Vô hiệu"}
                   </span>
                 </td>
-                <td>
+                <td style={{ padding: "12px 16px" }}>
                   <div style={{ display: "flex", gap: 6 }}>
-                    <button className="au-btn ghost" style={{ padding: "5px 12px", fontSize: ".78rem" }} onClick={() => openEdit(u)}>Sửa</button>
+                    <GhostBtn onClick={() => openEdit(u)}>Sửa</GhostBtn>
                     {u.id !== currentId && (
-                      <button className="au-btn ghost" style={{ padding: "5px 12px", fontSize: ".78rem", color: u.isActive ? "#f87171" : "#22c55e" }}
-                        onClick={() => toggleActive(u)}>
+                      <GhostBtn onClick={() => toggleActive(u)} danger={u.isActive}>
                         {u.isActive ? "Vô hiệu" : "Kích hoạt"}
-                      </button>
+                      </GhostBtn>
                     )}
                   </div>
                 </td>
@@ -156,27 +132,43 @@ export function AdminUsersClient({ initialUsers, currentId }: Props) {
 
       {/* Modal */}
       {showModal && (
-        <div className="au-modal">
-          <div className="au-scrim" onClick={() => setShowModal(false)} />
-          <div className="au-card">
-            <h2>{editUser ? `Sửa — ${editUser.username}` : "Thêm admin mới"}</h2>
-            <div className="au-grid">
-              {!editUser && <div className="au-sf"><label>Username *</label><input placeholder="vd: support1" value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value.toLowerCase() }))}/></div>}
-              <div className="au-sf"><label>Họ tên *</label><input placeholder="Nguyễn Văn A" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))}/></div>
+        <div style={{ position: "fixed", inset: 0, zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: "rgba(0,0,0,.6)", backdropFilter: "blur(4px)" }}
+          onClick={e => e.target === e.currentTarget && setShowModal(false)}>
+          <div style={{ background: "var(--elev)", border: "1px solid var(--border)", borderRadius: 16, width: "100%", maxWidth: 440, padding: 24, display: "flex", flexDirection: "column", gap: 14, boxShadow: "var(--shadow-lg)" }}>
+            <h2 style={{ fontSize: 15, fontWeight: 800, color: "var(--text)", margin: 0 }}>
+              {editUser ? `Sửa — ${editUser.username}` : "Thêm admin mới"}
+            </h2>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {!editUser && <FField label="Username *"><FInput placeholder="vd: support1" value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value.toLowerCase() }))}/></FField>}
+              <FField label="Họ tên *"><FInput placeholder="Nguyễn Văn A" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))}/></FField>
             </div>
-            <div className="au-sf"><label>Loại tài khoản</label>
-              <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as typeof form.type }))}>
+
+            <FField label="Loại tài khoản">
+              <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as typeof form.type }))} style={{ background: "var(--content)", border: "1.5px solid var(--border)", borderRadius: 9, padding: "9px 12px", fontFamily: "inherit", fontSize: 13, color: "var(--text)", outline: "none", width: "100%" }}>
                 {TYPE_OPTS.map(t => <option key={t.value} value={t.value}>{t.label} — {t.desc}</option>)}
               </select>
+            </FField>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <FField label={editUser ? "Mật khẩu mới (để trống = không đổi)" : "Mật khẩu *"}>
+                <FInput type="password" placeholder="Tối thiểu 8 ký tự" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))}/>
+              </FField>
+              <FField label="Email">
+                <FInput type="email" placeholder="admin@jobihome.vn" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}/>
+              </FField>
             </div>
-            <div className="au-grid">
-              <div className="au-sf"><label>{editUser ? "Mật khẩu mới (để trống = không đổi)" : "Mật khẩu *"}</label><input type="password" placeholder="Tối thiểu 8 ký tự" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))}/></div>
-              <div className="au-sf"><label>Email</label><input type="email" placeholder="admin@jobihome.vn" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}/></div>
-            </div>
-            {error && <div className="au-err">{error}</div>}
-            <div className="au-foot">
-              <button className="au-btn ghost" onClick={() => setShowModal(false)}>Hủy</button>
-              <button className="au-btn primary" disabled={saving} onClick={handleSave}>
+
+            {error && <div style={{ background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.25)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "#ef4444" }}>{error}</div>}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
+              <GhostBtn onClick={() => setShowModal(false)}>Hủy</GhostBtn>
+              <button onClick={handleSave} disabled={saving} style={{
+                height: 36, padding: "0 18px", borderRadius: 9, border: "none",
+                background: "var(--accent)", color: "var(--accent-ink)",
+                fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer",
+                fontFamily: "inherit", opacity: saving ? .5 : 1,
+              }}>
                 {saving ? "Đang lưu…" : editUser ? "Cập nhật" : "Tạo tài khoản"}
               </button>
             </div>
@@ -184,5 +176,27 @@ export function AdminUsersClient({ initialUsers, currentId }: Props) {
         </div>
       )}
     </>
+  );
+}
+
+function FField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-3)" }}>{label}</label>
+      {children}
+    </div>
+  );
+}
+function FInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...props} style={{ background: "var(--content)", border: "1.5px solid var(--border)", borderRadius: 9, padding: "9px 12px", fontFamily: "inherit", fontSize: 13, color: "var(--text)", outline: "none", width: "100%", boxSizing: "border-box" as const }} />;
+}
+function GhostBtn({ onClick, children, danger }: { onClick: () => void; children: React.ReactNode; danger?: boolean }) {
+  return (
+    <button onClick={onClick} style={{
+      height: 30, padding: "0 12px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+      cursor: "pointer", fontFamily: "inherit",
+      background: "transparent", border: "1px solid var(--border)",
+      color: danger ? "#ef4444" : "var(--text-2)", transition: "all .15s",
+    }}>{children}</button>
   );
 }

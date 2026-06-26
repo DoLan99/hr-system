@@ -236,6 +236,7 @@ model Employee {
   inventoryAssignments        InventoryAssignment[]
   inventoryTransactions       InventoryTransaction[]
   approvedLeaves              Leave[]                @relation("LeaveApprover")
+  approverLeaves              Leave[]                @relation("LeaveApprover2")
   leaves                      Leave[]
   messageAuditLogs            MessageAuditLog[]      @relation("MessageAuditActor")
   messages                    Message[]
@@ -524,6 +525,8 @@ model OfficeTime {
   actualWorked        Int?
   delta               Int?
   explanation         String?
+  attendanceStatus    String?
+  isManualTime        Boolean        @default(false)
   approvalStatus      ApprovalStatus @default(PENDING)
   approvedById        Int?
   approvedDelta       Int?
@@ -834,16 +837,19 @@ model Leave {
   date           DateTime
   employeeId     Int
   type           LeaveType
+  shiftType      ShiftType      @default(FULL_DAY)
   requestedHours Decimal        @db.Decimal(5, 2)
   reason         String?
   evidenceLink   String?
   status         ApprovalStatus @default(PENDING)
+  approverId     Int?
   approvedHours  Decimal?       @db.Decimal(5, 2)
   approvalNote   String?
   approvedById   Int?
   approvedAt     DateTime?
   money          Decimal?       @db.Decimal(10, 2)
   createdAt      DateTime       @default(now())
+  approver       Employee?      @relation("LeaveApprover2", fields: [approverId], references: [id])
   approvedBy     Employee?      @relation("LeaveApprover", fields: [approvedById], references: [id])
   employee       Employee       @relation(fields: [employeeId], references: [id])
   organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -1668,10 +1674,30 @@ enum PaymentType {
 }
 
 enum LeaveType {
+  PAID_LEAVE
+  UNPAID_LEAVE
+  INSURANCE_LEAVE
+  SICK_LEAVE_PAID
+  PERSONAL_TIME_PAID
+  HALF_DAY_PAID
+  HALF_DAY_UNPAID
+  COMPENSATORY_LEAVE
+  SPECIAL_LEAVE
+  OUT_OF_OFFICE_WORK
+  RESIGNATION
+  MATERNITY_LEAVE
+  CHILD_CARE_LEAVE
+  // Legacy values kept for backward compatibility
   VACATION
   HOLIDAY
   ILLNESS
   OTHER
+}
+
+enum ShiftType {
+  FULL_DAY
+  MORNING
+  AFTERNOON
 }
 
 enum MessageChannel {

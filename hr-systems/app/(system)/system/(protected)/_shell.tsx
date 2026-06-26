@@ -12,6 +12,12 @@ interface Props {
 const TYPE_LABEL: Record<string, string> = { SUPER_ADMIN: "Super Admin", SUPPORT: "Support", FINANCE: "Finance" };
 
 const NAV = [
+  { href: "/system", exact: true, label: "Tổng quan", icon: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" width={16} height={16}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+  )},
+  { href: "/system/workspaces", label: "Workspaces", icon: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" width={16} height={16}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+  )},
   { href: "/system/upgrade-requests", label: "Upgrade Requests", icon: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" width={16} height={16}><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg>
   )},
@@ -35,54 +41,60 @@ export function SystemShell({ user, children }: Props) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", background: "#0a0f1e", fontFamily: "system-ui, sans-serif" }}>
+    <div style={{ minHeight: "100vh", display: "flex", background: "var(--content)", fontFamily: "inherit" }}>
       {/* Sidebar */}
       <aside style={{
-        width: 220, flexShrink: 0, background: "#111827",
-        borderRight: "1px solid rgba(255,255,255,.08)", display: "flex", flexDirection: "column",
+        width: 220, flexShrink: 0,
+        background: "var(--elev)",
+        borderRight: "1px solid var(--border)",
+        display: "flex", flexDirection: "column",
         position: "sticky", top: 0, height: "100vh",
       }}>
-        <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 9, background: "rgba(59,91,219,.25)",
-              border: "1px solid rgba(59,91,219,.4)", display: "grid", placeItems: "center", flexShrink: 0,
-            }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#6582ff" strokeWidth={2} strokeLinecap="round" width={16} height={16}>
-                <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/>
-              </svg>
-            </div>
-            <div>
-              <div style={{ fontSize: ".82rem", fontWeight: 800, color: "#e8eeff" }}>System Admin</div>
-              <div style={{ fontSize: ".7rem", color: "rgba(180,200,255,.4)" }}>jobihome.vn</div>
-            </div>
+        {/* Logo */}
+        <div style={{ padding: "18px 16px 14px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 9,
+            background: "rgba(59,91,219,.15)", border: "1px solid rgba(59,91,219,.3)",
+            display: "grid", placeItems: "center", flexShrink: 0,
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinecap="round" width={16} height={16}>
+              <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/>
+            </svg>
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text)" }}>System Admin</div>
+            <div style={{ fontSize: 11, color: "var(--text-3)" }}>jobihome.vn</div>
           </div>
         </div>
 
-        <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
+        {/* Nav */}
+        <nav style={{ flex: 1, padding: "10px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
           {NAV.filter(n => !n.superOnly || user.type === "SUPER_ADMIN").map(n => {
-            const active = pathname.startsWith(n.href);
+            const active = n.exact ? pathname === n.href : pathname.startsWith(n.href);
             return (
               <Link key={n.href} href={n.href} style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "9px 10px",
-                borderRadius: 9, textDecoration: "none", fontSize: ".86rem", fontWeight: active ? 700 : 500,
-                color: active ? "#e8eeff" : "rgba(180,200,255,.55)",
-                background: active ? "rgba(59,91,219,.2)" : "transparent",
+                borderRadius: 9, textDecoration: "none", fontSize: 13,
+                fontWeight: active ? 700 : 500,
+                color: active ? "var(--text)" : "var(--text-2)",
+                background: active ? "var(--accent-soft)" : "transparent",
                 transition: "all .15s",
               }}>
-                {n.icon}{n.label}
+                <span style={{ color: active ? "var(--accent)" : "var(--text-3)" }}>{n.icon}</span>
+                {n.label}
               </Link>
             );
           })}
         </nav>
 
-        <div style={{ padding: "12px 12px 16px", borderTop: "1px solid rgba(255,255,255,.08)" }}>
-          <div style={{ fontSize: ".8rem", fontWeight: 600, color: "#e8eeff", marginBottom: 2 }}>{user.fullName}</div>
-          <div style={{ fontSize: ".72rem", color: "rgba(180,200,255,.4)", marginBottom: 10 }}>{TYPE_LABEL[user.type] ?? user.type}</div>
+        {/* User + logout */}
+        <div style={{ padding: "12px 12px 16px", borderTop: "1px solid var(--border)" }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 1 }}>{user.fullName}</div>
+          <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 10 }}>{TYPE_LABEL[user.type] ?? user.type}</div>
           <button onClick={logout} disabled={loggingOut} style={{
-            width: "100%", background: "rgba(239,68,68,.12)", border: "1px solid rgba(239,68,68,.2)",
-            borderRadius: 8, padding: "7px 0", fontSize: ".8rem", color: "#f87171",
-            cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+            width: "100%", background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.2)",
+            borderRadius: 8, padding: "7px 0", fontSize: 12, color: "#ef4444",
+            cursor: "pointer", fontFamily: "inherit", fontWeight: 600, transition: "background .15s",
           }}>
             {loggingOut ? "…" : "Đăng xuất"}
           </button>
@@ -90,7 +102,7 @@ export function SystemShell({ user, children }: Props) {
       </aside>
 
       {/* Main */}
-      <main style={{ flex: 1, padding: 28, overflowY: "auto", color: "#e8eeff" }}>
+      <main style={{ flex: 1, padding: "28px 32px", overflowY: "auto", color: "var(--text)" }}>
         {children}
       </main>
     </div>

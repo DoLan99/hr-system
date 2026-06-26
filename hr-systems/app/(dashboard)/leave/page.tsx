@@ -57,8 +57,9 @@ export default async function LeavePage({
     prisma.leave.findMany({
       where: whereViewWithStatus,
       include: {
-        employee: { select: { id: true, fullName: true, department: true } },
+        employee: { select: { id: true, fullName: true, department: true, avatarUrl: true } },
         approvedBy: { select: { id: true, fullName: true } },
+        approver: { select: { id: true, fullName: true } },
       },
       orderBy: { createdAt: "desc" },
       skip: (viewedPage - 1) * PAGE_SIZE,
@@ -85,6 +86,7 @@ export default async function LeavePage({
       where: whereToday,
       include: {
         employee: { select: { id: true, fullName: true, department: true } },
+        approver: { select: { id: true, fullName: true } },
       },
     }),
   ]);

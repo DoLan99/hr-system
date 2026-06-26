@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "./prisma";
 import { getActorId, getOrgId } from "./request-context";
 
-export const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
+export const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD", "HR"];
 export const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"];
 
 export type RequireResult =

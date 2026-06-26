@@ -2,767 +2,485 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useCurrentUser } from "@/lib/contexts/current-user-context";
-import { format, addMonths, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { vi as viLocale } from "date-fns/locale";
 
 const MANAGER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "TEAM_LEAD"];
-const WORK_START_HOUR = 9; // 09:00
 
-interface TimeLogEntry {
-  id: number;
-  code: string;
-  taskTitle: string;
-  startTime: string | null;
-  endTime: string | null;
-  durationMinutes: number;
-  note: string | null;
+type AttCode = "X" | "X/2" | "P" | "P/2" | "L" | "L/2" | "CĐ" | "CĐ/2" | "TS" | "TS/2"
+  | "U" | "U/2" | "XP" | "XU" | "PU" | "CĐU" | "--";
+
+interface GridDay {
+  date: string; dow: number; isWorkDay: boolean; isWeekend: boolean;
+  isSaturday: boolean; isFuture: boolean; code: AttCode;
+  workUnit: number; leaveUnit: number;
+  checkIn: string | null; checkOut: string | null;
+  explanation: string | null; isManualTime: boolean;
+  leaveType: string | null; leaveShift: string | null;
 }
 
-interface OfficeRecord {
-  id: number;
-  date: string | Date;
-  employeeId: number;
-  startWork1: string | null;
-  startLunch: string | null;
-  startWork2: string | null;
-  startAfternoonBreak: string | null;
-  startWork3: string | null;
-  endWorkday: string | null;
-  timeLogsTotal: number;
-  actualWorked: number | null;
-  delta: number | null;
-  explanation: string | null;
-  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
-  approvedBy: { fullName: string } | null;
-  approvedAt: string | null;
-  timeLogs?: TimeLogEntry[];
+interface AttSummary {
+  standardDays: number; actualDays: number; payrollDays: number;
+  paidLeaveDays: number; unpaidLeaveDays: number; holidayDays: number;
+  specialLeaveDays: number; maternityDays: number; lateCount: number;
+}
+
+interface Period { start: string; end: string; month: number; year: number; }
+
+interface Employee { id: number; fullName: string; department: string | null; avatarUrl?: string | null; }
+
+interface EmployeeInfo {
+  employeeCode: string;
+  fullName: string;
+  department: string;
+  position: string;
+  startDate: string;
+  status: string;
 }
 
 interface Props {
-  initialRecords: OfficeRecord[];
-  initialMonth: number;
-  initialYear: number;
-  employeeId: number;
-  employees?: { id: number; fullName: string; department: string | null; avatarUrl?: string | null }[];
-  viewingName?: string | null;
+  initialGrid: GridDay[]; initialSummary: AttSummary; initialPeriod: Period;
+  initialMonth: number; initialYear: number; employeeId: number;
+  employees?: Employee[]; viewingName?: string | null;
+  employeeInfo?: EmployeeInfo | null;
 }
+
+const CODE_COLOR: Record<string, string> = {
+  "X": "#16a34a", "X/2": "#16a34a",
+  "P": "#4338ca", "P/2": "#4338ca",
+  "L": "#7c3aed", "L/2": "#7c3aed",
+  "CĐ": "#ea580c", "CĐ/2": "#ea580c",
+  "TS": "#db2777", "TS/2": "#db2777",
+  "U": "#374151", "U/2": "#374151",
+  "XP": "#4338ca", "XU": "#374151",
+  "PU": "#7c3aed", "CĐU": "#991b1b",
+};
+
+const CODE_LABEL: Record<string, string> = {
+  "X": "Đi làm", "X/2": "Nửa ngày làm",
+  "P": "Nghỉ phép", "P/2": "Phép nửa ngày",
+  "L": "Nghỉ lễ", "L/2": "Lễ nửa ngày",
+  "CĐ": "Nghỉ chế độ", "CĐ/2": "Chế độ nửa ngày",
+  "TS": "Thai sản", "TS/2": "Thai sản nửa ngày",
+  "U": "NKL/Nghỉ BH cả ngày", "U/2": "NKL nửa ngày",
+  "XP": "Làm + Nghỉ phép", "XU": "Làm + Không lương",
+  "PU": "Phép + Không lương", "CĐU": "Chế độ + Không lương",
+  "--": "Không làm việc",
+};
+
+const COL_HEADERS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"];
 
 function fmtTime(d: string | null | undefined): string {
-  if (!d) return "—";
-  try { return format(new Date(d), "HH:mm"); } catch { return "—"; }
+  if (!d) return "";
+  try { return format(new Date(d), "HH:mm"); } catch { return ""; }
 }
 
-function fmtMins(m: number | null | undefined): string {
-  if (!m && m !== 0) return "—";
-  const h = Math.floor(m / 60);
-  const min = m % 60;
-  return h + "h" + (min ? " " + min + "ph" : "");
+function totalHours(ci: string | null, co: string | null): string {
+  if (!ci || !co) return "0h";
+  try {
+    const diff = (new Date(co).getTime() - new Date(ci).getTime()) / 3600000;
+    if (diff <= 0) return "0h";
+    return diff % 1 === 0 ? `${diff}h` : `${diff.toFixed(1)}h`;
+  } catch { return "0h"; }
 }
 
-function initials(name: string) {
-  return name.split(" ").map(w => w[0]).slice(-2).join("").toUpperCase();
-}
-
-function lateMinutes(startWork1: string | null): number {
-  if (!startWork1) return 0;
-  const d = new Date(startWork1);
-  const minutes = d.getHours() * 60 + d.getMinutes();
-  const workStart = WORK_START_HOUR * 60;
-  return Math.max(0, minutes - workStart);
+function fmtNum(n: number): string {
+  return n % 1 === 0 ? String(n) : n.toFixed(1);
 }
 
 export function OfficeTimeClient({
-  initialRecords, initialMonth, initialYear, employeeId, employees = [], viewingName,
+  initialGrid, initialSummary, initialPeriod,
+  initialMonth, initialYear, employeeId, employees = [], viewingName, employeeInfo,
 }: Props) {
   const user = useCurrentUser();
   const isManager = MANAGER_ROLES.includes(user.role.name);
 
-  const [viewDate, setViewDate] = useState(new Date(initialYear, initialMonth - 1));
-  const [records, setRecords] = useState<OfficeRecord[]>(initialRecords);
-  const [targetEmpId, setTargetEmpId] = useState(employeeId);
-  const [loading, setLoading] = useState<string | null>(null);
+  const [month, setMonth] = useState(initialMonth);
+  const [year, setYear] = useState(initialYear);
+  const [empId, setEmpId] = useState(employeeId);
+  const [grid, setGrid] = useState(initialGrid);
+  const [summary, setSummary] = useState(initialSummary);
+  const [period, setPeriod] = useState(initialPeriod);
+  const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState<GridDay | null>(null);
 
-  // Filters
-  const [selStatus, setSelStatus] = useState<"all" | "pending" | "approved">("all");
-
-  // Detail Drawer
-  const [drawerRecord, setDrawerRecord] = useState<OfficeRecord | null>(null);
-  const [drawerLogs, setDrawerLogs] = useState<TimeLogEntry[]>([]);
-  const [drawerLoading, setDrawerLoading] = useState(false);
-
-  // Approve/Reject modal
-  const [actionModal, setActionModal] = useState<{ recordId: number; action: "approve" | "reject" } | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
-  const [actionLoading, setActionLoading] = useState(false);
-
-  // Add/Edit record modal
-  const [createModal, setCreateModal] = useState<{ record?: OfficeRecord } | null>(null);
-  const [createForm, setCreateForm] = useState({ who: String(targetEmpId), date: format(new Date(), "yyyy-MM-dd"), checkIn: "08:30", checkOut: "", note: "" });
-  const [createLoading, setCreateLoading] = useState(false);
-
-  // Edit inline (for edit modal)
-  const [editForm, setEditForm] = useState<Record<string, string>>({});
-  const [explanation, setExplanation] = useState("");
-
-  // Today panel — only relevant when viewing self in current month
-  const todayStr = format(new Date(), "yyyy-MM-dd");
-  const isCurrentMonth = viewDate.getMonth() === new Date().getMonth() && viewDate.getFullYear() === new Date().getFullYear();
-  const isSelfView = targetEmpId === employeeId;
-  const todayRecord = useMemo(
-    () => records.find(r => format(new Date(r.date), "yyyy-MM-dd") === todayStr),
-    [records, todayStr]
-  );
-  const [clockLoading, setClockLoading] = useState<string | null>(null);
-
-  async function punch(checkpoint: "startWork1" | "startLunch" | "startWork2" | "endWorkday") {
-    if (clockLoading) return;
-    setClockLoading(checkpoint);
+  const fetchData = useCallback(async (m: number, y: number, eid: number) => {
+    setLoading(true);
+    setModal(null);
     try {
-      const res = await fetch("/api/office-time", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: todayStr, checkpoint }),
-      });
+      const p = new URLSearchParams({ month: String(m), year: String(y), employeeId: String(eid) });
+      const res = await fetch(`/api/office-time?${p}`);
       const json = await res.json();
-      if (json.data) {
-        setRecords(prev => {
-          const idx = prev.findIndex(r => format(new Date(r.date), "yyyy-MM-dd") === todayStr);
-          if (idx >= 0) { const n = [...prev]; n[idx] = json.data; return n; }
-          return [json.data, ...prev];
-        });
-      }
-    } finally { setClockLoading(null); }
-  }
-
-  const fetchRecords = useCallback(async (date: Date, empId: number) => {
-    setLoading("fetch");
-    try {
-      const m = date.getMonth() + 1;
-      const y = date.getFullYear();
-      const res = await fetch(`/api/office-time?month=${m}&year=${y}&employeeId=${empId}`);
-      const json = await res.json();
-      setRecords(json.data ?? []);
-    } finally { setLoading(null); }
+      setGrid(json.grid ?? []);
+      setSummary(json.summary ?? initialSummary);
+      setPeriod(json.period ?? initialPeriod);
+    } finally { setLoading(false); }
   }, []);
 
-  function navigateMonth(dir: 1 | -1) {
-    const next = dir === 1 ? addMonths(viewDate, 1) : subMonths(viewDate, 1);
-    setViewDate(next);
-    fetchRecords(next, targetEmpId);
+  function changeMonth(delta: number) {
+    let m = month + delta, y = year;
+    if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
+    setMonth(m); setYear(y);
+    fetchData(m, y, empId);
   }
 
-  function switchEmployee(empId: number) {
-    setTargetEmpId(empId);
-    fetchRecords(viewDate, empId);
-  }
+  const weeks = useMemo(() => {
+    const ws: GridDay[][] = [];
+    let week: GridDay[] = [];
+    for (const day of grid) {
+      week.push(day);
+      if (day.dow === 0) { ws.push(week); week = []; }
+    }
+    if (week.length > 0) ws.push(week);
+    return ws;
+  }, [grid]);
 
-  async function openDrawer(record: OfficeRecord) {
-    setDrawerRecord(record);
-    setDrawerLogs([]);
-    setDrawerLoading(true);
-    try {
-      const dateStr = format(new Date(record.date), "yyyy-MM-dd");
-      const res = await fetch(`/api/office-time/${record.id}?includeLogs=true`);
-      if (res.ok) {
-        const json = await res.json();
-        setDrawerLogs(json.data?.timeLogs ?? []);
-      }
-    } catch { /* ignore */ } finally { setDrawerLoading(false); }
-  }
+  const todayStr = format(new Date(), "yyyy-MM-dd");
 
-  function closeDrawer() { setDrawerRecord(null); setDrawerLogs([]); }
+  // Modal day label (e.g. "02/07/2026 (Thứ Năm)")
+  const modalTitle = modal
+    ? format(new Date(modal.date + "T12:00:00"), "dd/MM/yyyy (EEEE)", { locale: viLocale })
+    : "";
 
-  async function doApprove() {
-    if (!actionModal) return;
-    if (actionModal.action === "reject" && !rejectReason.trim()) return;
-    setActionLoading(true);
-    try {
-      const res = await fetch(`/api/office-time/${actionModal.recordId}/approve`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: actionModal.action === "approve" ? "APPROVED" : "REJECTED", reason: rejectReason || undefined }),
-      });
-      const json = await res.json();
-      if (json.data) {
-        setRecords(prev => prev.map(r => r.id === actionModal.recordId ? json.data : r));
-        if (drawerRecord?.id === actionModal.recordId) setDrawerRecord(json.data);
-      }
-      setActionModal(null);
-      setRejectReason("");
-    } finally { setActionLoading(false); }
-  }
-
-  async function doCreateRecord() {
-    setCreateLoading(true);
-    try {
-      const isEdit = !!createModal?.record;
-      const body = {
-        employeeId: Number(createForm.who),
-        date: createForm.date,
-        startWork1: createForm.checkIn ? `${createForm.date}T${createForm.checkIn}:00` : undefined,
-        endWorkday: createForm.checkOut ? `${createForm.date}T${createForm.checkOut}:00` : undefined,
-        explanation: createForm.note || undefined,
-      };
-      const url = isEdit ? `/api/office-time/${createModal!.record!.id}` : "/api/office-time";
-      const res = await fetch(url, { method: isEdit ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const json = await res.json();
-      if (json.data) {
-        setRecords(prev => {
-          const idx = prev.findIndex(r => r.id === json.data.id);
-          if (idx >= 0) { const n = [...prev]; n[idx] = json.data; return n; }
-          return [json.data, ...prev];
-        });
-      }
-      setCreateModal(null);
-    } finally { setCreateLoading(false); }
-  }
-
-  // Stats
-  const stats = useMemo(() => {
-    const withData = records.filter(r => r.startWork1);
-    const approved = withData.filter(r => r.approvalStatus === "APPROVED");
-    const pending = withData.filter(r => r.approvalStatus === "PENDING");
-    const late = withData.filter(r => lateMinutes(r.startWork1) > 0);
-    const totalMins = approved.reduce((s, r) => s + (r.actualWorked ?? 0), 0);
-    const avgMins = approved.length ? Math.round(totalMins / approved.length) : 0;
-    const onTimeRate = approved.length ? Math.round((approved.filter(r => !lateMinutes(r.startWork1)).length / approved.length) * 100) : 0;
-    return { workDays: approved.length, onTimeRate, lateCount: late.length, avgMins, pending: pending.length };
-  }, [records]);
-
-  // Filtered records for table
-  const filtered = useMemo(() => {
-    let rows = records.filter(r => r.startWork1); // only rows with data
-    if (selStatus === "pending") rows = rows.filter(r => r.approvalStatus === "PENDING");
-    if (selStatus === "approved") rows = rows.filter(r => r.approvalStatus === "APPROVED");
-    return rows.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [records, selStatus]);
-
-  const monthLabel = format(viewDate, "MMMM yyyy", { locale: viLocale });
-  const viewingEmp = employees.find(e => e.id === targetEmpId);
-
-  function statusChip(status: OfficeRecord["approvalStatus"], startWork1: string | null) {
-    if (!startWork1) return <span className="ot-status draft">— Nháp</span>;
-    if (status === "APPROVED") return <span className="ot-status approved">✓ Đã duyệt</span>;
-    if (status === "REJECTED") return <span className="ot-status rejected">✗ Từ chối</span>;
-    return <span className="ot-status pending">● Chờ duyệt</span>;
-  }
+  const emp = employeeInfo;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .ot-layout { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
+        @media (max-width: 1100px) { .ot-layout { grid-template-columns: 1fr; } }
 
-      {/* ── Page Header ── */}
-      <div className="page-head" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 0 }}>
+        .ot-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
+
+        .ot-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 12px; }
+        .ot-month-nav { display: flex; align-items: center; gap: 4px; }
+        .ot-nav-btn { width: 28px; height: 28px; border: none; background: transparent; border-radius: 7px; cursor: pointer; display: grid; place-items: center; color: #6b7280; transition: background .12s; }
+        .ot-nav-btn:hover { background: #f3f4f6; color: #111827; }
+        .ot-month-lbl { font-size: .92rem; font-weight: 700; color: #111827; min-width: 130px; text-align: center; font-variant-numeric: tabular-nums; }
+        .ot-period-lbl { font-size: .74rem; color: #9ca3af; font-variant-numeric: tabular-nums; }
+
+        .ot-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .ot-table th { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #9ca3af; padding: 8px 0; text-align: center; border-bottom: 1px solid #f3f4f6; }
+        .ot-table th.wk { background: #f5f7ff; color: #b0bef5; }
+        .ot-table td { padding: 0; }
+        .ot-table td.wk { background: #f5f7ff; }
+
+        .ot-cell { position: relative; padding: 10px 10px 8px; min-height: 82px; display: flex; flex-direction: column; align-items: flex-start; cursor: pointer; transition: background .12s; border: 1.5px solid transparent; margin: 2px; border-radius: 10px; }
+        .ot-cell:hover { background: #f0f4ff; }
+        .ot-cell.off { cursor: default; }
+        .ot-cell.off:hover { background: transparent; }
+        .ot-cell.today .ot-dnum { color: #2563eb; font-weight: 800; }
+        .ot-dnum { font-size: .72rem; font-weight: 500; color: #9ca3af; line-height: 1; font-variant-numeric: tabular-nums; }
+        .ot-code-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 5px; }
+        .ot-code { font-size: 1.05rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+        .ot-time { font-size: .63rem; color: #9ca3af; font-variant-numeric: tabular-nums; text-align: center; line-height: 1; }
+        .ot-manual-dot { position: absolute; top: 7px; right: 7px; width: 5px; height: 5px; border-radius: 50%; background: #f59e0b; }
+
+        /* Sidebar stats */
+        .ot-sb-head { padding: 14px 18px 12px; border-bottom: 1px solid #f3f4f6; }
+        .ot-sb-head h3 { margin: 0; font-size: .88rem; font-weight: 700; color: #111827; }
+        .ot-sb-top { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 18px; border-bottom: 1px solid #f3f4f6; }
+        .ot-kpi { background: #eff6ff; border-radius: 10px; padding: 10px 12px; }
+        .ot-kpi-lbl { font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #2563eb; margin-bottom: 4px; }
+        .ot-kpi-val { font-size: 1.45rem; font-weight: 800; color: #1d4ed8; font-variant-numeric: tabular-nums; line-height: 1; }
+        .ot-sb-section { padding: 10px 18px 2px; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #9ca3af; }
+        .ot-rows { padding: 0 18px 12px; }
+        .ot-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f9fafb; font-size: .8rem; }
+        .ot-row:last-child { border-bottom: none; }
+        .ot-row-lbl { color: #6b7280; }
+        .ot-row-val { font-variant-numeric: tabular-nums; font-weight: 700; color: #111827; }
+        .ot-row-val.dim { color: #d1d5db; font-weight: 400; }
+        .ot-row-val.warn { color: #d97706; }
+
+        /* Modal */
+        .ot-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .ot-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.18); }
+        .ot-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px 16px; border-bottom: 1px solid #f3f4f6; }
+        .ot-modal-head h2 { margin: 0; font-size: .96rem; font-weight: 700; color: #111827; }
+        .ot-modal-close { width: 30px; height: 30px; border: none; background: #f3f4f6; border-radius: 8px; cursor: pointer; display: grid; place-items: center; color: #6b7280; font-size: 1rem; transition: background .12s; flex-shrink: 0; }
+        .ot-modal-close:hover { background: #e5e7eb; color: #111827; }
+        .ot-modal-body { padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 0; }
+
+        /* Modal info grid */
+        .ot-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+        .ot-info-row { display: flex; align-items: baseline; gap: 6px; padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: .82rem; }
+        .ot-info-row.full { grid-column: 1 / -1; }
+        .ot-info-row:last-child { border-bottom: none; }
+        .ot-info-lbl { color: #6b7280; white-space: nowrap; flex-shrink: 0; }
+        .ot-info-val { font-weight: 700; color: #111827; }
+        .ot-info-val.accent { color: #16a34a; }
+
+        /* Attendance row in modal */
+        .ot-att-row { display: flex; align-items: center; gap: 24px; padding: 12px 0; border-bottom: 1px solid #f3f4f6; font-size: .82rem; }
+        .ot-att-item { display: flex; flex-direction: column; gap: 2px; }
+        .ot-att-lbl { font-size: .68rem; color: #9ca3af; font-weight: 500; }
+        .ot-att-val { font-weight: 700; color: #111827; font-variant-numeric: tabular-nums; }
+        .ot-att-val.red { color: #dc2626; }
+        .ot-att-val.blue { color: #2563eb; }
+
+        /* Code badge in modal */
+        .ot-code-badge { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 8px; border-radius: 8px; font-size: .84rem; font-weight: 700; }
+        .ot-code-badge span { width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; font-size: .82rem; font-weight: 800; background: rgba(255,255,255,.5); }
+
+        /* Topbar */
+        .ot-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+        .ot-emp-sel { height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; font-family: inherit; font-size: .82rem; color: #374151; outline: none; cursor: pointer; }
+        .ot-emp-sel:focus { border-color: #93c5fd; }
+        .spin { animation: ot-spin .7s linear infinite; }
+        @keyframes ot-spin { to { transform: rotate(360deg); } }
+      ` }} />
+
+      {/* Top bar */}
+      <div className="ot-topbar">
         <div>
-          <h1>Office Time</h1>
-          <p>Chấm công <b>{monthLabel}</b> · <b>{stats.pending}</b> bản ghi chờ duyệt</p>
+          <h1 style={{ margin: 0, fontSize: "1.08rem", fontWeight: 700 }}>Chấm công</h1>
+          {viewingName && <p style={{ margin: "2px 0 0", fontSize: ".78rem", color: "#9ca3af" }}>Xem: {viewingName}</p>}
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="abtn ghost">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Xuất Excel
-          </button>
-          {isManager && (
-            <button className="abtn primary" onClick={() => { setCreateForm({ who: String(targetEmpId), date: format(new Date(), "yyyy-MM-dd"), checkIn: "08:30", checkOut: "", note: "" }); setCreateModal({}); }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" style={{ width: 15, height: 15 }}><path d="M12 5v14M5 12h14"/></svg>
-              Thêm bản ghi
-            </button>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {isManager && employees.length > 0 && (
+            <select className="ot-emp-sel" value={empId} onChange={e => { const id = Number(e.target.value); setEmpId(id); fetchData(month, year, id); }}>
+              {employees.map(e => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+            </select>
+          )}
+          {loading && (
+            <svg className="spin" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" width="16" height="16">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
           )}
         </div>
       </div>
 
-      {/* ── KPI Cards ── */}
-      <div className="kpis">
-        <div className="kpi">
-          <div className="kt"><span className="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round"/></svg></span>Ngày đi làm</div>
-          <div className="kv">{stats.workDays}</div>
-          <div className="kc flat">tháng {format(viewDate, "M/yyyy")}</div>
+      <div className="ot-layout">
+        {/* Calendar */}
+        <div className="ot-card">
+          <div className="ot-head">
+            <div className="ot-month-nav">
+              <button type="button" className="ot-nav-btn" onClick={() => changeMonth(-1)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" width="14" height="14"><path d="M15 18l-6-6 6-6" /></svg>
+              </button>
+              <span className="ot-month-lbl">Tháng {String(month).padStart(2, "0")}/{year}</span>
+              <button type="button" className="ot-nav-btn" onClick={() => changeMonth(1)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" width="14" height="14"><path d="M9 6l6 6-6 6" /></svg>
+              </button>
+            </div>
+            <span className="ot-period-lbl">
+              {format(new Date(period.start + "T12:00:00"), "dd/MM/yyyy")} – {format(new Date(period.end + "T12:00:00"), "dd/MM/yyyy")}
+            </span>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table className="ot-table">
+              <thead>
+                <tr>
+                  {COL_HEADERS.map((h, i) => (
+                    <th key={h} className={i >= 5 ? "wk" : ""}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {weeks.map((week, wi) => (
+                  <tr key={wi}>
+                    {wi === 0 && Array.from({ length: (week[0].dow + 6) % 7 }).map((_, i) => (
+                      <td key={`e${i}`} className={i >= 5 ? "wk" : ""} />
+                    ))}
+                    {week.map(day => {
+                      const isOff = day.isWeekend || day.isSaturday;
+                      const isToday = day.date === todayStr;
+                      const color = CODE_COLOR[day.code] ?? "#374151";
+                      const ci = fmtTime(day.checkIn);
+                      const co = fmtTime(day.checkOut);
+                      return (
+                        <td key={day.date} className={isOff ? "wk" : ""}>
+                          <div
+                            className={["ot-cell", isOff ? "off" : "", isToday ? "today" : ""].filter(Boolean).join(" ")}
+                            onClick={() => { if (!isOff) setModal(day); }}
+                          >
+                            {day.isManualTime && <span className="ot-manual-dot" title="Giờ chỉnh tay" />}
+                            <span className="ot-dnum">{day.date.slice(8)}</span>
+                            <div className="ot-code-wrap">
+                              {isOff ? (
+                                <span className="ot-code" style={{ color: "#d1d5db", fontSize: ".82rem", fontWeight: 400 }}>--</span>
+                              ) : (
+                                <>
+                                  <span className="ot-code" style={{ color: day.isFuture ? "#9ca3af" : day.code === "--" ? "#9ca3af" : color, fontWeight: day.isFuture ? 400 : 800 }}>
+                                    {day.code}
+                                  </span>
+                                  {!day.isFuture && (ci || co) && (
+                                    <span className="ot-time">{ci}{co ? ` - ${co}` : ""}</span>
+                                  )}
+                                  {!day.isFuture && !ci && !co && day.code !== "--" && (
+                                    <span className="ot-time" style={{ opacity: .4 }}>-</span>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      );
+                    })}
+                    {wi === weeks.length - 1 && (() => {
+                      const last = week[week.length - 1];
+                      const filled = last.dow === 0 ? 7 : last.dow;
+                      return Array.from({ length: 7 - filled }).map((_, i) => (
+                        <td key={`t${i}`} className={(filled + i) >= 5 ? "wk" : ""} />
+                      ));
+                    })()}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div className="kpi">
-          <div className="kt"><span className="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Đúng giờ</div>
-          <div className="kv">{stats.onTimeRate}%</div>
-          <div className="kc up">{stats.workDays - stats.lateCount} / {stats.workDays} ngày</div>
-        </div>
-        <div className="kpi">
-          <div className="kt"><span className="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.3 3.9l-7 12A2 2 0 0 0 5 19h14a2 2 0 0 0 1.7-3l-7-12a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01" strokeLinecap="round"/></svg></span>Đi trễ</div>
-          <div className="kv">{stats.lateCount}</div>
-          <div className={`kc ${stats.lateCount > 0 ? "warn" : "flat"}`}>lần trong tháng</div>
-        </div>
-        <div className="kpi">
-          <div className="kt"><span className="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>TB giờ / ngày</div>
-          <div className="kv">{fmtMins(stats.avgMins)}</div>
-          <div className="kc flat">mỗi thành viên</div>
-        </div>
-      </div>
 
-      {/* ── Today Panel (self-view, current month) ── */}
-      {isSelfView && isCurrentMonth && (
-        <div className="ot-today">
-          <div className="ot-today-left">
-            <div className="ot-today-badge">Hôm nay</div>
-            <div className="ot-today-checkpoints">
-              <div className="ot-cp">
-                <span className="ot-cp-lbl">Check-in</span>
-                <span className={`ot-cp-val${todayRecord?.startWork1 ? " done" : ""}`}>
-                  {todayRecord?.startWork1 ? fmtTime(todayRecord.startWork1) : "—"}
-                </span>
-                {(() => {
-                  const lm = lateMinutes(todayRecord?.startWork1 ?? null);
-                  return lm > 0 ? <span className="ot-late">+{lm}ph</span> : null;
-                })()}
-              </div>
-              <div className="ot-cp-arrow">→</div>
-              <div className="ot-cp">
-                <span className="ot-cp-lbl">Nghỉ trưa</span>
-                <span className={`ot-cp-val${todayRecord?.startLunch ? " done" : ""}`}>
-                  {todayRecord?.startLunch ? fmtTime(todayRecord.startLunch) : "—"}
-                </span>
-              </div>
-              <div className="ot-cp-arrow">→</div>
-              <div className="ot-cp">
-                <span className="ot-cp-lbl">Buổi chiều</span>
-                <span className={`ot-cp-val${todayRecord?.startWork2 ? " done" : ""}`}>
-                  {todayRecord?.startWork2 ? fmtTime(todayRecord.startWork2) : "—"}
-                </span>
-              </div>
-              <div className="ot-cp-arrow">→</div>
-              <div className="ot-cp">
-                <span className="ot-cp-lbl">Check-out</span>
-                <span className={`ot-cp-val${todayRecord?.endWorkday ? " done" : ""}`}>
-                  {todayRecord?.endWorkday ? fmtTime(todayRecord.endWorkday) : <span style={{ animation: todayRecord?.startWork1 && !todayRecord.endWorkday ? "wpulse 1.5s infinite" : undefined, color: "var(--ok)" }}>{todayRecord?.startWork1 ? "▶ đang làm" : "—"}</span>}
-                </span>
-              </div>
-              {todayRecord?.actualWorked ? (
-                <>
-                  <div className="ot-cp-arrow">=</div>
-                  <div className="ot-cp">
-                    <span className="ot-cp-lbl">Giờ làm</span>
-                    <span className="ot-cp-val done" style={{ color: "var(--ok)", fontSize: "1rem" }}>{fmtMins(todayRecord.actualWorked)}</span>
-                  </div>
-                </>
-              ) : null}
+        {/* Stats sidebar */}
+        <div className="ot-card" style={{ position: "sticky", top: 76 }}>
+          <div className="ot-sb-head">
+            <h3>Thống kê T{String(month).padStart(2, "0")}, {year}</h3>
+          </div>
+          <div className="ot-sb-top">
+            <div className="ot-kpi">
+              <div className="ot-kpi-lbl">Công thực tế</div>
+              <div className="ot-kpi-val">{fmtNum(summary.actualDays)}</div>
+            </div>
+            <div className="ot-kpi">
+              <div className="ot-kpi-lbl">Công tính lương</div>
+              <div className="ot-kpi-val">{fmtNum(summary.payrollDays)}</div>
             </div>
           </div>
-
-          <div className="ot-today-btns">
-            {!todayRecord?.startWork1 && (
-              <button className="ot-punch checkin" onClick={() => punch("startWork1")} disabled={!!clockLoading}>
-                {clockLoading === "startWork1" ? "…" : "☀ Check-in"}
-              </button>
-            )}
-            {todayRecord?.startWork1 && !todayRecord.startLunch && (
-              <button className="ot-punch lunch" onClick={() => punch("startLunch")} disabled={!!clockLoading}>
-                {clockLoading === "startLunch" ? "…" : "☕ Nghỉ trưa"}
-              </button>
-            )}
-            {todayRecord?.startLunch && !todayRecord.startWork2 && (
-              <button className="ot-punch work2" onClick={() => punch("startWork2")} disabled={!!clockLoading}>
-                {clockLoading === "startWork2" ? "…" : "▶ Làm buổi chiều"}
-              </button>
-            )}
-            {todayRecord?.startWork1 && !todayRecord.endWorkday && (
-              <button className="ot-punch checkout" onClick={() => punch("endWorkday")} disabled={!!clockLoading}>
-                {clockLoading === "endWorkday" ? "…" : "🌙 Check-out"}
-              </button>
-            )}
-            {todayRecord?.endWorkday && (
-              <span className="ot-today-done">✓ Đã hoàn thành · {statusChip(todayRecord.approvalStatus, todayRecord.startWork1)}</span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Toolbar ── */}
-      <div className="ot-bar">
-        {/* Month nav */}
-        <div className="month-nav">
-          <button onClick={() => navigateMonth(-1)} title="Tháng trước">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <span className="month-label">{format(viewDate, "MMMM yyyy", { locale: viLocale })}</span>
-          <button onClick={() => navigateMonth(1)} title="Tháng sau">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><path d="M9 6l6 6-6 6"/></svg>
-          </button>
-        </div>
-
-        {/* Member filter chips (manager) */}
-        {isManager && employees.length > 0 && (
-          <div className="mf-wrap">
-            <button className={`mf-chip${targetEmpId === 0 ? " on" : ""}`} onClick={() => switchEmployee(employeeId)}>
-              Của tôi
-            </button>
-            {employees.map(emp => (
-              <button key={emp.id} className={`mf-chip${targetEmpId === emp.id ? " on" : ""}`} onClick={() => switchEmployee(emp.id)}>
-                <span className="mf-av">{initials(emp.fullName)}</span>
-                {emp.fullName.split(" ").pop()}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div style={{ flex: 1 }} />
-
-        {/* Status filter */}
-        <div className="range-seg" style={{ display: "inline-flex", background: "var(--elev)", border: "1px solid var(--border)", borderRadius: 9, padding: 3, gap: 2 }}>
-          {(["all", "pending", "approved"] as const).map(s => (
-            <button key={s} onClick={() => setSelStatus(s)}
-              style={{ height: 30, padding: "0 13px", borderRadius: 7, fontFamily: "inherit", fontSize: ".82rem", fontWeight: 600, border: "none", cursor: "pointer", transition: "background .15s,color .15s",
-                background: selStatus === s ? "var(--accent-soft)" : "none",
-                color: selStatus === s ? "var(--accent-ink)" : "var(--text-3)" }}>
-              {s === "all" ? "Tất cả" : s === "pending" ? "Chờ duyệt" : "Đã duyệt"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Main Table ── */}
-      <div className="ot-table-wrap">
-        <table className="ot-table">
-          <thead>
-            <tr>
-              {isManager && <th>Thành viên</th>}
-              <th>Ngày</th>
-              <th>Check-in</th>
-              <th>Check-out</th>
-              <th>Giờ làm</th>
-              <th>Trễ</th>
-              <th>Trạng thái</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading === "fetch" ? (
-              <tr><td colSpan={isManager ? 8 : 7} style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-3)" }}>Đang tải…</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={isManager ? 8 : 7} style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-3)" }}>Không có dữ liệu cho bộ lọc này.</td></tr>
-            ) : filtered.map(record => {
-              const dateObj = new Date(record.date);
-              const dateStr = format(dateObj, "yyyy-MM-dd");
-              const isTodayRow = dateStr === format(new Date(), "yyyy-MM-dd");
-              const lateMin = lateMinutes(record.startWork1);
-              const isWorking = record.startWork1 && !record.endWorkday;
-              const emp = employees.find(e => e.id === record.employeeId);
-
+          <div className="ot-sb-section">Chi tiết</div>
+          <div className="ot-rows">
+            {[
+              { label: "Công chuẩn",              val: summary.standardDays,     warn: false },
+              { label: "Phép",                    val: summary.paidLeaveDays,    warn: false },
+              { label: "Nghi lễ, Tết",            val: summary.holidayDays,      warn: false },
+              { label: "Nghỉ chế độ",             val: summary.specialLeaveDays, warn: false },
+              { label: "Nghỉ không lương",        val: summary.unpaidLeaveDays,  warn: true  },
+              { label: "Nghỉ thai sản",           val: summary.maternityDays,    warn: false },
+              { label: "Phạt đi muộn/về sớm (h)", val: null,                     warn: false },
+              { label: "Truy thu/ bù công",        val: null,                     warn: false },
+              { label: "Phép tồn đầu tháng",      val: null,                     warn: false },
+              { label: "Ngày phép còn lại",        val: null,                     warn: false },
+            ].map(r => {
+              const display = r.val === null ? "--" : r.val === 0 ? "--" : fmtNum(r.val);
+              const dim = display === "--";
               return (
-                <tr key={record.id} data-id={record.id}
-                  style={{ cursor: "pointer", ...(isTodayRow && record.approvalStatus === "PENDING" ? { background: "rgba(59,91,219,.04)" } : {}) }}
-                  onClick={() => openDrawer(record)}>
-
-                  {isManager && (
-                    <td onClick={e => e.stopPropagation()}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                        <span className="av-sm" style={{ width: 28, height: 28, fontSize: ".7rem", flexShrink: 0 }}>
-                          {emp ? initials(emp.fullName) : "?"}
-                        </span>
-                        <div>
-                          <div style={{ fontSize: ".87rem", fontWeight: 600, color: "var(--text)" }}>{emp?.fullName ?? "—"}</div>
-                          <div style={{ fontSize: ".72rem", color: "var(--text-3)", fontFamily: "var(--font-mono)" }}>{emp?.department ?? ""}</div>
-                        </div>
-                      </div>
-                    </td>
-                  )}
-
-                  <td>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                      <span style={{ fontSize: ".86rem", fontWeight: 600, color: "var(--text)" }}>{format(dateObj, "dd/MM/yyyy")}</span>
-                      <span style={{ fontSize: ".72rem", color: "var(--text-3)", fontFamily: "var(--font-mono)" }}>
-                        {["CN","T2","T3","T4","T5","T6","T7"][dateObj.getDay()]}{isTodayRow ? " · Hôm nay" : ""}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td>
-                    <span className="ot-time">{fmtTime(record.startWork1)}</span>
-                  </td>
-
-                  <td>
-                    {record.endWorkday
-                      ? <span className="ot-time">{fmtTime(record.endWorkday)}</span>
-                      : isWorking
-                        ? <span className="ot-time" style={{ color: "var(--ok)", fontWeight: 600, animation: "wpulse 1.5s infinite" }}>▶ đang làm</span>
-                        : <span className="ot-time missing">—</span>}
-                  </td>
-
-                  <td>
-                    {record.actualWorked
-                      ? <span className={`ot-hours${record.actualWorked < 360 ? " low" : ""}`}>{fmtMins(record.actualWorked)}</span>
-                      : <span className="ot-hours" style={{ color: "var(--text-3)" }}>—</span>}
-                  </td>
-
-                  <td>
-                    {lateMin > 0
-                      ? <span className="ot-late">+{lateMin}ph</span>
-                      : <span style={{ color: "var(--text-3)", fontFamily: "var(--font-mono)", fontSize: ".72rem" }}>—</span>}
-                  </td>
-
-                  <td>{statusChip(record.approvalStatus, record.startWork1)}</td>
-
-                  <td onClick={e => e.stopPropagation()}>
-                    <div className="ot-btns">
-                      {isManager && record.approvalStatus === "PENDING" && record.startWork1 ? (
-                        <>
-                          <button className="ot-btn approve" onClick={() => { setActionModal({ recordId: record.id, action: "approve" }); setRejectReason(""); }}>✓ Duyệt</button>
-                          <button className="ot-btn reject" onClick={() => { setActionModal({ recordId: record.id, action: "reject" }); setRejectReason(""); }}>✗ Từ chối</button>
-                        </>
-                      ) : record.approvalStatus === "APPROVED" ? (
-                        <button className="ot-btn view" onClick={() => openDrawer(record)}>Xem chi tiết</button>
-                      ) : (
-                        <button className="ot-btn view" onClick={() => openDrawer(record)}>Xem chi tiết</button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                <div key={r.label} className="ot-row">
+                  <span className="ot-row-lbl">{r.label}</span>
+                  <span className={`ot-row-val${dim ? " dim" : r.warn && !dim ? " warn" : ""}`}>{display}</span>
+                </div>
               );
             })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ── Detail Drawer ── */}
-      <div className={`od-back${drawerRecord ? " open" : ""}`} onClick={closeDrawer} />
-      <div className={`od-drawer${drawerRecord ? " open" : ""}`}>
-        {drawerRecord && (() => {
-          const dateObj = new Date(drawerRecord.date);
-          const lateMin = lateMinutes(drawerRecord.startWork1);
-          const emp = employees.find(e => e.id === drawerRecord.employeeId);
-          const totalLogMins = drawerLogs.reduce((s, l) => s + (l.durationMinutes ?? 0), 0);
-          return (
-            <>
-              <div className="od-head">
-                <div className="od-type" style={{ background: "var(--accent)" }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" style={{ width: 15, height: 15 }}><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                </div>
-                <div>
-                  <h3>{emp?.fullName ?? "Chi tiết"} · {format(dateObj, "dd/MM/yyyy")}</h3>
-                  <div style={{ fontSize: ".76rem", color: "var(--text-3)", fontFamily: "var(--font-mono)" }}>
-                    {["CN","T2","T3","T4","T5","T6","T7"][dateObj.getDay()]} · {statusChip(drawerRecord.approvalStatus, drawerRecord.startWork1)}
-                  </div>
-                </div>
-                <button className="od-close" onClick={closeDrawer}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 17, height: 17 }}><path d="M6 6l12 12M18 6L6 18"/></svg>
-                </button>
-              </div>
-
-              <div className="od-body">
-                <div className="od-sec">Thông tin chấm công</div>
-                <div className="od-meta">
-                  <div className="od-row">
-                    <span className="orl">Trạng thái</span>
-                    <span className="orv">{statusChip(drawerRecord.approvalStatus, drawerRecord.startWork1)}</span>
-                  </div>
-                  <div className="od-row">
-                    <span className="orl">Check-in</span>
-                    <span className="orv">
-                      <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{fmtTime(drawerRecord.startWork1)}</span>
-                      {lateMin > 0
-                        ? <span className="ot-late">+{lateMin}ph trễ</span>
-                        : drawerRecord.startWork1 ? <span style={{ fontSize: ".74rem", color: "var(--ok)" }}>● Đúng giờ</span> : null}
-                    </span>
-                  </div>
-                  <div className="od-row">
-                    <span className="orl">Nghỉ trưa</span>
-                    <span className="orv"><span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{fmtTime(drawerRecord.startLunch)}</span></span>
-                  </div>
-                  <div className="od-row">
-                    <span className="orl">Làm buổi chiều</span>
-                    <span className="orv"><span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{fmtTime(drawerRecord.startWork2)}</span></span>
-                  </div>
-                  <div className="od-row">
-                    <span className="orl">Check-out</span>
-                    <span className="orv">
-                      <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
-                        {drawerRecord.endWorkday ? fmtTime(drawerRecord.endWorkday) : <span style={{ color: "var(--text-3)" }}>Chưa ra về</span>}
-                      </span>
-                    </span>
-                  </div>
-                  <div className="od-row">
-                    <span className="orl">Giờ làm</span>
-                    <span className="orv" style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: ".95rem" }}>{fmtMins(drawerRecord.actualWorked)}</span>
-                  </div>
-                  {drawerRecord.approvedBy && (
-                    <div className="od-row">
-                      <span className="orl">Người duyệt</span>
-                      <span className="orv">
-                        <span className="av-sm" style={{ width: 22, height: 22, fontSize: ".6rem" }}>{initials(drawerRecord.approvedBy.fullName)}</span>
-                        {drawerRecord.approvedBy.fullName}
-                      </span>
-                    </div>
-                  )}
-                  {drawerRecord.explanation && (
-                    <div className="od-row">
-                      <span className="orl">Ghi chú</span>
-                      <span className="orv">{drawerRecord.explanation}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="od-sec">
-                  Time Logs ({drawerLogs.length} mục · <span style={{ color: "var(--accent-ink)" }}>{fmtMins(totalLogMins)}</span>)
-                </div>
-
-                {drawerLoading ? (
-                  <div style={{ padding: 16, textAlign: "center", color: "var(--text-3)", fontSize: ".83rem" }}>Đang tải…</div>
-                ) : (
-                  <div className="od-logs">
-                    {drawerLogs.length === 0
-                      ? <div style={{ padding: 16, textAlign: "center", color: "var(--text-3)", fontSize: ".83rem" }}>Chưa có time log nào.</div>
-                      : drawerLogs.map(log => (
-                          <div key={log.id} className="od-log-item">
-                            <div className="od-log-top">
-                              <span className="od-log-id">{log.code}</span>
-                              <span className="od-log-title" title={log.taskTitle}>{log.taskTitle}</span>
-                              <span className="od-log-dur">{fmtMins(log.durationMinutes)}</span>
-                            </div>
-                            <div className="od-log-time">
-                              {log.startTime ? format(new Date(log.startTime), "HH:mm") : "—"} → {log.endTime ? format(new Date(log.endTime), "HH:mm") : <span style={{ color: "var(--ok)" }}>đang chạy</span>}
-                            </div>
-                            {log.note && <div className="od-log-note">{log.note}</div>}
-                          </div>
-                        ))}
-                  </div>
-                )}
-
-                {isManager && drawerRecord.approvalStatus === "PENDING" && drawerRecord.startWork1 && (
-                  <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-                    <button className="abtn primary" style={{ flex: 1 }} onClick={() => { setActionModal({ recordId: drawerRecord.id, action: "approve" }); setRejectReason(""); }}>✓ Duyệt</button>
-                    <button className="abtn ghost" style={{ color: "var(--danger)", borderColor: "rgba(255,107,107,.3)" }} onClick={() => { setActionModal({ recordId: drawerRecord.id, action: "reject" }); setRejectReason(""); }}>✗ Từ chối</button>
-                  </div>
-                )}
-              </div>
-            </>
-          );
-        })()}
-      </div>
-
-      {/* ── Approve / Reject Modal ── */}
-      {actionModal && (() => {
-        const record = records.find(r => r.id === actionModal.recordId);
-        const isApprove = actionModal.action === "approve";
-        const emp = employees.find(e => e.id === record?.employeeId);
-        return (
-          <div className="modal-back" onClick={e => { if (e.target === e.currentTarget) setActionModal(null); }}>
-            <div className="ar-modal">
-              <div className="ar-head">
-                <div className="ar-ico" style={{ background: isApprove ? "var(--ok-soft)" : "var(--danger-soft)", color: isApprove ? "var(--ok)" : "var(--danger)" }}>
-                  {isApprove
-                    ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: 17, height: 17 }}><path d="M5 12l5 5L20 6"/></svg>
-                    : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" style={{ width: 17, height: 17 }}><path d="M6 6l12 12M18 6L6 18"/></svg>}
-                </div>
-                <h3>{isApprove ? "Phê duyệt chấm công" : "Từ chối chấm công"}</h3>
-                <button className="x" onClick={() => setActionModal(null)}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 17, height: 17 }}><path d="M6 6l12 12M18 6L6 18"/></svg>
-                </button>
-              </div>
-
-              <div className="ar-body">
-                {record && (
-                  <div className="ar-info">
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span className="av-sm" style={{ width: 32, height: 32, fontSize: ".8rem" }}>{emp ? initials(emp.fullName) : "?"}</span>
-                      <div>
-                        <div style={{ fontSize: ".9rem", fontWeight: 700 }}>{emp?.fullName ?? "—"}</div>
-                        <div style={{ fontSize: ".78rem", color: "var(--text-3)", fontFamily: "var(--font-mono)" }}>
-                          {format(new Date(record.date), "dd/MM/yyyy")} · Check-in: {fmtTime(record.startWork1)}{record.endWorkday ? ` → ${fmtTime(record.endWorkday)}` : ""}
-                        </div>
-                      </div>
-                    </div>
-                    {record.actualWorked ? (
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".82rem", color: "var(--text-3)", paddingTop: 8, borderTop: "1px solid var(--border)" }}>
-                        <span>Giờ làm:</span>
-                        <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--text)" }}>{fmtMins(record.actualWorked)}</span>
-                      </div>
-                    ) : null}
-                  </div>
-                )}
-
-                {!isApprove ? (
-                  <div className="ar-field">
-                    <label>Lý do từ chối <span style={{ color: "var(--danger)" }}>*</span></label>
-                    <textarea
-                      value={rejectReason}
-                      onChange={e => setRejectReason(e.target.value)}
-                      placeholder="Nhập lý do từ chối để thông báo cho nhân viên…"
-                    />
-                  </div>
-                ) : (
-                  <div style={{ fontSize: ".86rem", color: "var(--text-2)", lineHeight: 1.6 }}>
-                    Xác nhận phê duyệt bản ghi chấm công này? Nhân viên sẽ được thông báo.
-                  </div>
-                )}
-              </div>
-
-              <div className="ar-foot">
-                <button className="abtn ghost" onClick={() => setActionModal(null)}>Hủy</button>
-                <button
-                  className={`abtn ${isApprove ? "primary" : "ghost"}`}
-                  style={!isApprove ? { color: "var(--danger)", borderColor: "rgba(255,107,107,.4)" } : undefined}
-                  disabled={actionLoading || (!isApprove && !rejectReason.trim())}
-                  onClick={doApprove}
-                >
-                  {actionLoading ? "Đang xử lý…" : isApprove ? "✓ Phê duyệt" : "✗ Xác nhận từ chối"}
-                </button>
-              </div>
-            </div>
           </div>
-        );
-      })()}
+        </div>
+      </div>
 
-      {/* ── Add / Edit Record Modal ── */}
-      {createModal && (
-        <div className="modal-back" onClick={e => { if (e.target === e.currentTarget) setCreateModal(null); }}>
-          <div className="ar-modal" style={{ maxWidth: 480 }}>
-            <div className="ar-head">
-              <div className="ar-ico" style={{ background: "var(--accent)", color: "#fff" }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 17, height: 17 }}><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-              </div>
-              <h3>{createModal.record ? "Sửa bản ghi" : "Thêm bản ghi chấm công"}</h3>
-              <button className="x" onClick={() => setCreateModal(null)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 17, height: 17 }}><path d="M6 6l12 12M18 6L6 18"/></svg>
-              </button>
+      {/* Day detail modal */}
+      {modal && (
+        <div className="ot-overlay" onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
+          <div className="ot-modal">
+            <div className="ot-modal-head">
+              <h2>Chi tiết chấm công ngày {modalTitle}</h2>
+              <button type="button" className="ot-modal-close" onClick={() => setModal(null)}>✕</button>
             </div>
+            <div className="ot-modal-body">
+              {/* Employee info */}
+              <div className="ot-info-grid">
+                <div className="ot-info-row">
+                  <span className="ot-info-lbl">Mã nhân viên:</span>
+                  <span className="ot-info-val">{emp?.employeeCode ?? "--"}</span>
+                </div>
+                <div className="ot-info-row">
+                  <span className="ot-info-lbl">Họ tên:</span>
+                  <span className="ot-info-val">{emp?.fullName ?? "--"}</span>
+                </div>
+                <div className="ot-info-row">
+                  <span className="ot-info-lbl">Phòng ban:</span>
+                  <span className="ot-info-val">{emp?.department ?? "--"}</span>
+                </div>
+                <div className="ot-info-row">
+                  <span className="ot-info-lbl">Vị trí:</span>
+                  <span className="ot-info-val">{emp?.position ?? "--"}</span>
+                </div>
+                <div className="ot-info-row full">
+                  <span className="ot-info-lbl">Lịch làm việc:</span>
+                  <span className="ot-info-val">STANDARD_8H</span>
+                </div>
+                <div className="ot-info-row">
+                  <span className="ot-info-lbl">Ngày gia nhập:</span>
+                  <span className="ot-info-val">{emp?.startDate ?? "--"}</span>
+                </div>
+                <div className="ot-info-row">
+                  <span className="ot-info-lbl">Ngày nghỉ việc:</span>
+                  <span className="ot-info-val">{emp?.status === "INACTIVE" ? "--" : "--"}</span>
+                </div>
+              </div>
 
-            <div className="ar-body">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div className="ar-field">
-                  <label>Thành viên *</label>
-                  <select value={createForm.who} onChange={e => setCreateForm(f => ({ ...f, who: e.target.value }))}
-                    style={{ fontFamily: "inherit", fontSize: ".9rem", color: "var(--text)", background: "var(--content)", border: "1.5px solid var(--border-2)", borderRadius: 9, padding: "9px 12px", outline: "none", width: "100%" }}>
-                    {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.fullName}</option>)}
-                  </select>
-                </div>
-                <div className="ar-field">
-                  <label>Ngày *</label>
-                  <input type="date" value={createForm.date} onChange={e => setCreateForm(f => ({ ...f, date: e.target.value }))}
-                    style={{ fontFamily: "inherit", fontSize: ".9rem", color: "var(--text)", background: "var(--content)", border: "1.5px solid var(--border-2)", borderRadius: 9, padding: "9px 12px", outline: "none", width: "100%" }} />
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div className="ar-field">
-                  <label>Check-in *</label>
-                  <input type="time" value={createForm.checkIn} onChange={e => setCreateForm(f => ({ ...f, checkIn: e.target.value }))}
-                    style={{ fontFamily: "inherit", fontSize: ".9rem", color: "var(--text)", background: "var(--content)", border: "1.5px solid var(--border-2)", borderRadius: 9, padding: "9px 12px", outline: "none", width: "100%" }} />
-                </div>
-                <div className="ar-field">
-                  <label>Check-out</label>
-                  <input type="time" value={createForm.checkOut} onChange={e => setCreateForm(f => ({ ...f, checkOut: e.target.value }))}
-                    style={{ fontFamily: "inherit", fontSize: ".9rem", color: "var(--text)", background: "var(--content)", border: "1.5px solid var(--border-2)", borderRadius: 9, padding: "9px 12px", outline: "none", width: "100%" }} />
-                </div>
-              </div>
-              <div className="ar-field">
-                <label>Ghi chú</label>
-                <textarea value={createForm.note} onChange={e => setCreateForm(f => ({ ...f, note: e.target.value }))}
-                  style={{ fontFamily: "inherit", fontSize: ".9rem", color: "var(--text)", background: "var(--content)", border: "1.5px solid var(--border-2)", borderRadius: 9, padding: "9px 12px", outline: "none", resize: "vertical", minHeight: 68, width: "100%" }} />
-              </div>
-            </div>
+              {/* Divider */}
+              <div style={{ height: 1, background: "#f3f4f6", margin: "4px 0 12px" }} />
 
-            <div className="ar-foot">
-              <button className="abtn ghost" onClick={() => setCreateModal(null)}>Hủy</button>
-              <button className="abtn primary" onClick={doCreateRecord} disabled={createLoading || !createForm.checkIn}>
-                {createLoading ? "Đang lưu…" : createModal.record ? "Lưu thay đổi" : "Tạo bản ghi"}
-              </button>
+              {/* Attendance info */}
+              <div className="ot-att-row">
+                <div className="ot-att-item">
+                  <span className="ot-att-lbl">Giờ vào đầu tiên</span>
+                  <span className="ot-att-val" style={{ color: fmtTime(modal.checkIn) ? "#111827" : "#dc2626" }}>
+                    {fmtTime(modal.checkIn) || "--"}
+                  </span>
+                </div>
+                <div className="ot-att-item">
+                  <span className="ot-att-lbl">Giờ ra cuối cùng</span>
+                  <span className="ot-att-val" style={{ color: fmtTime(modal.checkOut) ? "#111827" : "#dc2626" }}>
+                    {fmtTime(modal.checkOut) || "--"}
+                  </span>
+                </div>
+                <div className="ot-att-item">
+                  <span className="ot-att-lbl">Tổng giờ</span>
+                  <span className="ot-att-val blue">{totalHours(modal.checkIn, modal.checkOut)}</span>
+                </div>
+              </div>
+
+              {/* Work status */}
+              <div style={{ padding: "12px 0", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: 10, fontSize: ".82rem" }}>
+                <span style={{ color: "#6b7280" }}>Công:</span>
+                <div
+                  className="ot-code-badge"
+                  style={{
+                    background: modal.code === "--" ? "#f3f4f6" : `${CODE_COLOR[modal.code] ?? "#374151"}18`,
+                    color: CODE_COLOR[modal.code] ?? "#374151",
+                  }}
+                >
+                  <span style={{ background: `${CODE_COLOR[modal.code] ?? "#374151"}22` }}>{modal.code}</span>
+                  {CODE_LABEL[modal.code] ?? ""}
+                </div>
+              </div>
+
+              {/* Explanation */}
+              <div style={{ padding: "12px 0", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "baseline", gap: 8, fontSize: ".82rem" }}>
+                <span style={{ color: "#6b7280", flexShrink: 0 }}>Giải trình:</span>
+                <span style={{ fontWeight: 500, color: modal.explanation ? "#111827" : "#9ca3af" }}>
+                  {modal.explanation || "--"}
+                </span>
+              </div>
+
+              {/* Late / penalty */}
+              <div style={{ padding: "12px 0", display: "flex", alignItems: "center", gap: 32, fontSize: ".82rem" }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
+                  <span style={{ color: "#6b7280" }}>Tổng phút đi muộn/về sớm:</span>
+                  <span style={{ fontWeight: 700 }}>0 phút</span>
+                </div>
+                <div style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
+                  <span style={{ color: "#6b7280" }}>Giờ phạt:</span>
+                  <span style={{ fontWeight: 700 }}>0h</span>
+                </div>
+              </div>
+
+              {modal.isManualTime && (
+                <div style={{ marginTop: 4, padding: "8px 12px", background: "#fffbeb", borderRadius: 8, fontSize: ".78rem", color: "#92400e", fontWeight: 600 }}>
+                  ⚠ Giờ chấm công này đã được chỉnh sửa thủ công
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

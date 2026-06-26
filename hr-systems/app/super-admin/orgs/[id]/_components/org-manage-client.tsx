@@ -8,15 +8,9 @@ import { type PlanConfig, type PlanId } from "@/lib/pricing";
 type OrgStatus = "ACTIVE" | "SUSPENDED" | "CANCELLED" | "TRIAL";
 
 interface OrgData {
-  id: string;
-  clerkOrgId: string;
-  slug: string;
-  name: string;
-  plan: PlanId;
-  status: OrgStatus;
-  seatLimit: number;
-  trialEndsAt: string | null;
-  createdAt: string;
+  id: string; clerkOrgId: string; slug: string; name: string;
+  plan: PlanId; status: OrgStatus; seatLimit: number;
+  trialEndsAt: string | null; createdAt: string;
   counts: { employees: number; tasks: number; customers: number; timeLogs: number };
   owners: { id: number; fullName: string; emailCompany: string; clerkUserId: string }[];
 }
@@ -27,18 +21,38 @@ interface Props {
   trialDaysLeft: number;
 }
 
+const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
+  ACTIVE:    { bg: "rgba(34,197,94,.12)",  color: "#22c55e" },
+  TRIAL:     { bg: "rgba(245,158,11,.12)", color: "#f59e0b" },
+  SUSPENDED: { bg: "rgba(239,68,68,.12)",  color: "#ef4444" },
+  CANCELLED: { bg: "rgba(148,163,184,.12)",color: "#94a3b8" },
+};
+const PLAN_COLOR: Record<string, { bg: string; color: string }> = {
+  FREE:    { bg: "rgba(148,163,184,.12)", color: "#94a3b8" },
+  STARTER: { bg: "rgba(59,91,219,.12)",   color: "#6582ff" },
+  TEAM:    { bg: "rgba(167,139,250,.12)", color: "#a78bfa" },
+};
+
+function initials(name: string) {
+  return name.split(" ").filter(Boolean).slice(-2).map(w => w[0]).join("").toUpperCase();
+}
+
 export function OrgManageClient({ org, plans, trialDaysLeft }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const [planDraft, setPlanDraft] = useState<PlanId>(org.plan);
   const [statusDraft, setStatusDraft] = useState<OrgStatus>(org.status);
   const [seatLimitDraft, setSeatLimitDraft] = useState(org.seatLimit);
-  const [trialExtendDays, setTrialExtendDays] = useState(0);
+  const [trialExtendDays, setTrialExtendDays] = useState(30);
 
-  const action = (body: any, successMessage: string) => {
-    setError(null);
+  function showToast(msg: string, ok = true) {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  function action(body: Record<string, unknown>, successMessage: string) {
     startTransition(async () => {
       const res = await fetch(`/api/super-admin/orgs/${org.id}`, {
         method: "PATCH",
@@ -46,193 +60,268 @@ export function OrgManageClient({ org, plans, trialDaysLeft }: Props) {
         body: JSON.stringify(body),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(typeof json.error === "string" ? json.error : "Có lỗi xảy ra");
-        return;
-      }
-      alert(successMessage);
+      if (!res.ok) { showToast(typeof json.error === "string" ? json.error : "Có lỗi xảy ra", false); return; }
+      showToast(successMessage);
       router.refresh();
     });
-  };
+  }
 
-  const setPlan = () => {
-    const newSeatLimit = plans[planDraft].seatLimit;
-    action({ plan: planDraft, seatLimit: newSeatLimit }, `Đã đổi plan thành ${planDraft}`);
-  };
-
-  const setStatus = () => action({ status: statusDraft }, `Đã đổi status thành ${statusDraft}`);
-
-  const setSeatLimit = () => action({ seatLimit: seatLimitDraft }, `Đã đổi seat limit = ${seatLimitDraft}`);
-
-  const extendTrial = () => action({ extendTrialDays: trialExtendDays }, `Đã gia hạn trial thêm ${trialExtendDays} ngày`);
-
-  const activatePayment = () => action(
-    { plan: planDraft, status: "ACTIVE", extendTrialDays: 30, seatLimit: plans[planDraft].seatLimit },
-    `Đã kích hoạt ${planDraft} thêm 30 ngày`,
-  );
+  const sc = STATUS_COLOR[org.status] ?? STATUS_COLOR.CANCELLED;
+  const pc = PLAN_COLOR[org.plan] ?? PLAN_COLOR.FREE;
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <Link href="/super-admin/orgs" className="text-sm text-blue-600 hover:underline">← Back to orgs</Link>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-2">{org.name}</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-          <code>{org.slug}.jobihome.vn</code> · created {new Date(org.createdAt).toLocaleDateString("vi-VN")}
-        </p>
-      </div>
-
-      {error && (
-        <div className="px-4 py-2 rounded bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 text-sm text-red-800 dark:text-red-300">
-          {error}
+    <div style={{ maxWidth: 900 }}>
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: "fixed", bottom: 24, right: 24, zIndex: 999,
+          background: toast.ok ? "rgba(34,197,94,.15)" : "rgba(239,68,68,.15)",
+          border: `1px solid ${toast.ok ? "rgba(34,197,94,.3)" : "rgba(239,68,68,.3)"}`,
+          color: toast.ok ? "#22c55e" : "#ef4444",
+          borderRadius: 12, padding: "12px 18px", fontSize: 13, fontWeight: 600,
+          boxShadow: "0 4px 20px rgba(0,0,0,.2)", display: "flex", alignItems: "center", gap: 8,
+        }}>
+          {toast.ok
+            ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={15} height={15}><polyline points="20 6 9 17 4 12"/></svg>
+            : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={15} height={15}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          }
+          {toast.msg}
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat label="Employees" value={`${org.counts.employees}/${org.seatLimit}`} />
-        <Stat label="Customers" value={org.counts.customers} />
-        <Stat label="Tasks" value={org.counts.tasks} />
-        <Stat label="Time Logs" value={org.counts.timeLogs} />
+      {/* Back + header */}
+      <div style={{ marginBottom: 24 }}>
+        <Link href="/super-admin/orgs" style={{ fontSize: 12, color: "var(--accent)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 10 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14}><polyline points="15 18 9 12 15 6"/></svg>
+          Workspaces
+        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <div style={{
+            width: 46, height: 46, borderRadius: 12, background: pc.bg, border: `1px solid ${pc.color}44`,
+            display: "grid", placeItems: "center", fontSize: 18, fontWeight: 800, color: pc.color, flexShrink: 0,
+          }}>
+            {initials(org.name)}
+          </div>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text)", margin: 0 }}>{org.name}</h1>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+              <code style={{ fontSize: 12, color: "var(--text-3)" }}>{org.slug}.jobihome.vn</code>
+              <span style={{ fontSize: 11, fontWeight: 600, color: pc.color, background: pc.bg, borderRadius: 6, padding: "1px 8px" }}>{org.plan}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: sc.color, background: sc.bg, borderRadius: 6, padding: "1px 8px" }}>{org.status}</span>
+              {org.status === "TRIAL" && trialDaysLeft <= 3 && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", background: "rgba(239,68,68,.1)", borderRadius: 6, padding: "1px 8px" }}>⚠ {trialDaysLeft}d left</span>
+              )}
+            </div>
+          </div>
+          <div style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-3)" }}>
+            Tạo {new Date(org.createdAt).toLocaleDateString("vi-VN")}
+          </div>
+        </div>
       </div>
 
-      {/* Quick actions */}
-      <Section title="⚡ Quick action — Khách đã chuyển khoản">
-        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-          Khi khách hàng chuyển khoản xong → chọn plan → click button. Sẽ tự đặt status=ACTIVE, gia hạn 30 ngày, set seatLimit theo plan.
-        </p>
-        <div className="flex items-center gap-3">
-          <select
-            value={planDraft}
-            onChange={(e) => setPlanDraft(e.target.value as PlanId)}
-            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900"
-          >
-            {Object.values(plans).map((p) => (
-              <option key={p.id} value={p.id}>{p.name} — {p.priceLabel}</option>
-            ))}
-          </select>
-          <button
-            onClick={activatePayment}
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
+        {[
+          { label: "Thành viên", value: `${org.counts.employees}/${org.seatLimit}`, warn: org.counts.employees >= org.seatLimit },
+          { label: "Khách hàng", value: org.counts.customers },
+          { label: "Tasks", value: org.counts.tasks },
+          { label: "Time Logs", value: org.counts.timeLogs },
+        ].map(s => (
+          <div key={s.label} style={{ background: "var(--elev)", border: `1px solid ${s.warn ? "rgba(245,158,11,.3)" : "var(--border)"}`, borderRadius: 12, padding: "14px 16px" }}>
+            <div style={{ fontSize: 11, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>{s.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: s.warn ? "#f59e0b" : "var(--text)" }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick activate */}
+      <Card title="⚡ Kích hoạt thanh toán">
+        <p style={{ fontSize: 13, color: "var(--text-3)", marginBottom: 12 }}>Khách chuyển khoản → chọn gói → kích hoạt. Tự set ACTIVE + gia hạn 30 ngày + seatLimit.</p>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <Select value={planDraft} onChange={e => setPlanDraft(e.target.value as PlanId)}>
+            {Object.values(plans).map(p => <option key={p.id} value={p.id}>{p.name} — {p.priceLabel}</option>)}
+          </Select>
+          <Btn
+            color="#22c55e"
             disabled={isPending}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg disabled:opacity-50"
+            onClick={() => action({ plan: planDraft, status: "ACTIVE", extendTrialDays: 30, seatLimit: plans[planDraft].seatLimit }, `Đã kích hoạt ${planDraft} + 30 ngày`)}
           >
-            {isPending ? "..." : "✓ Kích hoạt + 30 ngày"}
-          </button>
+            {isPending ? "…" : "✓ Kích hoạt + 30 ngày"}
+          </Btn>
         </div>
-      </Section>
+      </Card>
 
       {/* Plan */}
-      <Section title="Plan">
-        <div className="flex items-center gap-3">
-          <select
-            value={planDraft}
-            onChange={(e) => setPlanDraft(e.target.value as PlanId)}
-            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900"
-          >
-            {Object.values(plans).map((p) => (
-              <option key={p.id} value={p.id}>{p.name} — {p.priceLabel}</option>
-            ))}
-          </select>
-          <button onClick={setPlan} disabled={isPending} className="btn-secondary px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
-            Đổi plan (chỉ plan, không reset trial)
-          </button>
+      <Card title="Gói dịch vụ">
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <Select value={planDraft} onChange={e => setPlanDraft(e.target.value as PlanId)}>
+            {Object.values(plans).map(p => <option key={p.id} value={p.id}>{p.name} — {p.priceLabel}</option>)}
+          </Select>
+          <Btn disabled={isPending} onClick={() => action({ plan: planDraft, seatLimit: plans[planDraft].seatLimit }, `Đã đổi sang ${planDraft}`)}>
+            {isPending ? "…" : "Đổi gói"}
+          </Btn>
         </div>
-        <p className="text-xs text-slate-500 mt-2">Hiện tại: <strong>{org.plan}</strong> · Seat limit: {org.seatLimit}</p>
-      </Section>
+        <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 8 }}>
+          Hiện tại: <strong style={{ color: "var(--text-2)" }}>{org.plan}</strong> · Seat limit: {org.seatLimit}
+        </div>
+      </Card>
 
       {/* Status */}
-      <Section title="Status">
-        <div className="flex items-center gap-3">
-          <select
-            value={statusDraft}
-            onChange={(e) => setStatusDraft(e.target.value as OrgStatus)}
-            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900"
-          >
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="TRIAL">TRIAL</option>
-            <option value="SUSPENDED">SUSPENDED</option>
-            <option value="CANCELLED">CANCELLED</option>
-          </select>
-          <button onClick={setStatus} disabled={isPending} className="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
-            Đổi status
-          </button>
+      <Card title="Trạng thái">
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          {(["ACTIVE","TRIAL","SUSPENDED","CANCELLED"] as const).map(s => {
+            const c = STATUS_COLOR[s];
+            return (
+              <button key={s} onClick={() => setStatusDraft(s)} style={{
+                border: `1.5px solid ${statusDraft === s ? c.color : "var(--border)"}`,
+                background: statusDraft === s ? c.bg : "transparent",
+                color: statusDraft === s ? c.color : "var(--text-3)",
+                borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700,
+                cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
+              }}>{s}</button>
+            );
+          })}
+          <Btn disabled={isPending || statusDraft === org.status} onClick={() => action({ status: statusDraft }, `Đã đổi thành ${statusDraft}`)}>
+            {isPending ? "…" : "Lưu trạng thái"}
+          </Btn>
         </div>
-        <p className="text-xs text-slate-500 mt-2">Hiện tại: <strong>{org.status}</strong></p>
-      </Section>
+        <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 8 }}>
+          Hiện tại: <span style={{ fontWeight: 700, color: sc.color }}>{org.status}</span>
+        </div>
+      </Card>
 
       {/* Trial */}
-      <Section title="Gia hạn Trial / Subscription">
-        <div className="flex items-center gap-3">
+      <Card title="Gia hạn Trial / Subscription">
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {[7, 14, 30, 60, 90].map(d => (
+            <button key={d} onClick={() => setTrialExtendDays(d)} style={{
+              border: `1.5px solid ${trialExtendDays === d ? "var(--accent)" : "var(--border)"}`,
+              background: trialExtendDays === d ? "var(--accent-soft)" : "transparent",
+              color: trialExtendDays === d ? "var(--accent)" : "var(--text-3)",
+              borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 600,
+              cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
+            }}>{d}d</button>
+          ))}
           <input
-            type="number"
-            min={1}
-            max={365}
-            value={trialExtendDays || ""}
-            onChange={(e) => setTrialExtendDays(Number(e.target.value))}
-            placeholder="Số ngày"
-            className="px-3 py-2 w-32 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900"
+            type="number" min={1} max={365} value={trialExtendDays}
+            onChange={e => setTrialExtendDays(Number(e.target.value))}
+            style={{ width: 72, ...inputStyle }}
           />
-          <button onClick={extendTrial} disabled={isPending || !trialExtendDays} className="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50">
-            Gia hạn
-          </button>
+          <Btn disabled={isPending || !trialExtendDays} onClick={() => action({ extendTrialDays: trialExtendDays }, `Đã gia hạn thêm ${trialExtendDays} ngày`)}>
+            {isPending ? "…" : "Gia hạn"}
+          </Btn>
         </div>
-        <p className="text-xs text-slate-500 mt-2">
-          Trial kết thúc: <strong>{org.trialEndsAt ? new Date(org.trialEndsAt).toLocaleDateString("vi-VN") : "không có"}</strong>
-          {org.trialEndsAt && ` (còn ${trialDaysLeft} ngày)`}
-        </p>
-      </Section>
+        <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 8 }}>
+          {org.trialEndsAt
+            ? <>Hết hạn: <strong style={{ color: "var(--text-2)" }}>{new Date(org.trialEndsAt).toLocaleDateString("vi-VN")}</strong> {org.status === "TRIAL" && <>(còn <strong style={{ color: trialDaysLeft <= 3 ? "#ef4444" : "#f59e0b" }}>{trialDaysLeft} ngày</strong>)</>}</>
+            : "Chưa có trial"
+          }
+        </div>
+      </Card>
 
       {/* Seat limit */}
-      <Section title="Seat Limit (override)">
-        <div className="flex items-center gap-3">
-          <input
-            type="number"
-            min={1}
-            max={1000}
-            value={seatLimitDraft}
-            onChange={(e) => setSeatLimitDraft(Number(e.target.value))}
-            className="px-3 py-2 w-32 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900"
-          />
-          <button onClick={setSeatLimit} disabled={isPending} className="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
-            Đổi seat limit
-          </button>
+      <Card title="Seat Limit (override)">
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <input type="number" min={1} max={1000} value={seatLimitDraft} onChange={e => setSeatLimitDraft(Number(e.target.value))} style={{ width: 100, ...inputStyle }} />
+          <Btn disabled={isPending || seatLimitDraft === org.seatLimit} onClick={() => action({ seatLimit: seatLimitDraft }, `Đã đổi seat limit = ${seatLimitDraft}`)}>
+            {isPending ? "…" : "Lưu"}
+          </Btn>
         </div>
-        <p className="text-xs text-slate-500 mt-2">Hiện tại: {org.counts.employees}/{org.seatLimit} seats</p>
-      </Section>
+        <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 8 }}>
+          Hiện tại: <strong style={{ color: org.counts.employees >= org.seatLimit ? "#f59e0b" : "var(--text-2)" }}>{org.counts.employees}/{org.seatLimit}</strong> seats
+        </div>
+      </Card>
 
-      <Section title="Owners">
+      {/* Owners */}
+      <Card title="Owners">
         {org.owners.length === 0 ? (
-          <p className="text-sm text-slate-500">Chưa có owner</p>
+          <p style={{ fontSize: 13, color: "var(--text-3)" }}>Chưa có owner</p>
         ) : (
-          <ul className="space-y-2 text-sm">
-            {org.owners.map((o) => (
-              <li key={o.id} className="flex items-center gap-2">
-                <span className="font-medium">{o.fullName}</span>
-                <span className="text-slate-500">·</span>
-                <code className="text-xs">{o.emailCompany}</code>
-                <span className="text-slate-500">·</span>
-                <code className="text-xs text-slate-400">{o.clerkUserId.slice(0, 20)}...</code>
-              </li>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {org.owners.map(o => (
+              <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--content)", borderRadius: 10, border: "1px solid var(--border)" }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--accent-soft)", color: "var(--accent)", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
+                  {initials(o.fullName)}
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{o.fullName}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-3)" }}>{o.emailCompany}</div>
+                </div>
+                <code style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-3)", background: "var(--border)", borderRadius: 5, padding: "2px 6px" }}>
+                  {o.clerkUserId.slice(0, 24)}…
+                </code>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
-      </Section>
+      </Card>
+
+      {/* Danger zone */}
+      <Card title="Vùng nguy hiểm">
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Btn
+            color="#ef4444"
+            disabled={isPending || org.status === "SUSPENDED"}
+            onClick={() => {
+              if (confirm(`Tạm dừng workspace "${org.name}"?`))
+                action({ status: "SUSPENDED" }, "Đã tạm dừng workspace");
+            }}
+          >
+            Tạm dừng workspace
+          </Btn>
+          <Btn
+            color="#ef4444"
+            disabled={isPending || org.status === "CANCELLED"}
+            onClick={() => {
+              if (confirm(`Huỷ workspace "${org.name}"? Hành động này không thể hoàn tác dễ dàng.`))
+                action({ status: "CANCELLED" }, "Đã huỷ workspace");
+            }}
+          >
+            Huỷ workspace
+          </Btn>
+        </div>
+      </Card>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-2">
-      <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+    <div style={{ background: "var(--elev)", border: "1px solid var(--border)", borderRadius: 14, padding: "18px 20px", marginBottom: 14 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", marginBottom: 14 }}>{title}</div>
       {children}
-    </section>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
-      <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-0.5">{value}</p>
     </div>
   );
 }
+
+function Select({ value, onChange, children }: { value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; children: React.ReactNode }) {
+  return (
+    <select value={value} onChange={onChange} style={{
+      background: "var(--content)", border: "1px solid var(--border)", borderRadius: 9,
+      padding: "8px 12px", fontSize: 13, color: "var(--text)", outline: "none", cursor: "pointer", fontFamily: "inherit",
+    }}>
+      {children}
+    </select>
+  );
+}
+
+function Btn({ onClick, disabled, children, color }: { onClick: () => void; disabled?: boolean; children: React.ReactNode; color?: string }) {
+  const bg = color ?? "var(--accent)";
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      background: color ? `${color}18` : "var(--accent-soft)",
+      border: `1px solid ${color ? `${color}44` : "transparent"}`,
+      color: color ?? "var(--accent)",
+      borderRadius: 9, padding: "8px 16px", fontSize: 13, fontWeight: 700,
+      cursor: disabled ? "not-allowed" : "pointer", fontFamily: "inherit",
+      opacity: disabled ? .5 : 1, transition: "opacity .15s",
+    }}>
+      {children}
+    </button>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  background: "var(--content)", border: "1px solid var(--border)", borderRadius: 9,
+  padding: "8px 12px", fontSize: 13, color: "var(--text)", outline: "none", fontFamily: "inherit",
+};

@@ -1,12 +1,12 @@
 import { rawPrisma } from "@/lib/prisma";
-import { OrgsClient } from "./_components/orgs-client";
+import { WorkspacesClient } from "./_components/workspaces-client";
 
 export const dynamic = "force-dynamic";
 
-export default async function OrgsListPage({ searchParams }: { searchParams: { status?: string } }) {
+export default async function WorkspacesPage({ searchParams }: { searchParams: { status?: string } }) {
   const orgs = await rawPrisma.organization.findMany({
     orderBy: { createdAt: "desc" },
-    include: { _count: { select: { employees: true, tasks: true } } },
+    include: { _count: { select: { employees: true, tasks: true, timeLogs: true } } },
   });
 
   const serialized = orgs.map(o => ({
@@ -16,12 +16,12 @@ export default async function OrgsListPage({ searchParams }: { searchParams: { s
   }));
 
   return (
-    <div style={{ maxWidth: 1100 }}>
+    <div style={{ maxWidth: 1200 }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text)", margin: 0 }}>Workspaces</h1>
-        <p style={{ fontSize: 13, color: "var(--text-3)", marginTop: 4 }}>Quản lý tất cả {orgs.length} workspace trên hệ thống</p>
+        <p style={{ fontSize: 13, color: "var(--text-3)", marginTop: 4 }}>Tất cả {orgs.length} workspace — xem chi tiết và quản lý từng org</p>
       </div>
-      <OrgsClient orgs={serialized} initialStatus={searchParams.status} />
+      <WorkspacesClient orgs={serialized} initialStatus={searchParams.status} />
     </div>
   );
 }

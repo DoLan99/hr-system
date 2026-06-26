@@ -8,6 +8,7 @@ import { getInitials } from "@/lib/utils";
 import { useState } from "react";
 import { useLocale } from "@/lib/i18n/context";
 import { RunningTimerBadge } from "@/components/tracking/running-timer-badge";
+import { CheckInButton } from "@/components/tracking/check-in-button";
 import { useSidebar } from "@/lib/contexts/sidebar-context";
 import { useCurrentUser } from "@/lib/contexts/current-user-context";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -124,6 +125,7 @@ export function Topbar() {
 
       {/* Right */}
       <div className="flex items-center gap-1 flex-shrink-0">
+        <CheckInButton />
         <RunningTimerBadge />
 
         <ThemeToggle />
