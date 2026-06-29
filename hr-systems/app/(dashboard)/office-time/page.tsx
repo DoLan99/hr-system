@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, rawPrisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/current-user";
 import { MANAGER_ROLES } from "@/lib/api-auth";
 import { OfficeTimeClient } from "./_components/office-time-client";
@@ -36,7 +36,7 @@ export default async function OfficeTimePage({ searchParams }: Props) {
 
   const { start, end } = getPayrollPeriod(month, year);
 
-  const [records, leaveRecords, employees, targetEmp] = await Promise.all([
+  const [records, leaveRecords, employees, targetEmp, orgSettings] = await Promise.all([
     prisma.officeTime.findMany({
       where: { organizationId: organization.id, employeeId: targetId, date: { gte: start, lte: end } },
       include: { approvedBy: { select: { fullName: true } } },
@@ -68,6 +68,10 @@ export default async function OfficeTimePage({ searchParams }: Props) {
         status: true,
         role: { select: { name: true } },
       },
+    }),
+    rawPrisma.organization.findUnique({
+      where: { id: organization.id },
+      select: { workMode: true },
     }),
   ]);
 
@@ -166,6 +170,7 @@ export default async function OfficeTimePage({ searchParams }: Props) {
       employeeId={targetId}
       employees={isManager ? employees : []}
       viewingName={targetEmp?.fullName ?? null}
+      workMode={orgSettings?.workMode ?? "OFFLINE"}
       employeeInfo={targetEmp ? {
         employeeCode: targetEmp.employeeCode ?? "--",
         fullName: targetEmp.fullName,

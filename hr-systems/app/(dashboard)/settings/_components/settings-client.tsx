@@ -7,12 +7,16 @@ import { MicrosoftConnect } from "./microsoft-connect";
 import { ChannelSetup } from "./channel-setup";
 import { SUPPORTED_LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n";
 
-type Section = "workspace" | "appearance" | "notifications" | "integrations" | "danger";
+type Section = "workspace" | "work-rules" | "appearance" | "notifications" | "integrations" | "danger";
 
 const NAV: { id: Section; label: string; icon: React.ReactNode; danger?: boolean }[] = [
   {
     id: "workspace", label: "Workspace",
     icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+  },
+  {
+    id: "work-rules", label: "Quy định làm việc",
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
   },
   {
     id: "appearance", label: "Giao diện",
@@ -98,6 +102,77 @@ function WorkspacePane({ locale, setLocale, isPending }: { locale: Locale; setLo
         </div>
       </div>
     </>
+  );
+}
+
+function WorkRulesPane({ workMode: initial, isAdmin }: { workMode: string; isAdmin: boolean }) {
+  const [mode, setMode] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  async function handleChange(newMode: string) {
+    if (!isAdmin) return;
+    setMode(newMode);
+    setSaving(true);
+    setSaved(false);
+    try {
+      const res = await fetch("/api/org/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workMode: newMode }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("Lỗi lưu work mode:", res.status, err);
+        setMode(mode); // rollback
+        return;
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error("Lỗi lưu work mode:", e);
+      setMode(mode);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="ss">
+      <div className="ss-head"><h3>Quy định làm việc</h3></div>
+      <div className="ss-body">
+        <SRow
+          title="Hình thức làm việc"
+          sub="Ảnh hưởng đến cách hiển thị bảng chấm công của nhân viên"
+          ctrl={
+            <div className="radio-group">
+              <div className={`radio-item${mode === "OFFLINE" ? " on" : ""}${!isAdmin ? " disabled" : ""}`}
+                onClick={() => mode !== "OFFLINE" && handleChange("OFFLINE")}
+                style={{ opacity: !isAdmin ? 0.6 : 1, cursor: isAdmin ? "pointer" : "default" }}>
+                🏢 Offline (Văn phòng)
+              </div>
+              <div className={`radio-item${mode === "ONLINE" ? " on" : ""}${!isAdmin ? " disabled" : ""}`}
+                onClick={() => mode !== "ONLINE" && handleChange("ONLINE")}
+                style={{ opacity: !isAdmin ? 0.6 : 1, cursor: isAdmin ? "pointer" : "default" }}>
+                💻 Online (Remote)
+              </div>
+            </div>
+          }
+        />
+        <div style={{ padding: "10px 18px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+          {saving && <span style={{ fontSize: ".8rem", color: "var(--text-3)" }}>Đang lưu...</span>}
+          {saved && <span style={{ fontSize: ".8rem", color: "var(--ok)" }}>✓ Đã lưu</span>}
+          {!isAdmin && <span style={{ fontSize: ".78rem", color: "var(--text-3)" }}>Chỉ Admin mới có thể thay đổi cài đặt này.</span>}
+        </div>
+        <div style={{ margin: "0 18px 18px", padding: "14px 16px", background: "var(--content)", border: "1px solid var(--border)", borderRadius: 10 }}>
+          <div style={{ fontSize: ".82rem", fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>Ý nghĩa của từng chế độ</div>
+          <div style={{ fontSize: ".8rem", color: "var(--text-2)", lineHeight: 1.7 }}>
+            <div style={{ marginBottom: 6 }}><strong>🏢 Offline (Văn phòng):</strong> Bảng chấm công hiển thị dạng <em>lịch tháng</em> — nhân viên check-in/out trực tiếp tại văn phòng, mỗi ngày hiển thị trạng thái trên ô lịch.</div>
+            <div><strong>💻 Online (Remote):</strong> Bảng chấm công hiển thị dạng <em>danh sách tuần</em> — nhân viên làm việc từ xa, có thể xem chi tiết giờ làm theo từng ngày trong tuần.</div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -221,7 +296,7 @@ function DangerPane() {
   );
 }
 
-export function SettingsClient({ isAdmin = false }: { isAdmin?: boolean }) {
+export function SettingsClient({ isAdmin = false, workMode = "OFFLINE" }: { isAdmin?: boolean; workMode?: string }) {
   const { locale, setLocale, isPending } = useLocale();
   const [active, setActive] = useState<Section>("workspace");
 
@@ -244,6 +319,9 @@ export function SettingsClient({ isAdmin = false }: { isAdmin?: boolean }) {
       <div className="st-main">
         <div className={`st-pane${active === "workspace" ? " on" : ""}`}>
           <WorkspacePane locale={locale} setLocale={setLocale} isPending={isPending} />
+        </div>
+        <div className={`st-pane${active === "work-rules" ? " on" : ""}`}>
+          <WorkRulesPane workMode={workMode} isAdmin={isAdmin} />
         </div>
         <div className={`st-pane${active === "appearance" ? " on" : ""}`}>
           <AppearancePane />

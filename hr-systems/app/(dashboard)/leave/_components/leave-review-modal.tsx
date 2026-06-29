@@ -18,6 +18,7 @@ interface Props {
   item: LeaveItem;
   onClose: () => void;
   onSaved: (item: any) => void;
+  defaultStatus?: "APPROVED" | "REJECTED";
 }
 
 const TYPE_LABELS: Record<string, { label: string; color: string }> = {
@@ -31,11 +32,9 @@ function initials(name: string) {
   return name.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase();
 }
 
-export function LeaveReviewModal({ item, onClose, onSaved }: Props) {
-  const [status, setStatus] = useState<"APPROVED" | "REJECTED">("APPROVED");
-  const [approvedHours, setApprovedHours] = useState(String(Number(item.requestedHours)));
+export function LeaveReviewModal({ item, onClose, onSaved, defaultStatus = "APPROVED" }: Props) {
+  const [status, setStatus] = useState<"APPROVED" | "REJECTED">(defaultStatus);
   const [approvalNote, setApprovalNote] = useState("");
-  const [money, setMoney] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -52,8 +51,7 @@ export function LeaveReviewModal({ item, onClose, onSaved }: Props) {
     try {
       const body: any = { status, approvalNote: approvalNote || undefined };
       if (status === "APPROVED") {
-        body.approvedHours = Number(approvedHours);
-        if (money) body.money = Number(money);
+        body.approvedHours = Number(item.requestedHours);
       }
       const res = await fetch(`/api/leave/${item.id}/review`, {
         method: "PATCH",
@@ -218,42 +216,20 @@ export function LeaveReviewModal({ item, onClose, onSaved }: Props) {
             </button>
           </div>
 
-          {/* Approve fields */}
-          {isApprove && (
-            <div className="rv-row2">
-              <div className="rv-field">
-                <label>Số giờ duyệt<span className="req">*</span></label>
-                <input
-                  type="number" min={0} max={24} step={0.5}
-                  value={approvedHours}
-                  onChange={(e) => setApprovedHours(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="rv-field">
-                <label>Tiền hỗ trợ (nếu có)</label>
-                <input
-                  type="number" min={0}
-                  value={money}
-                  onChange={(e) => setMoney(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
+          {/* Reject reason — only shown when rejecting */}
+          {!isApprove && (
+            <div className="rv-field">
+              <label>Lý do từ chối<span className="req">*</span></label>
+              <textarea
+                value={approvalNote}
+                onChange={(e) => setApprovalNote(e.target.value)}
+                rows={3}
+                placeholder="Nhập lý do để thông báo cho nhân viên…"
+                style={{ minHeight: 80, resize: "vertical" }}
+                autoFocus
+              />
             </div>
           )}
-
-          <div className="rv-field">
-            <label>
-              {isApprove ? "Ghi chú" : <>Lý do từ chối<span className="req">*</span></>}
-            </label>
-            <textarea
-              value={approvalNote}
-              onChange={(e) => setApprovalNote(e.target.value)}
-              rows={3}
-              placeholder={isApprove ? "Ghi chú cho nhân viên…" : "Nhập lý do để thông báo cho nhân viên…"}
-              style={{ minHeight: 80, resize: "vertical" }}
-            />
-          </div>
 
           {error && <div className="rv-err">{error}</div>}
         </div>

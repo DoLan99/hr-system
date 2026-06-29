@@ -16,6 +16,7 @@ model Organization {
   logoUrl               String?
   plan                  Plan                   @default(FREE)
   status                OrgStatus              @default(ACTIVE)
+  workMode              WorkMode               @default(OFFLINE)
   seatLimit             Int                    @default(1)
   stripeCustomerId      String?                @unique
   stripeSubscriptionId  String?                @unique
@@ -1591,6 +1592,11 @@ enum SprintStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+}
+
+enum WorkMode {
+  ONLINE
+  OFFLINE
 }
 
 enum Plan {
