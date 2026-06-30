@@ -3,667 +3,590 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Đánh giá Hiệu suất — jobihome.vn</title>
+<title>Đánh giá hiệu suất — jobihome.vn</title>
 <script>(function(){var t=localStorage.getItem('jh-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
 <link rel="stylesheet" href="css/app.css"/>
 <style>
-/* ── Performance page ── */
+/* ── Performance Reviews ── */
+.pf-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.pf-stat{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);padding:15px 17px;display:flex;align-items:center;gap:13px}
+.pf-stat .psi{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+.pf-stat .psi svg{width:18px;height:18px}
+.pf-stat .psv{font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+.pf-stat .psl{font-size:.78rem;color:var(--text-3);margin-top:1px}
+.pf-stat .psd{font-size:.74rem;font-weight:600;margin-top:2px}
+.psd.ok{color:var(--ok)}.psd.warn{color:var(--warn)}.psd.danger{color:var(--danger)}
 
-/* cycle selector */
-.cycle-sel{display:inline-flex;align-items:center;gap:4px;background:var(--elev);border:1px solid var(--border);border-radius:9px;padding:3px}
-.cycle-sel button{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--text-2);border:none;background:none;cursor:pointer;transition:background .15s,color .15s;font-family:inherit}
-.cycle-sel button:hover{background:var(--accent-soft);color:var(--accent-ink)}
-.cycle-sel .cval{padding:0 16px;font-size:.86rem;font-weight:700;color:var(--text);min-width:120px;text-align:center}
+/* layout */
+.pf-layout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+.pf-main{display:flex;flex-direction:column;gap:16px}
+.pf-side{display:flex;flex-direction:column;gap:16px}
 
-/* status chips */
-.perf-status{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:.69rem;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap}
-.perf-status.completed{background:var(--ok-soft);color:var(--ok)}
-.perf-status.manager{background:rgba(59,91,219,.14);color:var(--accent-ink)}
-.perf-status.self{background:var(--warn-soft);color:var(--warn)}
-.perf-status.draft{background:var(--border);color:var(--text-3)}
+/* tabs */
+.pf-tabs{display:flex;gap:4px;margin-bottom:18px;flex-wrap:wrap}
+.pf-tab{font-size:.85rem;font-weight:500;padding:8px 16px;border-radius:9px;color:var(--text-2);cursor:pointer;transition:all .15s;border:1px solid transparent}
+.pf-tab:hover{color:var(--text);background:var(--elev);border-color:var(--border)}
+.pf-tab.on{background:var(--accent-soft);color:var(--accent-ink);font-weight:600;border-color:var(--accent-soft-2)}
 
-/* review cards grid */
-.perf-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-@media(max-width:820px){.perf-grid{grid-template-columns:1fr}}
+/* panel */
+.pp{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.pp-head{display:flex;align-items:center;justify-content:space-between;padding:13px 17px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px}
+.pp-head h3{font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.pp-head h3 svg{width:15px;height:15px;color:var(--accent-ink)}
 
-/* member review card */
-.perf-card{background:var(--elev);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:22px;cursor:pointer;transition:border-color .18s var(--ease),transform .18s var(--ease),box-shadow .15s;position:relative;overflow:hidden}
-.perf-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,50,.35)}
-.perf-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);opacity:0;transition:opacity .2s}
-.perf-card.completed::before{background:var(--ok);opacity:1}
-.perf-card.manager::before{background:var(--accent);opacity:1}
-.perf-card.self::before{background:var(--warn);opacity:1}
-.perf-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
-.pc-who{display:flex;align-items:center;gap:11px}
-.pc-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#8b7bff,#4f7aff);display:grid;place-items:center;color:#fff;font-size:.9rem;font-weight:700;flex-shrink:0}
-.pc-name{font-size:.96rem;font-weight:700;color:var(--text)}
-.pc-role{font-size:.74rem;color:var(--text-3);font-family:var(--font-mono);margin-top:2px}
+/* review card grid */
+.rev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.rev-card{background:var(--elev);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;transition:border-color .18s,transform .18s,box-shadow .18s;cursor:pointer;position:relative;overflow:hidden}
+.rev-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow)}
+.rev-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:99px 0 0 99px}
+.rev-card.status-pending::before{background:var(--warn)}
+.rev-card.status-self_done::before{background:var(--accent)}
+.rev-card.status-manager_done::before{background:var(--ok)}
+.rev-card.status-completed::before{background:#22c55e}
+.rc-top{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.rc-av{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:.85rem;font-weight:700;color:#fff;flex-shrink:0}
+.rc-name{font-weight:700;font-size:.96rem;color:var(--text)}
+.rc-role{font-size:.76rem;color:var(--text-3);margin-top:2px}
+.rc-status{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:.66rem;font-weight:700;padding:3px 9px;border-radius:99px;margin-left:auto;flex-shrink:0}
+.rs-pending{background:var(--warn-soft);color:var(--warn)}
+.rs-self_done{background:var(--accent-soft);color:var(--accent-ink)}
+.rs-manager_done{background:var(--ok-soft);color:var(--ok)}
+.rs-completed{background:var(--ok-soft);color:var(--ok)}
 
-/* score donut (CSS only) */
-.score-ring{width:52px;height:52px;position:relative;flex-shrink:0}
-.score-ring svg{width:52px;height:52px;transform:rotate(-90deg)}
-.score-ring .ring-bg{fill:none;stroke:var(--border);stroke-width:4}
-.score-ring .ring-fill{fill:none;stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .6s var(--ease)}
-.score-ring .ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.score-ring .ring-val{font-family:var(--font-mono);font-size:.88rem;font-weight:800;color:var(--text);line-height:1}
-.score-ring .ring-max{font-size:.58rem;color:var(--text-3)}
+/* score row */
+.score-bars{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.sb-row{display:flex;align-items:center;gap:8px}
+.sb-lbl{font-size:.74rem;color:var(--text-3);width:80px;flex-shrink:0}
+.sb-track{flex:1;height:6px;border-radius:99px;background:var(--border);overflow:hidden}
+.sb-fill{height:100%;border-radius:99px;background:var(--accent);transition:width .6s var(--ease)}
+.sb-val{font-family:var(--font-mono);font-size:.74rem;font-weight:700;color:var(--text);width:30px;text-align:right;flex-shrink:0}
 
-/* criteria bars */
-.criteria-bars{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
-.cr-bar-row{display:grid;grid-template-columns:80px 1fr 30px;align-items:center;gap:8px}
-.cr-bar-row .cr-lbl{font-size:.76rem;color:var(--text-2);white-space:nowrap}
-.cr-bar-row .cr-track{height:5px;background:var(--border);border-radius:99px;overflow:hidden}
-.cr-bar-row .cr-fill{height:100%;border-radius:99px;transition:width .5s var(--ease)}
-.cr-bar-row .cr-val{font-family:var(--font-mono);font-size:.72rem;font-weight:700;color:var(--text);text-align:right}
+/* total score donut */
+.rc-score{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border)}
+.mini-donut{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--p,0)*1%),var(--border) 0);flex-shrink:0}
+.mini-donut .inner{width:38px;height:38px;border-radius:50%;background:var(--elev);display:grid;place-items:center;font-family:var(--font-mono);font-size:.88rem;font-weight:800;color:var(--text)}
+.rc-meta{font-size:.78rem;color:var(--text-2);line-height:1.5}
+.rc-meta b{color:var(--text)}
 
-/* score pill */
-.score-pill{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:.78rem;font-weight:800;padding:3px 10px;border-radius:99px}
-.score-pill.great{background:rgba(74,222,128,.12);color:#4ade80}
-.score-pill.good{background:rgba(59,91,219,.13);color:var(--accent-ink)}
-.score-pill.avg{background:var(--warn-soft);color:var(--warn)}
-.score-pill.low{background:var(--danger-soft);color:var(--danger)}
-.score-pill.none{background:var(--border);color:var(--text-3)}
+/* review detail panel */
+.pf-detail{position:fixed;top:0;right:0;bottom:0;width:520px;max-width:96vw;background:var(--elev);border-left:1px solid var(--border);display:flex;flex-direction:column;z-index:60;transform:translateX(110%);transition:transform .32s cubic-bezier(.22,1,.36,1);box-shadow:-20px 0 60px rgba(0,0,0,.35)}
+.pf-detail.open{transform:translateX(0)}
+.pd-head{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.pd-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0}
+.pd-sect{padding:18px;border-bottom:1px solid var(--border)}
+.pd-sect:last-child{border-bottom:none}
+.pd-sect-h{font-family:var(--font-mono);font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:12px}
+.pd-row{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--border);font-size:.85rem;gap:16px}
+.pd-row:last-child{border-bottom:none}
+.pd-row .pl{color:var(--text-3);flex-shrink:0;min-width:110px}
+.pd-row .pv{color:var(--text);font-weight:500;text-align:right}
 
-/* review drawer */
-.rd-back{position:fixed;inset:0;background:rgba(4,8,18,.6);backdrop-filter:blur(3px);z-index:100;opacity:0;transition:opacity .22s;pointer-events:none}
-.rd-back.open{opacity:1;pointer-events:auto}
-.rd-drawer{position:fixed;top:0;right:0;height:100vh;width:620px;max-width:97vw;background:var(--elev);border-left:1px solid var(--border-2);box-shadow:-30px 0 60px rgba(0,0,0,.45);z-index:101;transform:translateX(100%);transition:transform .28s var(--ease);display:flex;flex-direction:column}
-.rd-drawer.open{transform:translateX(0)}
-.rd-head{display:flex;align-items:center;gap:12px;padding:18px 24px;border-bottom:1px solid var(--border);flex-shrink:0}
-.rd-close{margin-left:auto;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);cursor:pointer;font-family:inherit;border:none;background:none;flex-shrink:0}
-.rd-close:hover{background:var(--content);color:var(--text)}
-.rd-close svg{width:17px;height:17px}
-.rd-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
-.rd-tab{flex:1;height:44px;display:flex;align-items:center;justify-content:center;font-size:.83rem;font-weight:600;color:var(--text-3);border-bottom:2px solid transparent;cursor:pointer;transition:color .15s,border-color .15s;font-family:inherit;border-top:none;border-left:none;border-right:none;background:none}
-.rd-tab:hover{color:var(--text-2)}
-.rd-tab.on{color:var(--text);border-bottom-color:var(--accent)}
-.rd-pane{display:none;padding:24px;overflow-y:auto}
-.rd-pane.on{display:block}
-.rd-body{flex:1;overflow:hidden;display:flex;flex-direction:column}
+/* big score display */
+.big-score{display:flex;align-items:center;gap:20px;padding:18px}
+.bs-donut{width:90px;height:90px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--p,0)*1%),var(--border) 0);flex-shrink:0}
+.bs-donut .bsi{width:68px;height:68px;border-radius:50%;background:var(--elev);display:grid;place-items:center;font-family:var(--font-mono);font-size:1.5rem;font-weight:800;color:var(--text)}
+.bs-info{flex:1}
+.bs-label{font-size:.78rem;color:var(--text-3);margin-bottom:4px}
+.bs-sources{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.bs-src{font-size:.74rem;font-weight:500;padding:3px 9px;border-radius:99px;background:var(--content);border:1px solid var(--border)}
 
-/* drawer sections */
-.dsec{font-family:var(--font-mono);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:14px;margin-top:4px}
-.drow{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
-.drow:last-child{border-bottom:none}
-.drow .dl{font-size:.78rem;color:var(--text-3);min-width:100px;flex-shrink:0;padding-top:1px}
-.drow .dv{font-size:.88rem;color:var(--text);flex:1}
-.dcard{background:var(--content);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:18px}
+/* criterion score bars (detail) */
+.crit-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px dashed var(--border)}
+.crit-row:last-child{border-bottom:none}
+.crit-ico{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;flex-shrink:0}
+.crit-ico svg{width:13px;height:13px}
+.crit-lbl{font-size:.85rem;font-weight:600;flex:1}
+.crit-desc{font-size:.74rem;color:var(--text-3);margin-top:2px}
+.crit-scores{display:flex;gap:8px;flex-shrink:0;align-items:center}
+.cs-item{display:flex;flex-direction:column;align-items:center;gap:2px}
+.cs-v{font-family:var(--font-mono);font-size:.88rem;font-weight:800}
+.cs-l{font-size:.62rem;color:var(--text-3)}
 
-/* score input sliders */
-.sc-input-row{display:grid;grid-template-columns:110px 1fr 46px;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
-.sc-input-row:last-child{border-bottom:none}
-.sc-input-row .sil{font-size:.82rem;color:var(--text-2);font-weight:500}
-.sc-input-row .sil span{font-size:.7rem;color:var(--text-3);display:block;font-family:var(--font-mono)}
-.sc-input-row input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:var(--border);border-radius:99px;outline:none;cursor:pointer}
-.sc-input-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 8px rgba(59,91,219,.5)}
-.sc-input-row .sival{font-family:var(--font-mono);font-size:.9rem;font-weight:800;color:var(--accent-ink);text-align:right}
+/* self / manager review form */
+.review-form{display:flex;flex-direction:column;gap:14px;padding:18px}
+.rf-label{font-size:.82rem;font-weight:600;color:var(--text-2);margin-bottom:5px}
+.rf-score-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.score-btn{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;font-family:var(--font-mono);font-size:.88rem;font-weight:700;border:1.5px solid var(--border-2);background:var(--content);color:var(--text-2);cursor:pointer;transition:all .15s}
+.score-btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.score-btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.rf-textarea{background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:10px 13px;font-family:inherit;font-size:.85rem;color:var(--text);outline:none;resize:vertical;min-height:80px;width:100%;transition:border-color .15s,box-shadow .15s}
+.rf-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.rf-textarea::placeholder{color:var(--text-3)}
 
-/* compare bars */
-.compare-row{display:grid;grid-template-columns:80px 1fr 1fr 28px 28px;gap:8px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border)}
-.compare-row:last-child{border-bottom:none}
-.compare-row.header{padding:6px 14px;background:var(--content)}
-.compare-row.header span{font-family:var(--font-mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);text-align:center}
-.compare-row.header span:first-child{text-align:left}
-.cbar-wrap{height:6px;background:var(--border);border-radius:99px;overflow:hidden}
-.cbar-fill{height:100%;border-radius:99px;transition:width .5s var(--ease)}
-.cbar-fill.auto{background:linear-gradient(90deg,var(--accent),#5275e6)}
-.cbar-fill.self{background:linear-gradient(90deg,#a78bfa,#8b5cf6)}
-.cbar-fill.mgr{background:linear-gradient(90deg,var(--ok),#4ade80)}
-.cnum{font-family:var(--font-mono);font-size:.78rem;font-weight:700;text-align:center}
-.cnum.auto{color:var(--accent-ink)}
-.cnum.mgr{color:var(--ok)}
+/* cycle header */
+.cycle-banner{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--accent-soft);border:1px solid var(--accent-soft-2);border-radius:var(--r-lg);margin-bottom:18px}
+.cb-ico{width:38px;height:38px;border-radius:10px;background:var(--accent);display:grid;place-items:center;flex-shrink:0}
+.cb-ico svg{width:18px;height:18px;color:#fff}
+.cb-name{font-weight:700;font-size:.95rem;color:var(--text)}
+.cb-sub{font-size:.8rem;color:var(--text-2)}
+.cb-progress{margin-left:auto;text-align:right}
+.cb-pct{font-family:var(--font-mono);font-size:1.1rem;font-weight:800;color:var(--accent-ink)}
+.cb-plbl{font-size:.74rem;color:var(--text-3)}
 
-/* AI suggestion */
-.ai-suggestion{background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:12px;padding:16px;margin-top:18px}
-.ai-head{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:700;color:#a78bfa;margin-bottom:10px}
-.ai-head svg{width:16px;height:16px}
-.ai-kpi-list{display:flex;flex-direction:column;gap:6px}
-.ai-kpi{font-size:.84rem;color:var(--text-2);display:flex;gap:8px;align-items:flex-start}
-.ai-kpi::before{content:"→";color:#a78bfa;flex-shrink:0;font-weight:700}
+/* team ranking */
+.rank-list{display:flex;flex-direction:column;gap:6px}
+.rank-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;transition:background .12s;cursor:pointer}
+.rank-row:hover{background:var(--content)}
+.rank-n{font-family:var(--font-mono);font-size:.72rem;color:var(--text-3);width:18px;text-align:right;flex-shrink:0}
+.rank-av{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:.66rem;font-weight:700;color:#fff;flex-shrink:0}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-weight:600;font-size:.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-role{font-size:.72rem;color:var(--text-3)}
+.rank-score{font-family:var(--font-mono);font-size:.9rem;font-weight:800}
 
-/* comment textarea */
-.rv-ta{width:100%;font-family:inherit;font-size:.88rem;color:var(--text);background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:10px 12px;outline:none;resize:vertical;min-height:80px;transition:border-color .15s,box-shadow .15s}
-.rv-ta:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.rv-ta::placeholder{color:var(--text-3)}
+/* create cycle modal */
+.cm-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.cm-modal.open{opacity:1;pointer-events:auto}
+.cm-scrim{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.cm-card{position:relative;z-index:1;background:var(--elev);border:1px solid var(--border-2);border-radius:var(--r-lg);width:100%;max-width:480px;padding:26px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-lg)}
+.cm-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--text-3)}
+.cm-f{display:flex;flex-direction:column;gap:5px}
+.cm-f label{font-size:.81rem;font-weight:600;color:var(--text-2)}
+.cm-f input,.cm-f select{background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:9px 12px;font-family:inherit;font-size:.88rem;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.cm-f input:focus,.cm-f select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.cm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cm-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:6px;border-top:1px solid var(--border)}
 
-/* progress tracker */
-.cycle-progress{display:flex;align-items:center;gap:0;margin-bottom:24px;background:var(--elev);border:1px solid var(--border);border-radius:12px;padding:16px 20px;overflow:hidden}
-.cp-step{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative}
-.cp-step::after{content:"";position:absolute;top:14px;left:50%;width:100%;height:2px;background:var(--border);z-index:0}
-.cp-step:last-child::after{display:none}
-.cp-dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-mono);font-size:.72rem;font-weight:700;position:relative;z-index:1;flex-shrink:0;transition:background .2s}
-.cp-dot.done{background:var(--ok);color:#fff}
-.cp-dot.active{background:var(--accent);color:#fff;box-shadow:0 0 12px rgba(59,91,219,.5)}
-.cp-dot.todo{background:var(--border);color:var(--text-3)}
-.cp-lbl{font-size:.72rem;color:var(--text-3);text-align:center;white-space:nowrap;font-family:var(--font-mono)}
-.cp-step.done .cp-lbl{color:var(--ok)}
-.cp-step.active .cp-lbl{color:var(--accent-ink);font-weight:700}
-.cp-step.done::after{background:var(--ok)}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:59;opacity:0;pointer-events:none;transition:opacity .25s}
+.scrim.on{opacity:1;pointer-events:auto}
 
-/* toast */
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--elev);border:1px solid var(--border-2);border-radius:10px;padding:12px 22px;font-size:.86rem;font-weight:500;color:var(--text);box-shadow:var(--shadow-lg);z-index:500;opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;white-space:nowrap}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.toast.ok{border-left:3px solid var(--ok)}
-.toast.warn{border-left:3px solid var(--warn)}
-.toast.err{border-left:3px solid var(--danger)}
+@media(max-width:1000px){.pf-layout{grid-template-columns:1fr}.pf-side{display:grid;grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.pf-stats{grid-template-columns:1fr 1fr}.rev-grid{grid-template-columns:1fr}.pf-detail{width:100vw}.pf-side{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="nav-scrim" id="navScrim"></div>
+<div class="scrim" id="scrim"></div>
 <div class="app">
 
-<!-- SIDEBAR -->
-<aside class="side">
-  <div class="side-brand">
-    <span class="lm">j</span>
-    <div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div>
+  <aside class="side">
+    <div class="side-brand"><span class="lm">j</span><div><div class="bt">jobihome</div><div class="bs">Workspace · Do thi Lan</div></div></div>
+    <nav class="side-nav scroll" id="sideNav"></nav>
+    <div class="side-foot"><div class="side-user"><span class="av">DL</span><div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span></div></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="tb-icon menu-btn" id="menuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div><div class="tb-title">Đánh giá hiệu suất</div></div>
+      <div class="tb-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input type="text" id="globalSearch" placeholder="Tìm nhân viên…"/><kbd>⌘K</kbd></div>
+      <div class="tb-right">
+        <button class="tb-icon" id="themeToggle">
+          <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+          <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+        </button>
+        <button class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+      </div>
+    </header>
+
+    <main class="content scroll">
+      <div class="content-inner">
+
+        <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div><h1>Đánh giá hiệu suất</h1><p>Auto-KPI từ dữ liệu thật + Self-review + Manager review — 5 tiêu chí khách quan.</p></div>
+          <div style="display:flex;gap:8px;">
+            <button class="abtn ghost" id="cycleSel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Chu kỳ Q2/2026 ▾</button>
+            <button class="abtn primary" id="newCycleBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>Chu kỳ mới</button>
+          </div>
+        </div>
+
+        <!-- current cycle banner -->
+        <div class="cycle-banner">
+          <div class="cb-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z"/></svg></div>
+          <div><div class="cb-name">Chu kỳ Review Q2/2026</div><div class="cb-sub">01/04/2026 – 30/06/2026 · 9 thành viên · Hạn nộp self-review: <b>25/06/2026</b></div></div>
+          <div class="cb-progress"><div class="cb-pct">7/9</div><div class="cb-plbl">đã hoàn thành</div></div>
+        </div>
+
+        <!-- stats -->
+        <div class="pf-stats" id="pfStats"></div>
+
+        <!-- tabs -->
+        <div class="pf-tabs">
+          <div class="pf-tab on" data-t="overview">Tổng quan</div>
+          <div class="pf-tab" data-t="self">Self-review</div>
+          <div class="pf-tab" data-t="manager">Manager review</div>
+          <div class="pf-tab" data-t="history">Lịch sử</div>
+        </div>
+
+        <div class="pf-layout">
+          <!-- main -->
+          <div class="pf-main" id="pfMain"></div>
+          <!-- side -->
+          <div class="pf-side">
+            <!-- ranking -->
+            <div class="pp">
+              <div class="pp-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>Xếp hạng Q2/2026</h3></div>
+              <div style="padding:12px 14px"><div class="rank-list" id="rankList"></div></div>
+            </div>
+            <!-- criteria legend -->
+            <div class="pp">
+              <div class="pp-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>5 tiêu chí Auto-KPI</h3></div>
+              <div style="padding:14px;display:flex;flex-direction:column;gap:10px">
+                <div style="font-size:.78rem;color:var(--text-2);line-height:1.6">Điểm được tính <b>tự động</b> từ dữ liệu task & time log, kết hợp self-review và manager review.</div>
+                <div style="display:flex;flex-direction:column;gap:8px" id="criteriaLegend"></div>
+              </div>
+            </div>
+            <!-- quick actions -->
+            <div class="pp">
+              <div class="pp-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>Thao tác nhanh</h3></div>
+              <div style="padding:14px;display:flex;flex-direction:column;gap:8px">
+                <button class="abtn ghost" style="height:36px;font-size:.83rem;justify-content:flex-start" id="remindBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>Nhắc nhở self-review</button>
+                <button class="abtn ghost" style="height:36px;font-size:.83rem;justify-content:flex-start"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export kết quả CSV</button>
+                <button class="abtn ghost" style="height:36px;font-size:.83rem;justify-content:flex-start"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Kết thúc chu kỳ</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
   </div>
-  <nav class="side-nav scroll" id="sideNav"></nav>
-  <div class="side-foot">
-    <div class="side-user">
-      <span class="av">DL</span>
-      <div><div class="un">Do thi Lan</div><div class="ur">Super Admin</div></div>
-      <span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></span>
-    </div>
-  </div>
+</div>
+
+<!-- Detail panel -->
+<aside class="pf-detail" id="pfDetail">
+  <div class="pd-head" id="pdHead"></div>
+  <div class="pd-body" id="pdBody"></div>
 </aside>
 
-<!-- MAIN -->
-<div class="main">
-  <header class="topbar">
-    <button class="tb-icon menu-btn" id="menuBtn" aria-label="Menu">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-    </button>
-    <div><div class="tb-title">Đánh giá Hiệu suất</div></div>
-    <div class="tb-search">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-      <input type="text" placeholder="Tìm thành viên…"/>
-      <kbd>⌘K</kbd>
+<!-- New cycle modal -->
+<div class="cm-modal" id="cycleModal">
+  <div class="cm-scrim" id="cmScrim"></div>
+  <div class="cm-card">
+    <h2>Tạo chu kỳ review mới</h2>
+    <button class="cm-close" id="cmClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <div class="cm-f"><label>Tên chu kỳ *</label><input type="text" id="cmName" placeholder="vd. Q3/2026, Năm 2026…"/></div>
+    <div class="cm-grid">
+      <div class="cm-f"><label>Ngày bắt đầu</label><input type="date" id="cmFrom" value="2026-07-01"/></div>
+      <div class="cm-f"><label>Ngày kết thúc</label><input type="date" id="cmTo" value="2026-09-30"/></div>
     </div>
-    <div class="tb-right">
-      <button class="tb-icon" id="themeToggle" aria-label="Sáng/Tối">
-        <span class="icon-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
-        <span class="icon-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
-      </button>
-      <button class="tb-icon" aria-label="Thông báo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-        <span class="dot"></span>
-      </button>
-    </div>
-  </header>
-
-  <main class="content scroll">
-    <div class="content-inner">
-
-      <!-- Page head -->
-      <div class="page-head" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px">
-        <div>
-          <h1>Đánh giá Hiệu suất</h1>
-          <p>Performance review định kỳ · <b id="completedCount">—</b> hoàn thành · <b id="pendingCount">—</b> chờ đánh giá</p>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <div class="cycle-sel">
-            <button id="prevCycle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-            <span class="cval" id="cycleLabel">Q2 / 2026</span>
-            <button id="nextCycle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
-          </div>
-          <button class="abtn ghost" id="exportBtn" style="gap:7px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Xuất báo cáo
-          </button>
-        </div>
+    <div class="cm-f"><label>Hạn nộp self-review</label><input type="date" id="cmDeadline" value="2026-09-25"/></div>
+    <div class="cm-f"><label>Trọng số nguồn điểm</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px">
+        <div class="cm-f"><label style="font-size:.74rem">Auto-KPI</label><input type="number" value="40" min="0" max="100" id="wAuto"/></div>
+        <div class="cm-f"><label style="font-size:.74rem">Self-review</label><input type="number" value="20" min="0" max="100" id="wSelf"/></div>
+        <div class="cm-f"><label style="font-size:.74rem">Manager</label><input type="number" value="40" min="0" max="100" id="wMgr"/></div>
       </div>
-
-      <!-- Cycle progress -->
-      <div class="cycle-progress" id="cycleProgress"></div>
-
-      <!-- KPIs -->
-      <div class="kpis" id="kpiRow"></div>
-
-      <!-- Cards grid -->
-      <div style="font-family:var(--font-mono);font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);margin-bottom:14px;display:flex;align-items:center;gap:10px">
-        Đánh giá thành viên <span style="flex:1;height:1px;background:var(--border);display:block"></span>
-      </div>
-      <div class="perf-grid" id="perfGrid"></div>
-
     </div>
-  </main>
-</div>
-</div>
-
-<!-- Review Drawer -->
-<div class="rd-back" id="rdBack"></div>
-<div class="rd-drawer" id="rdDrawer">
-  <div class="rd-head">
-    <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#8b7bff,#4f7aff);display:grid;place-items:center;color:#fff;font-size:.9rem;font-weight:700;flex-shrink:0" id="drawerAv">—</div>
-    <div style="flex:1;min-width:0">
-      <div id="drawerName" style="font-size:1rem;font-weight:700;color:var(--text)"></div>
-      <div id="drawerMeta" style="font-size:.74rem;color:var(--text-3);font-family:var(--font-mono);margin-top:2px"></div>
+    <div class="cm-foot">
+      <button class="abtn ghost" id="cmCancel">Hủy</button>
+      <button class="abtn primary" id="cmSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="13" height="13"><path d="M5 12l5 5L20 6"/></svg>Tạo chu kỳ</button>
     </div>
-    <button class="rd-close" id="rdClose">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-    </button>
-  </div>
-  <div class="rd-tabs" id="rdTabBar">
-    <button class="rd-tab on" data-pane="overview">Tổng quan</button>
-    <button class="rd-tab" data-pane="self">Tự đánh giá</button>
-    <button class="rd-tab" data-pane="manager">Manager review</button>
-  </div>
-  <div class="rd-body">
-    <div class="rd-pane on" id="pane-overview" style="overflow-y:auto"></div>
-    <div class="rd-pane" id="pane-self" style="overflow-y:auto"></div>
-    <div class="rd-pane" id="pane-manager" style="overflow-y:auto"></div>
   </div>
 </div>
-
-<div class="toast" id="toast"></div>
 
 <script>
-(function(){
-"use strict";
+var AVCOLORS=["#3B5BDB","#2196f3","#7c3aed","#0891b2","#059669","#d97706","#dc2626","#be185d","#0f766e","#b45309","#1d4ed8","#6d28d9"];
 
-/* ── DATA ── */
-var CYCLES = ["Q4/2025","Q1/2026","Q2/2026","Q3/2026"];
-var curCycle = 2;
-
-var CRITERIA = [
-  {k:"speed",  l:"Tốc độ",   desc:"Hoàn thành task nhanh so với est"},
-  {k:"quality",l:"Chất lượng",desc:"Code sạch, ít bug, review tốt"},
-  {k:"ontime", l:"Đúng hạn",  desc:"% task hoàn thành trước deadline"},
-  {k:"learning",l:"Học hỏi",  desc:"Kỹ năng mới, tự cải thiện liên tục"},
-  {k:"initiative",l:"Chủ động",desc:"Đề xuất, giải quyết vấn đề không cần nhắc"}
+var CRITERIA=[
+  {id:"speed",name:"Tốc độ",desc:"Tasks hoàn thành / sprint",color:"#3B5BDB",svg:'<path d="M13 2L3 14h7l-1 8 10-12h-7z" stroke-linecap="round" stroke-linejoin="round"/>'},
+  {id:"quality",name:"Chất lượng",desc:"Tỷ lệ pass review lần đầu",color:"#059669",svg:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'},
+  {id:"ontime",name:"Đúng hạn",desc:"% task giao đúng deadline",color:"#d97706",svg:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/>'},
+  {id:"learning",name:"Học hỏi",desc:"Kỹ năng mới, đóng góp kiến thức",color:"#7c3aed",svg:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>'},
+  {id:"proactive",name:"Chủ động",desc:"Tự đề xuất cải tiến, hỗ trợ team",color:"#be185d",svg:'<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" stroke-linecap="round"/>'}
 ];
 
-var CYCLE_STEPS = [
-  {k:"setup",   l:"Mở chu kỳ",   status:"done"},
-  {k:"self",    l:"Tự đánh giá", status:"done"},
-  {k:"manager", l:"Manager review",status:"active"},
-  {k:"calibration",l:"Hiệu chỉnh",status:"todo"},
-  {k:"publish", l:"Công bố",     status:"todo"}
+var MEMBERS=[
+  {id:"M1",name:"Nguyễn Minh Anh",init:"MA",col:0,role:"Frontend Lead",
+   autoKpi:{speed:9.2,quality:8.8,ontime:8.5,learning:7.9,proactive:8.6},selfScore:8.4,managerScore:8.8,
+   selfNote:"Q2 tôi đã hoàn thành sprint đúng hạn và chủ động refactor auth module.",
+   managerNote:"Hiệu suất rất tốt. Cần cải thiện thêm phần documentation.",status:"completed"},
+  {id:"M2",name:"Trần Quốc Hoàng",init:"HG",col:1,role:"Backend Developer",
+   autoKpi:{speed:8.4,quality:9.1,ontime:7.8,learning:8.2,proactive:7.5},selfScore:7.9,managerScore:8.5,
+   selfNote:"Đã migrate toàn bộ schema Prisma và viết test coverage 85%.",
+   managerNote:"Code chất lượng cao, cần chủ động hơn trong planning.",status:"completed"},
+  {id:"M3",name:"Lê Thị Lan",init:"LN",col:2,role:"UI/UX Designer",
+   autoKpi:{speed:7.8,quality:8.6,ontime:8.0,learning:8.5,proactive:8.1},selfScore:8.0,managerScore:8.3,
+   selfNote:"Hoàn thành redesign toàn bộ flow onboarding và design system tokens.",
+   managerNote:"Sản phẩm thiết kế đẹp, phối hợp tốt với dev.",status:"completed"},
+  {id:"M4",name:"Phạm Văn Tú",init:"TU",col:3,role:"DevOps Engineer",
+   autoKpi:{speed:9.0,quality:8.3,ontime:9.1,learning:7.6,proactive:8.8},selfScore:8.5,managerScore:null,
+   selfNote:"Đã setup CI/CD pipeline và giảm 60% thời gian deploy.",status:"self_done"},
+  {id:"M5",name:"Đỗ Thị Lan",init:"DL",col:4,role:"HR Manager",
+   autoKpi:{speed:7.5,quality:8.9,ontime:8.7,learning:8.0,proactive:9.2},selfScore:8.6,managerScore:null,
+   selfNote:"Cải thiện toàn bộ quy trình onboarding nhân viên mới.",status:"self_done"},
+  {id:"M6",name:"Vũ Thanh Hà",init:"TH",col:5,role:"Product Manager",
+   autoKpi:{speed:8.1,quality:8.0,ontime:8.4,learning:8.8,proactive:9.0},selfScore:null,managerScore:null,
+   status:"pending"},
+  {id:"M7",name:"Nguyễn Đức Nam",init:"DN",col:6,role:"QA Engineer",
+   autoKpi:{speed:7.6,quality:9.3,ontime:8.2,learning:7.8,proactive:7.4},selfScore:7.5,managerScore:8.0,
+   selfNote:"Viết test automation cho 3 module chính.",
+   managerNote:"QA tốt, cần nhanh hơn trong phát hiện lỗi.",status:"completed"},
+  {id:"M8",name:"Trần Thị Mai",init:"TM",col:7,role:"Marketing Lead",
+   autoKpi:{speed:8.0,quality:7.9,ontime:8.6,learning:8.3,proactive:8.7},selfScore:null,managerScore:null,
+   status:"pending"},
+  {id:"M9",name:"Lê Hoàng Phúc",init:"HP",col:8,role:"Full-stack Dev",
+   autoKpi:{speed:8.3,quality:8.5,ontime:8.0,learning:8.6,proactive:8.2},selfScore:8.1,managerScore:8.4,
+   selfNote:"Đóng góp vào cả frontend và backend module lương.",
+   managerNote:"Full-stack tốt, tiếp tục phát triển.",status:"completed"}
 ];
 
-var MEMBERS = [
-  {v:"MA",l:"Minh Anh",role:"Frontend Lead",dept:"Frontend"},
-  {v:"HG",l:"Hoàng",role:"Backend Dev",dept:"Backend"},
-  {v:"LN",l:"Lan",role:"UI/UX Designer",dept:"Design"},
-  {v:"TU",l:"Tú",role:"Backend Dev",dept:"Backend"}
-];
-
-var REVIEWS = {
-  "MA":{
-    status:"completed",
-    autoKPI:{speed:9.2,quality:8.8,ontime:8.5,learning:7.9,initiative:8.6},
-    selfReview:{speed:8.5,quality:8.0,ontime:8.0,learning:8.5,initiative:8.0,
-      comment:"Quý 2 tôi đã hoàn thành tốt các feature chính của dashboard. Điểm cần cải thiện là cần chủ động hơn trong việc review code của team."},
-    managerReview:{speed:9.2,quality:8.8,ontime:8.5,learning:7.9,initiative:8.6,
-      comment:"Minh Anh có hiệu suất xuất sắc Q2, đặc biệt ở tốc độ và chất lượng code. Cần tập trung phát triển kỹ năng mentoring junior."},
-    finalScore:8.6,
-    nextKPIs:["Nâng cao TypeScript & performance optimization","Lead tech design cho 2 feature mới Sprint 15–16","Mentor 1 junior frontend developer"]
-  },
-  "HG":{
-    status:"manager",
-    autoKPI:{speed:8.1,quality:7.8,ontime:7.2,learning:8.4,initiative:7.6},
-    selfReview:{speed:7.5,quality:8.0,ontime:7.0,learning:8.5,initiative:7.5,
-      comment:"Tôi đã học thêm nhiều về Prisma và multi-tenant architecture. Cần cải thiện về việc đúng deadline hơn — một số task bị trễ do estimate chưa chính xác."},
-    managerReview:{speed:0,quality:0,ontime:0,learning:0,initiative:0,comment:""},
-    finalScore:null,
-    nextKPIs:["Cải thiện accuracy của task estimation","Hoàn thiện Salary module trong Q3","Deep dive into PostgreSQL performance tuning"]
-  },
-  "LN":{
-    status:"self",
-    autoKPI:{speed:7.6,quality:8.9,ontime:8.2,learning:7.5,initiative:7.8},
-    selfReview:{speed:0,quality:0,ontime:0,learning:0,initiative:0,comment:""},
-    managerReview:{speed:0,quality:0,ontime:0,learning:0,initiative:0,comment:""},
-    finalScore:null,
-    nextKPIs:["Xây dựng Design System component library","Cải thiện kỹ năng user research & testing","Học Figma variables & prototyping nâng cao"]
-  },
-  "TU":{
-    status:"completed",
-    autoKPI:{speed:8.8,quality:9.0,ontime:8.7,learning:9.1,initiative:8.5},
-    selfReview:{speed:8.0,quality:9.0,ontime:8.5,learning:9.0,initiative:8.0,
-      comment:"Q2 tôi đã hoàn thành tốt migration Prisma và Clerk integration — 2 task phức tạp nhất của sprint. Điểm tự cảm thấy có thể làm tốt hơn là initiative trong việc cải thiện quy trình team."},
-    managerReview:{speed:8.8,quality:9.0,ontime:8.7,learning:9.1,initiative:8.5,
-      comment:"Tú là contributor xuất sắc nhất Q2 — đặc biệt ở chất lượng code và tinh thần học hỏi liên tục. Recommend tăng trách nhiệm Tech Lead."},
-    finalScore:8.9,
-    nextKPIs:["Đảm nhận vai trò Tech Lead cho module Salary","Nghiên cứu và propose architecture cho Q4 roadmap","Viết tech blog chia sẻ kinh nghiệm Prisma multi-tenant"]
-  }
-};
-
-var openMember = null;
-var managerScores = {};
-
-/* ── UTILS ── */
-function mn(v){var m=MEMBERS.find(function(x){return x.v===v;});return m?m.l:v;}
-function avgOf(sc){
-  var vals=Object.values(sc).filter(function(v){return v>0;});
-  if(!vals.length)return null;
-  return Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10)/10;
+function emp(id){return MEMBERS.find(function(m){return m.id===id;});}
+function autoAvg(m){var s=CRITERIA.reduce(function(a,c){return a+m.autoKpi[c.id];},0);return Math.round(s/CRITERIA.length*10)/10;}
+function finalScore(m){
+  var auto=autoAvg(m);
+  var scores=[auto*0.4];
+  if(m.selfScore) scores.push(m.selfScore*0.2); else return null;
+  if(m.managerScore) scores.push(m.managerScore*0.4); else return null;
+  return Math.round(scores.reduce(function(a,b){return a+b;},0)*10)/10;
 }
-function scoreClass(s){if(s===null||s===undefined)return "none";if(s>=8.5)return "great";if(s>=7)return "good";if(s>=5)return "avg";return "low";}
-function scoreColor(s){if(!s)return "var(--border)";if(s>=8.5)return "var(--ok)";if(s>=7)return "var(--accent)";if(s>=5)return "var(--warn)";return "var(--danger)";}
-function statusLabel(s){return {completed:"Hoàn thành",manager:"Chờ manager",self:"Chờ tự đánh giá",draft:"Chưa bắt đầu"}[s]||s;}
+function scoreColor(s){if(!s)return"var(--text-3)";if(s>=9)return"#22c55e";if(s>=8)return"var(--accent-ink)";if(s>=7)return"var(--warn)";return"var(--danger)";}
 
-function scoreRing(score, size){
-  size=size||52;
-  var r=20, circ=2*Math.PI*r;
-  var pct=score?score/10:0;
-  var dash=circ*(1-pct);
-  var color=scoreColor(score);
-  return '<div class="score-ring" style="width:'+size+'px;height:'+size+'px">'+
-    '<svg width="'+size+'" height="'+size+'" viewBox="0 0 48 48" style="transform:rotate(-90deg)">'+
-      '<circle class="ring-bg" cx="24" cy="24" r="'+r+'" stroke-width="4"/>'+
-      '<circle class="ring-fill" cx="24" cy="24" r="'+r+'" stroke="'+color+'"'+
-        ' stroke-dasharray="'+circ+'" stroke-dashoffset="'+dash+'"'+
-        ' fill="none" stroke-width="4" stroke-linecap="round"/>'+
-    '</svg>'+
-    '<div class="ring-text">'+
-      '<span class="ring-val" style="color:'+color+'">'+(score||"—")+'</span>'+
-      (score?'<span class="ring-max">/10</span>':'')+
+/* ── Stats ── */
+(function(){
+  var completed=MEMBERS.filter(function(m){return m.status==="completed";}).length;
+  var selfDone=MEMBERS.filter(function(m){return m.status==="self_done";}).length;
+  var pending=MEMBERS.filter(function(m){return m.status==="pending";}).length;
+  var scores=MEMBERS.map(finalScore).filter(Boolean);
+  var avg=scores.length?Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length*10)/10:0;
+  document.getElementById("pfStats").innerHTML=[
+    {c:"#22c55e",sv:'<path d="M5 12l5 5L20 6"/>',v:completed,l:"Hoàn thành",d:"Cả self + manager review",dc:"ok"},
+    {c:"#3B5BDB",sv:'<circle cx="12" cy="8" r="4"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke-linecap="round"/>',v:selfDone,l:"Chờ manager review",d:"Đã nộp self-review"},
+    {c:"#f59e0b",sv:'<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/>',v:pending,l:"Chưa bắt đầu",d:"",dc:pending>0?"warn":""},
+    {c:"#7c3aed",sv:'<path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z"/>',v:avg||"–",l:"Điểm trung bình team",d:"Từ review hoàn thành",dc:"ok"}
+  ].map(function(s){
+    return '<div class="pf-stat"><span class="psi" style="background:'+s.c+'22;color:'+s.c+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">'+s.sv+'</svg></span><div><div class="psv">'+s.v+'</div><div class="psl">'+s.l+'</div><div class="psd '+(s.dc||"")+'">'+s.d+'</div></div></div>';
+  }).join("");
+})();
+
+/* ── Ranking ── */
+var ranked=MEMBERS.map(function(m){return{m:m,score:finalScore(m)};}).filter(function(x){return x.score;}).sort(function(a,b){return b.score-a.score;});
+document.getElementById("rankList").innerHTML=ranked.map(function(r,i){
+  return '<div class="rank-row" data-id="'+r.m.id+'">'+
+    '<span class="rank-n">'+(i+1)+'</span>'+
+    '<span class="rank-av" style="background:'+AVCOLORS[r.m.col%AVCOLORS.length]+'">'+r.m.init+'</span>'+
+    '<div class="rank-info"><div class="rank-name">'+r.m.name+'</div><div class="rank-role">'+r.m.role+'</div></div>'+
+    '<span class="rank-score" style="color:'+scoreColor(r.score)+'">'+r.score+'</span>'+
+  '</div>';
+}).join("");
+document.querySelectorAll(".rank-row[data-id]").forEach(function(r){r.addEventListener("click",function(){openDetail(r.getAttribute("data-id"));});});
+
+/* ── Criteria legend ── */
+document.getElementById("criteriaLegend").innerHTML=CRITERIA.map(function(c){
+  return '<div style="display:flex;align-items:center;gap:9px"><span style="width:24px;height:24px;border-radius:7px;background:'+c.color+'22;color:'+c.color+';display:grid;place-items:center;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">'+c.svg+'</svg></span><div><div style="font-size:.82rem;font-weight:600;color:var(--text)">'+c.name+'</div><div style="font-size:.72rem;color:var(--text-3)">'+c.desc+'</div></div></div>';
+}).join("");
+
+/* ── Status labels ── */
+var STATUS_LBL={pending:"Chưa bắt đầu",self_done:"Chờ manager review",manager_done:"Chờ xác nhận",completed:"Hoàn thành"};
+var STATUS_CLS={pending:"rs-pending",self_done:"rs-self_done",manager_done:"rs-manager_done",completed:"rs-completed"};
+
+/* ── Views ── */
+function renderOverview(){
+  document.getElementById("pfMain").innerHTML='<div class="rev-grid">'+
+    MEMBERS.map(function(m){
+      var auto=autoAvg(m), fin=finalScore(m);
+      var pct=fin?Math.round(fin/10*100):Math.round(auto/10*100);
+      var bars=CRITERIA.map(function(c){
+        return '<div class="sb-row"><span class="sb-lbl">'+c.name+'</span><div class="sb-track"><div class="sb-fill" style="width:'+Math.round(m.autoKpi[c.id]/10*100)+'%;background:'+c.color+'"></div></div><span class="sb-val" style="color:'+c.color+'">'+m.autoKpi[c.id]+'</span></div>';
+      }).join("");
+      return '<div class="rev-card status-'+m.status+'" data-id="'+m.id+'" style="padding-left:22px">'+
+        '<div class="rc-top">'+
+          '<span class="rc-av" style="background:'+AVCOLORS[m.col%AVCOLORS.length]+'">'+m.init+'</span>'+
+          '<div><div class="rc-name">'+m.name+'</div><div class="rc-role">'+m.role+'</div></div>'+
+          '<span class="rc-status '+STATUS_CLS[m.status]+'">'+STATUS_LBL[m.status]+'</span>'+
+        '</div>'+
+        '<div class="score-bars">'+bars+'</div>'+
+        '<div class="rc-score">'+
+          '<div class="mini-donut" style="--p:'+pct+'"><div class="inner" style="background:var(--elev)">'+(fin||auto)+'</div></div>'+
+          '<div class="rc-meta"><div><b>Auto-KPI</b> '+auto+'</div>'+
+            (m.selfScore?'<div><b>Self-review</b> '+m.selfScore+'</div>':'<div style="color:var(--text-3)">Self-review chưa nộp</div>')+
+            (m.managerScore?'<div><b>Manager</b> '+m.managerScore+'</div>':'<div style="color:var(--text-3)">Manager chưa review</div>')+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }).join("")+
+  '</div>';
+  document.querySelectorAll(".rev-card[data-id]").forEach(function(c){
+    c.addEventListener("click",function(){openDetail(c.getAttribute("data-id"));});
+  });
+}
+
+function renderSelf(){
+  document.getElementById("pfMain").innerHTML='<div class="pp">'+
+    '<div class="pp-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>Trạng thái Self-review</h3></div>'+
+    '<table style="width:100%;border-collapse:collapse;font-size:.85rem">'+
+    '<thead><tr>'+
+      '<th style="padding:9px 14px;text-align:left;border-bottom:1px solid var(--border);background:var(--content);font-family:var(--font-mono);font-size:.68rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em">Nhân viên</th>'+
+      '<th style="padding:9px 14px;text-align:left;border-bottom:1px solid var(--border);background:var(--content);font-family:var(--font-mono);font-size:.68rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em">Điểm tự chấm</th>'+
+      '<th style="padding:9px 14px;text-align:left;border-bottom:1px solid var(--border);background:var(--content);font-family:var(--font-mono);font-size:.68rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em">Ghi chú</th>'+
+      '<th style="padding:9px 14px;text-align:left;border-bottom:1px solid var(--border);background:var(--content);font-family:var(--font-mono);font-size:.68rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em">Trạng thái</th>'+
+    '</tr></thead><tbody>'+
+    MEMBERS.map(function(m){
+      return '<tr style="cursor:pointer" onclick="openDetail(\''+m.id+'\')">'+
+        '<td style="padding:11px 14px;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:9px"><span style="width:28px;height:28px;border-radius:8px;background:'+AVCOLORS[m.col%AVCOLORS.length]+';display:grid;place-items:center;font-size:.62rem;font-weight:700;color:#fff">'+m.init+'</span><div><div style="font-weight:600;color:var(--text)">'+m.name+'</div><div style="font-size:.74rem;color:var(--text-3)">'+m.role+'</div></div></div></td>'+
+        '<td style="padding:11px 14px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-weight:700;font-size:.9rem;color:'+(m.selfScore?scoreColor(m.selfScore):"var(--text-3)")+'">'+( m.selfScore||"–")+'</td>'+
+        '<td style="padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text-2);font-size:.82rem;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(m.selfNote||'<span style="color:var(--text-3)">Chưa nộp</span>')+'</td>'+
+        '<td style="padding:11px 14px;border-bottom:1px solid var(--border)"><span class="rc-status '+STATUS_CLS[m.status]+'">'+STATUS_LBL[m.status]+'</span></td>'+
+      '</tr>';
+    }).join("")+
+    '</tbody></table></div>';
+}
+
+function renderManager(){
+  var pending=MEMBERS.filter(function(m){return m.status==="self_done";});
+  var done=MEMBERS.filter(function(m){return m.status==="completed";});
+  var html='';
+  if(pending.length){
+    html+='<div style="font-size:.8rem;font-family:var(--font-mono);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);margin-bottom:10px">Chờ manager review ('+pending.length+')</div>';
+    html+=pending.map(function(m){return managerCard(m);}).join("");
+  }
+  if(done.length){
+    html+='<div style="font-size:.8rem;font-family:var(--font-mono);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ok);margin-top:20px;margin-bottom:10px">Đã review ('+done.length+')</div>';
+    html+=done.map(function(m){return managerCard(m);}).join("");
+  }
+  document.getElementById("pfMain").innerHTML=html||'<div style="padding:40px;text-align:center;color:var(--text-3)">Không có dữ liệu</div>';
+  document.querySelectorAll(".rev-card[data-id]").forEach(function(c){
+    c.addEventListener("click",function(){openDetail(c.getAttribute("data-id"));});
+  });
+}
+
+function managerCard(m){
+  return '<div class="rev-card status-'+m.status+'" data-id="'+m.id+'" style="padding-left:22px;margin-bottom:10px">'+
+    '<div class="rc-top">'+
+      '<span class="rc-av" style="background:'+AVCOLORS[m.col%AVCOLORS.length]+'">'+m.init+'</span>'+
+      '<div><div class="rc-name">'+m.name+'</div><div class="rc-role">'+m.role+'</div></div>'+
+      '<span class="rc-status '+STATUS_CLS[m.status]+'">'+STATUS_LBL[m.status]+'</span>'+
     '</div>'+
+    '<div style="font-size:.82rem;color:var(--text-2);padding:8px 0;border-top:1px solid var(--border)">'+
+      '<b>Self-review '+m.selfScore+'</b> · '+(m.selfNote||"—")+'</div>'+
+    (m.managerScore?'<div style="font-size:.82rem;padding:6px 0;color:var(--text-2)"><b>Manager review '+m.managerScore+'</b> · '+(m.managerNote||"—")+'</div>':
+    '<button class="abtn primary" style="height:30px;font-size:.8rem;margin-top:8px" onclick="openDetail(\''+m.id+'\');event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Viết manager review</button>')+
   '</div>';
 }
 
-/* ── CYCLE PROGRESS ── */
-function renderCycleProgress(){
-  document.getElementById("cycleProgress").innerHTML=
-    CYCLE_STEPS.map(function(s){
-      var icon=s.status==="done"
-        ?'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M5 12l5 5L20 6"/></svg>'
-        :s.status==="active"
-        ?'<span style="font-size:.72rem">▶</span>'
-        :'<span style="font-family:var(--font-mono);font-size:.66rem">'+CYCLE_STEPS.indexOf(s)+1+'</span>';
-      return '<div class="cp-step '+s.status+'">'+
-        '<div class="cp-dot '+s.status+'">'+icon+'</div>'+
-        '<span class="cp-lbl">'+s.l+'</span>'+
+function renderHistory(){
+  document.getElementById("pfMain").innerHTML='<div class="pp"><div class="pp-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Lịch sử chu kỳ review</h3></div>'+
+    '<div style="padding:18px;display:flex;flex-direction:column;gap:12px">'+
+    [["Q2/2026","01/04 – 30/06/2026","completed","8.3"],["Q1/2026","01/01 – 31/03/2026","completed","7.9"],["Q4/2025","01/10 – 31/12/2025","completed","8.1"],["Q3/2025","01/07 – 30/09/2025","completed","7.7"]].map(function(h){
+      return '<div style="display:flex;align-items:center;gap:14px;padding:13px 14px;background:var(--content);border:1px solid var(--border);border-radius:11px">'+
+        '<div style="flex:1"><div style="font-weight:700;font-size:.9rem">'+h[0]+'</div><div style="font-size:.76rem;color:var(--text-3)">'+h[1]+'</div></div>'+
+        '<span class="emp-status active" style="font-size:.72rem">Hoàn thành</span>'+
+        '<span style="font-family:var(--font-mono);font-weight:800;color:var(--accent-ink);font-size:1rem">⌀ '+h[3]+'</span>'+
+        '<button class="abtn ghost" style="height:28px;font-size:.76rem">Xem</button>'+
       '</div>';
+    }).join("")+
+  '</div></div>';
+}
+
+/* ── Detail panel ── */
+function openDetail(id){
+  var m=MEMBERS.find(function(x){return x.id===id;}); if(!m) return;
+  var fin=finalScore(m), auto=autoAvg(m);
+  var pct=fin?Math.round(fin/10*100):Math.round(auto/10*100);
+  document.getElementById("pdHead").innerHTML=
+    '<span style="width:38px;height:38px;border-radius:11px;background:'+AVCOLORS[m.col%AVCOLORS.length]+';display:grid;place-items:center;font-size:.82rem;font-weight:700;color:#fff;flex-shrink:0">'+m.init+'</span>'+
+    '<div><div style="font-weight:700;font-size:.95rem">'+m.name+'</div><div style="font-size:.78rem;color:var(--text-3)">'+m.role+'</div></div>'+
+    '<span class="rc-status '+STATUS_CLS[m.status]+'" style="margin-left:auto">'+STATUS_LBL[m.status]+'</span>'+
+    '<button id="pdClose" style="width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);margin-left:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg></button>';
+  document.getElementById("pdClose").addEventListener("click",closeDetail);
+
+  /* big score */
+  var bigScore='<div class="big-score"><div class="bs-donut" style="--p:'+pct+'"><div class="bsi">'+(fin||auto)+'</div></div>'+
+    '<div class="bs-info"><div class="bs-label">Điểm tổng hợp Q2/2026</div>'+
+      '<div style="font-size:1.1rem;font-weight:800;color:'+scoreColor(fin||auto)+'">'+
+        (fin?fin:auto+' (chưa đủ nguồn)')+
+      '</div>'+
+      '<div class="bs-sources">'+
+        '<span class="bs-src">Auto-KPI '+auto+'</span>'+
+        (m.selfScore?'<span class="bs-src">Self '+m.selfScore+'</span>':'<span class="bs-src" style="color:var(--text-3)">Self –</span>')+
+        (m.managerScore?'<span class="bs-src">Manager '+m.managerScore+'</span>':'<span class="bs-src" style="color:var(--text-3)">Manager –</span>')+
+      '</div>'+
+    '</div></div>';
+
+  /* criteria detail */
+  var critHTML=CRITERIA.map(function(c){
+    var v=m.autoKpi[c.id];
+    return '<div class="crit-row">'+
+      '<span class="crit-ico" style="background:'+c.color+'22;color:'+c.color+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">'+c.svg+'</svg></span>'+
+      '<div class="crit-lbl">'+c.name+'<div class="crit-desc">'+c.desc+'</div></div>'+
+      '<div class="crit-scores">'+
+        '<div class="cs-item"><span class="cs-v" style="color:'+c.color+'">'+v+'</span><span class="cs-l">Auto</span></div>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+
+  /* manager review form (if self done but manager not yet) */
+  var mgrSection="";
+  if(m.status==="self_done"){
+    var scoreButtons=[...Array(10)].map(function(_,i){
+      var v=i+1;
+      return '<button class="score-btn" data-v="'+v+'" id="mgr'+id+'_'+v+'">'+v+'</button>';
     }).join("");
-}
-
-/* ── KPI CARDS ── */
-function renderKPIs(){
-  var all=Object.values(REVIEWS);
-  var completed=all.filter(function(r){return r.status==="completed";}).length;
-  var pending=all.filter(function(r){return r.status!=="completed";}).length;
-  var scored=all.filter(function(r){return r.finalScore;});
-  var avgScore=scored.length?Math.round(scored.reduce(function(a,r){return a+r.finalScore;},0)/scored.length*10)/10:null;
-  var topPerformer=scored.length?scored.reduce(function(a,b){return a.finalScore>b.finalScore?a:b;}):null;
-
-  document.getElementById("completedCount").textContent=completed;
-  document.getElementById("pendingCount").textContent=pending;
-
-  var cards=[
-    {ico:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
-     lab:"Hoàn thành",val:completed+"/"+all.length,chg:CYCLES[curCycle],cls:"up"},
-    {ico:'<path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z"/>',
-     lab:"Điểm TB",val:avgScore!==null?avgScore+"/10":"—",chg:scored.length+" đã chấm",cls:"up"},
-    {ico:'<circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5" stroke-linecap="round" stroke-linejoin="round"/>',
-     lab:"Top performer",val:topPerformer?MEMBERS.find(function(m){return REVIEWS[m.v]===topPerformer;}).l.split(" ").pop():"—",chg:topPerformer?topPerformer.finalScore+"/10":"",cls:"up"},
-    {ico:'<path d="M10.3 3.9l-7 12A2 2 0 0 0 5 19h14a2 2 0 0 0 1.7-3l-7-12a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01" stroke-linecap="round"/>',
-     lab:"Chờ đánh giá",val:pending,chg:all.filter(function(r){return r.status==="self";}).length+" tự đánh giá",cls:pending>0?"warn":"flat"}
-  ];
-  document.getElementById("kpiRow").innerHTML=cards.map(function(k){
-    return '<div class="kpi"><div class="kt"><span class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+k.ico+'</svg></span>'+k.lab+'</div><div class="kv">'+k.val+'</div><div class="kc '+k.cls+'">'+k.chg+'</div></div>';
-  }).join("");
-}
-
-/* ── MEMBER CARDS ── */
-function renderCards(){
-  document.getElementById("perfGrid").innerHTML=MEMBERS.map(function(m){
-    var r=REVIEWS[m.v];
-    var auto=avgOf(r.autoKPI);
-    var self=r.selfReview?avgOf(r.selfReview):null;
-    var mgr=r.managerReview?avgOf(r.managerReview):null;
-    var display=r.finalScore||mgr||auto;
-    var sc=scoreClass(display);
-
-    var bars=CRITERIA.map(function(c){
-      var av=r.autoKPI[c.k]||0;
-      return '<div class="cr-bar-row">'+
-        '<span class="cr-lbl">'+c.l+'</span>'+
-        '<div class="cr-track"><div class="cr-fill" style="width:'+av*10+'%;background:'+scoreColor(av)+'"></div></div>'+
-        '<span class="cr-val" style="color:'+scoreColor(av)+'">'+av+'</span>'+
-      '</div>';
-    }).join("");
-
-    return '<div class="perf-card '+r.status+'" data-who="'+m.v+'">'+
-      '<div class="perf-card-top">'+
-        '<div class="pc-who">'+
-          '<div class="pc-av">'+m.v+'</div>'+
-          '<div><div class="pc-name">'+m.l+'</div><div class="pc-role">'+m.role+' · '+m.dept+'</div></div>'+
-        '</div>'+
-        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'+
-          scoreRing(display,52)+
-          '<span class="perf-status '+r.status+'">'+statusLabel(r.status)+'</span>'+
-        '</div>'+
-      '</div>'+
-      '<div class="criteria-bars">'+bars+'</div>'+
-      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border)">'+
-        '<div style="display:flex;gap:8px;align-items:center">'+
-          '<span style="font-size:.74rem;color:var(--text-3)">Auto-KPI</span>'+
-          '<span class="score-pill '+scoreClass(auto)+'">'+(auto||"—")+'</span>'+
-          (self&&self>0?'<span style="font-size:.74rem;color:var(--text-3)">Tự</span><span class="score-pill '+scoreClass(self)+'">'+self+'</span>':'')+
-          (mgr&&mgr>0?'<span style="font-size:.74rem;color:var(--text-3)">Mgr</span><span class="score-pill '+scoreClass(mgr)+'">'+mgr+'</span>':'')+
-        '</div>'+
-        '<span style="font-size:.78rem;color:var(--accent-ink);font-weight:600">Xem chi tiết →</span>'+
+    mgrSection='<div class="pd-sect"><div class="pd-sect-h">Manager review</div>'+
+      '<div class="rf-label">Điểm tổng (1–10)</div>'+
+      '<div class="rf-score-row" id="mgrBtns_'+id+'">'+scoreButtons+'</div>'+
+      '<div class="rf-label" style="margin-top:12px">Nhận xét</div>'+
+      '<textarea class="rf-textarea" id="mgrNote_'+id+'" placeholder="Nhận xét về hiệu suất Q2…">'+( m.managerNote||"")+'</textarea>'+
+      '<div style="display:flex;gap:8px;margin-top:10px">'+
+        '<button class="abtn primary" style="height:32px;font-size:.82rem" id="saveMgr_'+id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="13" height="13"><path d="M5 12l5 5L20 6"/></svg>Lưu đánh giá</button>'+
       '</div>'+
     '</div>';
-  }).join("");
-}
-
-/* ── DRAWER ── */
-function openDrawer(who){
-  var m=MEMBERS.find(function(x){return x.v===who;});
-  var r=REVIEWS[who];
-  if(!m||!r) return;
-  openMember=who;
-  managerScores=Object.assign({},r.managerReview);
-
-  document.getElementById("drawerAv").textContent=m.v;
-  document.getElementById("drawerName").textContent=m.l;
-  document.getElementById("drawerMeta").textContent=m.role+" · "+m.dept+" · "+CYCLES[curCycle];
-
-  buildOverviewPane(m,r);
-  buildSelfPane(m,r);
-  buildManagerPane(m,r);
-
-  document.querySelectorAll(".rd-tab").forEach(function(t){t.classList.remove("on");});
-  document.querySelectorAll(".rd-pane").forEach(function(p){p.classList.remove("on");});
-  document.querySelector(".rd-tab[data-pane='overview']").classList.add("on");
-  document.getElementById("pane-overview").classList.add("on");
-
-  document.getElementById("rdBack").classList.add("open");
-  document.getElementById("rdDrawer").classList.add("open");
-}
-
-function buildOverviewPane(m,r){
-  var auto=avgOf(r.autoKPI);
-  var self=avgOf(r.selfReview);
-  var mgr=avgOf(r.managerReview);
-  var display=r.finalScore||mgr||auto;
-
-  /* compare table */
-  var compareRows=CRITERIA.map(function(c){
-    var av=r.autoKPI[c.k]||0;
-    var sv=(r.selfReview&&r.selfReview[c.k])||0;
-    var mv=(r.managerReview&&r.managerReview[c.k])||0;
-    return '<div class="compare-row">'+
-      '<span style="font-size:.8rem;color:var(--text-2)">'+c.l+'</span>'+
-      '<div style="display:flex;align-items:center;gap:6px"><div class="cbar-wrap" style="flex:1"><div class="cbar-fill auto" style="width:'+av*10+'%"></div></div><span class="cnum auto">'+av+'</span></div>'+
-      (sv?'<div style="display:flex;align-items:center;gap:6px"><div class="cbar-wrap" style="flex:1"><div class="cbar-fill self" style="width:'+sv*10+'%"></div></div><span class="cnum" style="color:#a78bfa">'+sv+'</span></div>':'<span style="text-align:center;color:var(--text-3);font-size:.74rem">—</span>')+
-      (mv?'<span class="cnum mgr">'+mv+'</span>':'<span style="text-align:center;color:var(--text-3);font-size:.74rem">—</span>')+
-    '</div>';
-  }).join("");
-
-  var nextKpiHtml=r.nextKPIs&&r.nextKPIs.length?r.nextKPIs.map(function(k){return '<div class="ai-kpi">'+k+'</div>';}).join(""):'<div style="font-size:.83rem;color:var(--text-3)">Chưa xác định KPI.</div>';
-
-  document.getElementById("pane-overview").innerHTML=
-    '<div style="display:flex;align-items:center;gap:20px;padding:20px;background:var(--content);border-radius:14px;margin-bottom:20px;border:1px solid var(--border)">'+
-      scoreRing(display,68)+
-      '<div>'+
-        '<div style="font-size:1.6rem;font-weight:800;letter-spacing:-.03em;color:var(--text)">'+(display||"—")+(display?'<span style="font-size:.9rem;color:var(--text-3);font-weight:400">/10</span>':"")+
-        '</div>'+
-        '<div style="font-size:.82rem;color:var(--text-3);margin-top:4px">'+CYCLES[curCycle]+' · '+m.role+'</div>'+
-        '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'+
-          '<span style="font-size:.74rem;color:var(--text-3)">Auto</span><span class="score-pill '+scoreClass(auto)+'">'+(auto||"—")+'</span>'+
-          (self&&self>0?'<span style="font-size:.74rem;color:var(--text-3)">Tự</span><span class="score-pill '+scoreClass(self)+'">'+self+'</span>':'')+
-          (mgr&&mgr>0?'<span style="font-size:.74rem;color:var(--text-3)">Mgr</span><span class="score-pill '+scoreClass(mgr)+'">'+mgr+'</span>':'')+
-        '</div>'+
-      '</div>'+
-      '<span class="perf-status '+r.status+'" style="margin-left:auto;align-self:flex-start">'+statusLabel(r.status)+'</span>'+
-    '</div>'+
-    '<div class="dsec">So sánh điểm 3 nguồn</div>'+
-    '<div class="dcard">'+
-      '<div class="compare-row header">'+
-        '<span>Tiêu chí</span><span style="text-align:center">Auto-KPI</span><span style="text-align:center">Tự đánh giá</span><span style="text-align:center;font-size:.58rem">Mgr</span>'+
-      '</div>'+compareRows+
-    '</div>'+
-    '<div class="dsec">Gợi ý KPI quý tiếp theo</div>'+
-    '<div class="ai-suggestion">'+
-      '<div class="ai-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.6 6.3L21 9l-5 4.3L17.5 20 12 16.5 6.5 20 8 13.3 3 9l6.4-.7z"/></svg>AI Suggest · Dựa trên xu hướng Q2</div>'+
-      '<div class="ai-kpi-list">'+nextKpiHtml+'</div>'+
-    '</div>';
-}
-
-function buildSelfPane(m,r){
-  var hasData=r.selfReview&&Object.values(r.selfReview).some(function(v){return v>0;});
-  if(!hasData){
-    document.getElementById("pane-self").innerHTML=
-      '<div style="text-align:center;padding:48px 20px;color:var(--text-3)">'+
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="margin:0 auto 16px;opacity:.3"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/></svg>'+
-        '<p style="font-size:.92rem;font-weight:600;color:var(--text-2)">'+m.l+' chưa tự đánh giá</p>'+
-        '<span style="font-size:.82rem">Nhân viên cần hoàn thành phần tự đánh giá trước.</span>'+
-      '</div>';
-    return;
   }
-  var rows=CRITERIA.map(function(c){
-    var v=r.selfReview[c.k]||0;
-    var av=r.autoKPI[c.k]||0;
-    var diff=Math.round((v-av)*10)/10;
-    var diffHtml=diff!==0?'<span style="font-size:.72rem;color:'+(diff>0?"var(--ok)":"var(--danger)")+';">'+(diff>0?"+":"")+diff+'</span>':'';
-    return '<div style="display:grid;grid-template-columns:90px 1fr 32px 32px;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)">'+
-      '<span style="font-size:.82rem;color:var(--text-2)">'+c.l+'</span>'+
-      '<div class="cr-track"><div class="cr-fill" style="width:'+v*10+'%;background:#a78bfa"></div></div>'+
-      '<span style="font-family:var(--font-mono);font-size:.82rem;font-weight:700;color:#a78bfa;text-align:center">'+v+'</span>'+
-      diffHtml+
-    '</div>';
-  }).join("");
-  var self=avgOf(r.selfReview);
-  document.getElementById("pane-self").innerHTML=
-    '<div style="display:flex;align-items:center;gap:14px;padding:16px;background:var(--content);border-radius:12px;border:1px solid var(--border);margin-bottom:18px">'+
-      scoreRing(self,48)+
-      '<div><div style="font-size:1.1rem;font-weight:800;color:var(--text)">'+(self||"—")+'/10</div><div style="font-size:.78rem;color:var(--text-3)">Điểm tự đánh giá · '+m.l+'</div></div>'+
-    '</div>'+
-    '<div class="dsec">Điểm từng tiêu chí</div>'+
-    '<div class="dcard" style="margin-bottom:18px">'+rows+'</div>'+
-    (r.selfReview.comment?
-      '<div class="dsec">Nhận xét của '+m.l+'</div>'+
-      '<div style="font-size:.88rem;color:var(--text-2);line-height:1.65;padding:14px;background:var(--content);border-radius:10px;border:1px solid var(--border);border-left:3px solid #a78bfa">'+r.selfReview.comment+'</div>':
-      "");
-}
 
-function buildManagerPane(m,r){
-  var isCompleted=r.status==="completed";
-  var rows=CRITERIA.map(function(c){
-    var mv=(managerScores&&managerScores[c.k])||0;
-    return '<div class="sc-input-row">'+
-      '<div class="sil">'+c.l+'<span>'+c.desc+'</span></div>'+
-      '<input type="range" min="0" max="10" step="0.5" value="'+mv+'" data-key="'+c.k+'" '+(isCompleted?"disabled":"")+' style="'+(isCompleted?"opacity:.5":"")+'" id="mgr-range-'+c.k+'"/>'+
-      '<span class="sival" id="mgr-val-'+c.k+'">'+(mv||0)+'</span>'+
-    '</div>';
-  }).join("");
-  var mgr=isCompleted?avgOf(r.managerReview):null;
+  document.getElementById("pdBody").innerHTML=
+    bigScore+
+    '<div class="pd-sect"><div class="pd-sect-h">Auto-KPI (5 tiêu chí)</div>'+critHTML+'</div>'+
+    (m.selfScore?'<div class="pd-sect"><div class="pd-sect-h">Self-review</div><div class="pd-row"><span class="pl">Điểm tự chấm</span><span class="pv" style="font-family:var(--font-mono);font-weight:800;font-size:1rem;color:'+scoreColor(m.selfScore)+'">'+m.selfScore+'</span></div><div class="pd-row"><span class="pl">Ghi chú</span><span class="pv" style="font-size:.83rem;text-align:right">'+( m.selfNote||"–")+'</span></div></div>':"<div class='pd-sect'><div class='pd-sect-h'>Self-review</div><p style='font-size:.84rem;color:var(--text-3)'>Chưa nộp self-review.</p></div>")+
+    (m.managerScore?'<div class="pd-sect"><div class="pd-sect-h">Manager review</div><div class="pd-row"><span class="pl">Điểm manager</span><span class="pv" style="font-family:var(--font-mono);font-weight:800;font-size:1rem;color:'+scoreColor(m.managerScore)+'">'+m.managerScore+'</span></div><div class="pd-row"><span class="pl">Nhận xét</span><span class="pv" style="font-size:.83rem;text-align:right">'+( m.managerNote||"–")+'</span></div></div>':mgrSection);
 
-  document.getElementById("pane-manager").innerHTML=
-    (isCompleted?
-      '<div style="padding:10px 14px;background:var(--ok-soft);border:1px solid rgba(74,222,128,.2);border-radius:10px;font-size:.84rem;color:var(--ok);margin-bottom:18px">'+
-        '✓ Manager đã hoàn thành đánh giá · Điểm: '+avgOf(r.managerReview)+'/10'+
-      '</div>':
-      '<div style="padding:10px 14px;background:var(--warn-soft);border:1px solid rgba(251,191,36,.2);border-radius:10px;font-size:.84rem;color:var(--warn);margin-bottom:18px">'+
-        '⏳ Chưa hoàn thành — Di chuyển thanh để chấm điểm'+
-      '</div>')+
-    '<div class="dsec">Chấm điểm từng tiêu chí</div>'+
-    '<div class="dcard" style="margin-bottom:16px">'+rows+'</div>'+
-    '<div style="margin-bottom:16px">'+
-      '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:8px">Nhận xét manager</div>'+
-      '<textarea class="rv-ta" id="mgrComment" placeholder="Đánh giá tổng thể, điểm mạnh, điểm cần cải thiện…" '+(isCompleted?"readonly":"")+' style="'+(isCompleted?"opacity:.75":"")+'">'+(r.managerReview.comment||"")+'</textarea>'+
-    '</div>'+
-    (!isCompleted?'<button class="abtn primary" id="submitMgrBtn" style="width:100%;height:44px">Lưu đánh giá manager</button>':'');
-
-  if(isCompleted) return;
-
-  /* live range updates */
-  CRITERIA.forEach(function(c){
-    var range=document.getElementById("mgr-range-"+c.k);
-    var valEl=document.getElementById("mgr-val-"+c.k);
-    if(!range) return;
-    range.addEventListener("input",function(){
-      managerScores[c.k]=parseFloat(range.value);
-      valEl.textContent=range.value;
-      valEl.style.color=scoreColor(parseFloat(range.value));
+  /* wire score buttons */
+  var mgrBtns=document.getElementById("mgrBtns_"+id);
+  if(mgrBtns){
+    var picked=m.managerScore||null;
+    function refreshBtns(){mgrBtns.querySelectorAll(".score-btn").forEach(function(b){b.classList.toggle("on",parseFloat(b.getAttribute("data-v"))===picked);});}
+    refreshBtns();
+    mgrBtns.querySelectorAll(".score-btn").forEach(function(b){
+      b.addEventListener("click",function(){picked=parseFloat(b.getAttribute("data-v"));refreshBtns();});
     });
+    var saveBtn=document.getElementById("saveMgr_"+id);
+    if(saveBtn) saveBtn.addEventListener("click",function(){
+      if(!picked){alert("Chọn điểm 1–10.");return;}
+      m.managerScore=picked;
+      m.managerNote=document.getElementById("mgrNote_"+id).value;
+      m.status="completed";
+      closeDetail(); renderCurrent(); openDetail(id);
+    });
+  }
+  document.getElementById("pfDetail").classList.add("open");
+  document.getElementById("scrim").classList.add("on");
+}
+function closeDetail(){document.getElementById("pfDetail").classList.remove("open");document.getElementById("scrim").classList.remove("on");}
+document.getElementById("scrim").addEventListener("click",closeDetail);
+
+var currentTab="overview";
+function renderCurrent(){
+  if(currentTab==="overview") renderOverview();
+  else if(currentTab==="self") renderSelf();
+  else if(currentTab==="manager") renderManager();
+  else renderHistory();
+}
+
+/* ── Tabs ── */
+document.querySelectorAll(".pf-tab").forEach(function(t){
+  t.addEventListener("click",function(){
+    document.querySelectorAll(".pf-tab").forEach(function(x){x.classList.remove("on");});
+    t.classList.add("on"); currentTab=t.getAttribute("data-t"); renderCurrent();
   });
-
-  document.getElementById("submitMgrBtn").addEventListener("click",function(){
-    var comment=document.getElementById("mgrComment").value.trim();
-    if(!comment){showToast("Vui lòng nhập nhận xét","err");return;}
-    var nonZero=Object.values(managerScores).filter(function(v){return v>0;}).length;
-    if(nonZero<CRITERIA.length){showToast("Chấm điểm đủ "+CRITERIA.length+" tiêu chí","err");return;}
-    var avg=avgOf(managerScores);
-    var r=REVIEWS[openMember];
-    r.managerReview=Object.assign({},managerScores,{comment:comment});
-    r.status="completed";
-    r.finalScore=Math.round((avg+(avgOf(r.autoKPI)||0))/2*10)/10;
-    closeDrawer();
-    renderAll();
-    showToast("Đánh giá manager đã lưu ✓ · Điểm: "+r.finalScore+"/10","ok");
-  });
-}
-
-function closeDrawer(){
-  document.getElementById("rdBack").classList.remove("open");
-  document.getElementById("rdDrawer").classList.remove("open");
-  openMember=null;
-}
-
-/* ── EVENTS ── */
-document.getElementById("perfGrid").addEventListener("click",function(e){
-  var card=e.target.closest(".perf-card[data-who]");
-  if(card) openDrawer(card.dataset.who);
-});
-document.getElementById("rdTabBar").addEventListener("click",function(e){
-  var b=e.target.closest(".rd-tab");if(!b)return;
-  var pane=b.dataset.pane;
-  document.querySelectorAll(".rd-tab").forEach(function(t){t.classList.remove("on");});
-  document.querySelectorAll(".rd-pane").forEach(function(p){p.classList.remove("on");});
-  b.classList.add("on");
-  document.getElementById("pane-"+pane).classList.add("on");
-});
-document.getElementById("rdBack").addEventListener("click",closeDrawer);
-document.getElementById("rdClose").addEventListener("click",closeDrawer);
-document.getElementById("prevCycle").addEventListener("click",function(){
-  if(curCycle>0){curCycle--;document.getElementById("cycleLabel").textContent=CYCLES[curCycle];renderAll();}
-});
-document.getElementById("nextCycle").addEventListener("click",function(){
-  if(curCycle<CYCLES.length-1){curCycle++;document.getElementById("cycleLabel").textContent=CYCLES[curCycle];renderAll();}
-  else showToast("Chưa có dữ liệu Q3/2026","warn");
-});
-document.getElementById("exportBtn").addEventListener("click",function(){
-  showToast("Đang tạo báo cáo PDF…","ok");
 });
 
-/* ── TOAST ── */
-function showToast(msg,type){
-  var t=document.getElementById("toast");
-  t.textContent=msg;t.className="toast "+(type||"ok");
-  t.classList.add("show");
-  setTimeout(function(){t.classList.remove("show");},2800);
-}
+/* ── Modals ── */
+document.getElementById("newCycleBtn").addEventListener("click",function(){document.getElementById("cycleModal").classList.add("open");});
+document.getElementById("cmClose").addEventListener("click",function(){document.getElementById("cycleModal").classList.remove("open");});
+document.getElementById("cmScrim").addEventListener("click",function(){document.getElementById("cycleModal").classList.remove("open");});
+document.getElementById("cmCancel").addEventListener("click",function(){document.getElementById("cycleModal").classList.remove("open");});
+document.getElementById("cmSave").addEventListener("click",function(){
+  var name=document.getElementById("cmName").value.trim(); if(!name){alert("Nhập tên chu kỳ.");return;}
+  document.getElementById("cycleModal").classList.remove("open");
+  alert("Chu kỳ '"+name+"' đã được tạo! Hệ thống sẽ tự động gửi email mời self-review cho 9 thành viên.");
+});
+document.getElementById("globalSearch").addEventListener("input",function(){/* filter cards */});
+document.getElementById("remindBtn").addEventListener("click",function(){
+  var ns=MEMBERS.filter(function(m){return m.status==="pending";}).map(function(m){return m.name;});
+  alert("Đã gửi nhắc nhở đến: "+ns.join(", ")+(ns.length?"":" (không có ai chờ)"));
+});
 
-/* ── RENDER ALL ── */
-function renderAll(){renderCycleProgress();renderKPIs();renderCards();}
-renderAll();
-
-})();
+/* ── Init ── */
+renderOverview();
 </script>
 <script src="js/admin.js"></script>
 </body>

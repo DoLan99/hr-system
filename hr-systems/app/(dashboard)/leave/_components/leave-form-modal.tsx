@@ -193,28 +193,21 @@ export function LeaveFormModal({ employees, isManager, currentUserId, onClose, o
 
           {/* Leave Type */}
           <div className="lm-field">
-            <label>Loại nghỉ <span className="att-code" style={{ background: `${infoType.color}20`, color: infoType.color }}>{infoType.attendanceCode}</span></label>
-            <div className="type-grid">
+            <label>
+              Loại nghỉ{" "}
+              <span className="att-code" style={{ background: `${infoType.color}20`, color: infoType.color }}>
+                {infoType.attendanceCode}
+              </span>
+            </label>
+            <select value={type} onChange={e => handleTypeChange(e.target.value)}>
               {LEAVE_TYPE_GROUPS.map(g => (
-                <Fragment key={g.label}>
-                  <span className="type-group-label">{g.label}</span>
-                  {g.types.map(t => {
-                    const info = LEAVE_TYPES[t];
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        className={`type-opt${type === t ? " on" : ""}`}
-                        onClick={() => handleTypeChange(t)}
-                      >
-                        <span className="type-dot" style={{ background: info.color }}></span>
-                        {info.label}
-                      </button>
-                    );
-                  })}
-                </Fragment>
+                <optgroup key={g.label} label={g.label}>
+                  {g.types.map(t => (
+                    <option key={t} value={t}>{LEAVE_TYPES[t].label}</option>
+                  ))}
+                </optgroup>
               ))}
-            </div>
+            </select>
           </div>
 
           {/* Dates */}

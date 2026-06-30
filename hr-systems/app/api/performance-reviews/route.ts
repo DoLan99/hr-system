@@ -24,7 +24,7 @@ export const GET = withContext(async (req: NextRequest) => {
       employee: { select: { id: true, fullName: true, department: true, avatarUrl: true } },
       mgrReviewer: { select: { id: true, fullName: true } },
     },
-    orderBy: [{ cycle: { periodEnd: "desc" } }, { status: "asc" }],
+    orderBy: [{ cycle: { periodEnd: "desc" } }, { status: "asc" } ],
   });
 
   return NextResponse.json({ data: reviews });

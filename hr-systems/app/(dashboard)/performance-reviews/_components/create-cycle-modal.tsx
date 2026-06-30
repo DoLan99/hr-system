@@ -1,8 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { X, Loader2, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
+
+const CSS = `
+.cm-scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:79}
+.cm-card{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px}
+.cm-box{position:relative;background:var(--elev);border:1px solid var(--border-2);border-radius:var(--r-lg);width:100%;max-width:480px;padding:26px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-lg)}
+.cm-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--text-3);border:none;background:none;cursor:pointer;font-family:inherit}
+.cm-close:hover{background:var(--content);color:var(--text)}
+.cm-title{font-size:1rem;font-weight:800;color:var(--text);margin:0}
+.cm-sub{font-size:.76rem;color:var(--text-3);margin-top:2px}
+.cm-f{display:flex;flex-direction:column;gap:5px}
+.cm-f label{font-size:.81rem;font-weight:600;color:var(--text-2)}
+.cm-f input,.cm-f select{background:var(--content);border:1.5px solid var(--border-2);border-radius:9px;padding:9px 12px;font-family:inherit;font-size:.88rem;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.cm-f input:focus,.cm-f select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.cm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cm-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:6px;border-top:1px solid var(--border)}
+.cm-type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cm-type-btn{padding:8px 0;border-radius:9px;border:1.5px solid var(--border-2);background:var(--content);color:var(--text-2);font-family:inherit;font-size:.82rem;font-weight:500;cursor:pointer;transition:all .15s;text-align:center}
+.cm-type-btn:hover{border-color:var(--accent);color:var(--text)}
+.cm-type-btn.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);font-weight:700}
+.cm-q-row{display:flex;gap:6px}
+.cm-q-btn{flex:1;padding:7px 0;border-radius:8px;border:1.5px solid var(--border-2);background:var(--content);color:var(--text-2);font-family:var(--font-mono);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;text-align:center}
+.cm-q-btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.cm-q-btn.on{border-color:var(--accent);background:var(--accent);color:#fff}
+.cm-note{display:flex;align-items:flex-start;gap:9px;padding:10px 13px;background:var(--accent-soft);border:1px solid var(--accent-soft-2);border-radius:9px;font-size:.76rem;color:var(--accent-ink);line-height:1.6}
+.cm-err{font-size:.78rem;color:var(--danger);background:var(--danger-soft);padding:8px 12px;border-radius:8px;border-left:3px solid var(--danger)}
+`;
 
 export function CreateCycleModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [periodType, setPeriodType] = useState<"QUARTERLY" | "ANNUAL" | "CUSTOM">("QUARTERLY");
@@ -40,46 +64,42 @@ export function CreateCycleModal({ onClose, onCreated }: { onClose: () => void; 
         return;
       }
       onCreated();
-    } catch (e: any) {
-      setError(e?.message ?? "Lỗi không xác định");
+    } catch (err: any) {
+      setError(err?.message ?? "Lỗi không xác định");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Tạo chu kỳ đánh giá</h2>
-            <p className="text-xs text-slate-500">Tự động sinh review cho tất cả nhân viên ACTIVE</p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition">
-            <X className="w-4 h-4" />
+    <>
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <div className="cm-scrim" onClick={onClose} />
+      <div className="cm-card" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+        <form className="cm-box" onSubmit={handleSubmit}>
+          <button type="button" className="cm-close" onClick={onClose}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
-        </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
-          {/* Period type */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">Loại chu kỳ</label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
+            <h2 className="cm-title">Tạo chu kỳ review mới</h2>
+            <p className="cm-sub">Tự động sinh review cho tất cả nhân viên ACTIVE</p>
+          </div>
+
+          {/* Period type */}
+          <div className="cm-f">
+            <label>Loại chu kỳ</label>
+            <div className="cm-type-grid">
+              {([
                 { val: "QUARTERLY", label: "Theo quý" },
-                { val: "ANNUAL", label: "Theo năm" },
-                { val: "CUSTOM", label: "Tùy chỉnh" },
-              ].map(opt => (
+                { val: "ANNUAL",    label: "Theo năm" },
+                { val: "CUSTOM",    label: "Tùy chỉnh" },
+              ] as const).map(opt => (
                 <button
                   key={opt.val}
                   type="button"
-                  onClick={() => setPeriodType(opt.val as any)}
-                  className={cn(
-                    "px-3 py-2 text-xs rounded-lg border-2 transition",
-                    periodType === opt.val
-                      ? "border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium"
-                      : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300",
-                  )}
+                  className={`cm-type-btn${periodType === opt.val ? " on" : ""}`}
+                  onClick={() => setPeriodType(opt.val)}
                 >
                   {opt.label}
                 </button>
@@ -88,33 +108,26 @@ export function CreateCycleModal({ onClose, onCreated }: { onClose: () => void; 
           </div>
 
           {/* Year + Quarter */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">Năm</label>
+          <div className="cm-grid">
+            <div className="cm-f">
+              <label>Năm</label>
               <input
                 type="number"
                 value={year}
                 onChange={e => setYear(Number(e.target.value))}
-                min={2020}
-                max={2100}
-                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min={2020} max={2100}
               />
             </div>
             {periodType === "QUARTERLY" && (
-              <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">Quý</label>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4].map(q => (
+              <div className="cm-f">
+                <label>Quý</label>
+                <div className="cm-q-row">
+                  {([1, 2, 3, 4] as const).map(q => (
                     <button
                       key={q}
                       type="button"
-                      onClick={() => setQuarter(q as any)}
-                      className={cn(
-                        "flex-1 py-2 text-xs rounded-lg border-2 transition",
-                        quarter === q
-                          ? "border-blue-600 bg-blue-600 text-white"
-                          : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400",
-                      )}
+                      className={`cm-q-btn${quarter === q ? " on" : ""}`}
+                      onClick={() => setQuarter(q)}
                     >
                       Q{q}
                     </button>
@@ -124,60 +137,53 @@ export function CreateCycleModal({ onClose, onCreated }: { onClose: () => void; 
             )}
           </div>
 
+          {/* Custom date range */}
           {periodType === "CUSTOM" && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">Từ ngày</label>
-                <input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} required
-                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div className="cm-grid">
+              <div className="cm-f">
+                <label>Ngày bắt đầu</label>
+                <input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} required />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">Đến ngày</label>
-                <input type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} required
-                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <div className="cm-f">
+                <label>Ngày kết thúc</label>
+                <input type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} required />
               </div>
             </div>
           )}
 
           {/* Due dates */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">Hạn self-review</label>
-              <input type="date" value={selfDueDate} onChange={e => setSelfDueDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800" />
+          <div className="cm-grid">
+            <div className="cm-f">
+              <label>Hạn nộp self-review</label>
+              <input type="date" value={selfDueDate} onChange={e => setSelfDueDate(e.target.value)} />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">Hạn manager review</label>
-              <input type="date" value={managerDueDate} onChange={e => setManagerDueDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800" />
+            <div className="cm-f">
+              <label>Hạn manager review</label>
+              <input type="date" value={managerDueDate} onChange={e => setManagerDueDate(e.target.value)} />
             </div>
           </div>
 
-          <div className="flex items-start gap-2 px-3 py-2 bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800 rounded-lg">
-            <Sparkles className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400 mt-0.5 shrink-0" />
-            <p className="text-[11px] text-violet-700 dark:text-violet-300">
-              Hệ thống sẽ tính Auto-KPI (Tốc độ/Chất lượng/Đúng hạn/Học hỏi/Chủ động) trong period và đính kèm vào mỗi review.
-              Quá trình có thể mất vài giây nếu nhiều nhân viên.
-            </p>
+          {/* Note */}
+          <div className="cm-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="15" height="15" style={{ flexShrink: 0, marginTop: 1 }}><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>
+            Hệ thống sẽ tính Auto-KPI (Tốc độ / Chất lượng / Đúng hạn / Học hỏi / Chủ động) và đính kèm vào mỗi review. Quá trình có thể mất vài giây.
           </div>
 
-          {error && (
-            <p className="text-xs text-red-600 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded">{error}</p>
-          )}
+          {error && <div className="cm-err">{error}</div>}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose}
-              className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-              Hủy
-            </button>
-            <button type="submit" disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-lg transition flex items-center gap-2">
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+          <div className="cm-foot">
+            <button type="button" className="abtn ghost" onClick={onClose}>Hủy</button>
+            <button type="submit" className="abtn primary" disabled={loading} style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+              {loading && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" width="13" height="13" style={{ animation: "spin .8s linear infinite" }}>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+              )}
               Tạo & mở cycle
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </>
   );
 }
