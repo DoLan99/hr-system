@@ -1,254 +1,194 @@
-# PRD-18: Activity Tracking, Audit Log & Anomaly Detection
+# PRD-18 — Activity Tracking, Audit Log & Anomaly Detection
 
-**Module:** Activity / Audit / Anomaly  
-**Phiên bản:** 1.0  
-**Ngày:** 2026-06-30  
+> **Product Requirements Document**
+> Version 1.0 · 02/07/2026 · Status: IN REVIEW
 
----
-
-## 1. Mục tiêu
-
-**Activity Tracking:** Giám sát hành vi sử dụng hệ thống real-time: ai đang online, ai đang làm gì, thống kê trang hay dùng nhất, heatmap hoạt động.
-
-**Audit Log:** Ghi lại mọi thao tác quan trọng (create/update/delete) để truy vết khi cần, đảm bảo tuân thủ và bảo mật.
-
-**Anomaly Detection:** Tự động phát hiện hành vi bất thường: đăng nhập lạ, bulk action đáng ngờ, truy cập ngoài giờ làm việc.
-
----
-
-## 2. Người dùng liên quan
-
-| Người dùng | Quyền |
+| Trường | Giá trị |
 |---|---|
-| Admin (Workspace) | Xem activity, audit, anomaly của workspace |
-| Super Admin | Xem tất cả workspace |
-| Employee | Xem activity của chính mình |
+| Module | Activity / Audit Log / Anomaly Detection |
+| Phiên bản | v1.0 |
+| Trạng thái | IN REVIEW |
+| Ngày tạo | 02/07/2026 |
+| Cập nhật lần cuối | 02/07/2026 |
+| Stakeholders | PO, Dev, Admin, Security, Compliance |
 
 ---
 
-## 3. Activity Tracking — Luồng chức năng
+## 1. Tổng quan sản phẩm (Overview)
 
-### 3.1 Heartbeat (Client ping)
+### 1.1 Bối cảnh & Vấn đề
 
-```
-Client gửi heartbeat mỗi 30 giây:
-    → POST /api/activity/heartbeat
-        { page: "/tasks", timestamp: now }
-    → Server:
-        - Cập nhật session lastSeen
-        - Ghi pageView nếu page thay đổi
-        - Session status = ACTIVE
-```
+Hệ thống HR chứa dữ liệu nhạy cảm (lương, hợp đồng, thông tin cá nhân). Cần:
+- Ghi lại mọi thay đổi dữ liệu để phục vụ audit compliance.
+- Phát hiện hành vi bất thường: đăng nhập lạ, truy cập dữ liệu hàng loạt, thay đổi lương đột ngột.
+- Theo dõi hoạt động người dùng để security investigation khi cần.
 
-### 3.2 Cron: Đóng session stale
+Không có audit trail → khi xảy ra sự cố không biết ai đã làm gì.
 
-```
-Cron job /api/cron/close-stale-sessions chạy mỗi 5 phút:
-    → Tìm sessions không có heartbeat > 10 phút
-    → Session status = CLOSED, ghi endTime
-```
+### 1.2 Mục tiêu sản phẩm (Goals)
 
-### 3.3 Xem Online Users
+- Audit Log tự động cho tất cả thay đổi dữ liệu trên các entity quan trọng (AUDITED_MODELS).
+- Activity Tracking: theo dõi session, API access, heartbeat người dùng đang active.
+- Anomaly Detection: phát hiện và alert các hành vi bất thường.
 
-```
-GET /api/activity/online-users
-    → Danh sách nhân viên đang active trong 5 phút gần nhất
-    → Trả về: [{ employeeId, name, avatar, currentPage, lastSeen }]
-    → Dùng để hiển thị "đang online" trên avatar
-```
+### 1.3 Phạm vi (Scope)
 
-### 3.4 Xem Heatmap hoạt động
+**Trong phạm vi:** Auto audit log (qua Prisma extension), UserSession tracking, ApiAccessLog, AnomalyAlert, dashboard audit.
 
-```
-Admin vào /admin/activity
-    → GET /api/activity/heatmap?days=30
-    → Heatmap theo giờ trong ngày × ngày trong tuần
-    → Heatmap theo ngày trong tháng
-    → Chỉ số: số lượt truy cập mỗi slot thời gian
-```
-
-### 3.5 Page Stats (Trang nào dùng nhiều nhất)
-
-```
-GET /api/activity/page-stats?period=30d
-    → Top pages theo số lượt view
-    → Thời gian trung bình trên mỗi trang
-    → Dùng để ưu tiên cải thiện UX
-```
-
-### 3.6 Timeline hoạt động
-
-```
-GET /api/activity/timeline?employeeId=&date=
-    → Timeline hoạt động của 1 nhân viên trong 1 ngày:
-        09:03 - Login
-        09:05 - /tasks
-        09:45 - /tasks/[id]
-        10:30 - /leave
-        ...
-    → Dùng để tính giờ làm việc thực tế (auto-derive office time)
-```
-
-### 3.7 Top Users
-
-```
-GET /api/activity/top-users?period=7d
-    → Nhân viên có nhiều hoạt động nhất
-    → Metrics: sessions, page views, active time
-```
-
-### 3.8 Sessions
-
-```
-GET /api/activity/sessions?employeeId=
-    → Lịch sử sessions: login time, logout time, duration, IP, device
-```
+**Ngoài phạm vi:** SIEM integration (v2), machine learning anomaly (v2), compliance report tự động cho kiểm toán viên ngoài (v2).
 
 ---
 
-## 4. Audit Log — Luồng chức năng
+## 2. Người dùng mục tiêu (Target Users)
 
-### 4.1 Ghi audit tự động
+### 2.1 Personas
 
-```
-Middleware interceptor (áp dụng cho mọi write API):
-    → Sau mỗi action thành công:
-        POST /internal/audit {
-          actorId: userId,
-          action: "CREATE" | "UPDATE" | "DELETE" | "APPROVE" | "VIEW_SENSITIVE",
-          entityType: "Employee" | "Leave" | "Task" | ...,
-          entityId: id,
-          before: { ...oldData },    (cho UPDATE/DELETE)
-          after: { ...newData },     (cho CREATE/UPDATE)
-          ip: request.ip,
-          userAgent: request.headers['user-agent'],
-          timestamp: now
-        }
-```
+| Persona | Mô tả | Nhu cầu chính | Pain Point |
+|---|---|---|---|
+| **Admin / Super Admin** | Kiểm tra ai đã làm gì khi xảy ra sự cố; theo dõi suspicious activity. | Search audit log nhanh; nhận alert anomaly ngay lập tức. | Không có audit trail → không điều tra được khi có vấn đề. |
+| **Compliance Officer / HR Admin** | Đảm bảo dữ liệu nhạy cảm chỉ được truy cập đúng người; chuẩn bị báo cáo kiểm toán. | Export audit log theo date range; xem ai đã xem dữ liệu lương. | Phải điều tra thủ công, tốn nhiều thời gian. |
 
-### 4.2 Xem Audit Log
+### 2.2 User Journey
 
-```
-Admin vào /admin/audit
-    → GET /api/admin/audit
-        (filter: actorId, action, entityType, dateRange, search)
-    → Hiển thị table: thời gian, người làm, hành động, đối tượng, IP
-    → Click xem chi tiết: before/after diff
-    → Filter theo ngày: xem ai làm gì hôm qua
-```
+**Admin — Điều tra sự cố:**
 
-### 4.3 Audit Timeline theo Entity
-
-```
-GET /api/admin/audit/timeline?entityType=Employee&entityId=xxx
-    → Timeline mọi thay đổi của 1 entity cụ thể:
-        15:30 - Admin A tạo nhân viên B
-        16:00 - Admin A gán phòng ban Marketing
-        Ngày N - Manager C đổi role
-    → Dùng để trace lịch sử nhân viên
-```
-
-### 4.4 Export Audit Log
-
-```
-Admin → "Export"
-    → GET /api/admin/audit/export?startDate=&endDate=&format=csv
-    → Download file CSV đầy đủ
-    → Dùng cho báo cáo tuân thủ, kiểm toán
-```
-
----
-
-## 5. Anomaly Detection — Luồng chức năng
-
-### 5.1 Cron phát hiện bất thường
-
-```
-Cron job /api/cron/anomalies chạy hàng ngày:
-    → Phân tích activity + audit logs
-    → Các pattern bất thường:
-        - Login từ IP/quốc gia lạ
-        - Đăng nhập ngoài giờ làm việc (ví dụ: 2h sáng)
-        - Bulk delete trong thời gian ngắn (> 20 records/phút)
-        - Nhiều failed attempts
-        - Truy cập vault nhiều lần liên tiếp
-        - Đổi email/phone của nhiều nhân viên cùng lúc
-    → Tạo Anomaly record với severity: LOW / MEDIUM / HIGH / CRITICAL
-    → Gửi cảnh báo realtime cho Admin (nếu CRITICAL)
-```
-
-### 5.2 Xem & Xử lý Anomaly
-
-```
-Admin vào /admin/anomalies
-    → GET /api/admin/anomalies (filter: severity, status, dateRange)
-    → Danh sách anomaly: mô tả, severity, thời gian, actor
-    → Click chi tiết: GET /api/admin/anomalies/[id]
-        - Xem evidence (activity records liên quan)
-        - Xem audit log của actor trong ngày đó
-    → Xử lý:
-        - "Đã xem xét - Bình thường": PUT { status: "DISMISSED", note }
-        - "Đình chỉ tài khoản": Vô hiệu hóa nhân viên
-        - "Cần điều tra thêm": PUT { status: "INVESTIGATING" }
-```
-
-### 5.3 Refresh thủ công
-
-```
-Admin click "Quét ngay"
-    → POST /api/admin/anomalies/refresh
-    → Chạy lại detection cho 24h gần nhất
-    → Trả về số anomaly mới phát hiện
-```
-
----
-
-## 6. API Endpoints
-
-### Activity
-| Method | Endpoint | Mô tả |
+| Bước | Hành động | Mục tiêu |
 |---|---|---|
-| POST | `/api/activity/heartbeat` | Client ping |
-| GET | `/api/activity/online-users` | Đang online |
-| GET | `/api/activity/heatmap` | Heatmap hoạt động |
-| GET | `/api/activity/page-stats` | Thống kê trang |
-| GET | `/api/activity/timeline` | Timeline cá nhân |
-| GET | `/api/activity/top-users` | Top hoạt động |
-| GET | `/api/activity/sessions` | Lịch sử sessions |
-
-### Audit
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| GET | `/api/admin/audit` | Audit log (filter) |
-| GET | `/api/admin/audit/timeline` | Timeline theo entity |
-| GET | `/api/admin/audit/export` | Export CSV |
-
-### Anomaly
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| GET | `/api/admin/anomalies` | Danh sách anomaly |
-| GET | `/api/admin/anomalies/[id]` | Chi tiết |
-| PUT | `/api/admin/anomalies/[id]` | Cập nhật status |
-| POST | `/api/admin/anomalies/refresh` | Quét lại |
+| 1 | Nhận AnomalyAlert: "Người dùng X export 200 records lương trong 5 phút" | Phát hiện anomaly |
+| 2 | Vào /audit-logs → Filter: user = X, entity = PayrollRun, date = hôm nay | Tìm dấu vết |
+| 3 | Xem từng action: export, view, timestamp, IP | Điều tra |
+| 4 | Vào /sessions → Xem session của X: login từ IP lạ | Xác nhận breach |
+| 5 | [Revoke session] → Buộc logout X → Notify security team | Xử lý |
 
 ---
 
-## 7. Màn hình UI
+## 3. Yêu cầu chức năng (Functional Requirements)
 
-| Route | Màn hình |
-|---|---|
-| `/admin/activity` | Dashboard hoạt động người dùng |
-| `/admin/audit` | Audit log |
-| `/admin/audit/timeline` | Timeline audit |
-| `/admin/anomalies` | Phát hiện bất thường |
+### 3.1 Danh sách tính năng
+
+| ID | Tính năng | Mô tả | Độ ưu tiên | SP |
+|---|---|---|---|---|
+| FR-001 | Auto Audit Log | Prisma extension tự động ghi AuditLog cho AUDITED_MODELS khi có CREATE/UPDATE/DELETE | Must Have | 13 |
+| FR-002 | Manual Audit Log | API middleware ghi log cho actions không qua Prisma (export, view sensitive data) | Must Have | 8 |
+| FR-003 | UserSession Tracking | Ghi nhận login/logout, duration, IP, device, browser | Must Have | 5 |
+| FR-004 | API Access Log | Ghi mỗi API request: method, route, statusCode, duration, userId | Should Have | 8 |
+| FR-005 | Activity Heartbeat | Client ping mỗi 30s → ghi UserActivity; tính last seen, active minutes | Should Have | 5 |
+| FR-006 | Anomaly Detection | Rules-based: đăng nhập IP lạ, bulk export, thay đổi lương lớn, nhiều lần sai password | Must Have | 13 |
+| FR-007 | AnomalyAlert notification | Alert cho Admin khi phát hiện anomaly: in-app + email | Must Have | 5 |
+| FR-008 | Audit Log Dashboard | Search, filter, xem chi tiết audit logs; xem sessions active | Must Have | 8 |
+| FR-009 | Export Audit Log | Export CSV/Excel audit log theo date range, entity, user | Should Have | 5 |
+| FR-010 | Session revoke | Admin force logout user (revoke session) | Should Have | 3 |
+
+### 3.2 User Stories
+
+| ID | User Story | Acceptance Criteria | Priority |
+|---|---|---|---|
+| US-001 | Là Admin, tôi muốn hệ thống tự động ghi lại mọi thay đổi dữ liệu quan trọng, để tôi không cần nhớ phải log thủ công. | AC1: Các entity trong AUDITED_MODELS (Employee, PayrollRun, LeaveRequest, Task, Customer...) tự động có audit log khi CREATE/UPDATE/DELETE. AC2: Mỗi log: entityType, entityId, action, userId, timestamp, oldValue (JSON), newValue (JSON), IP. AC3: Audit log immutable — không ai có thể xóa/sửa (kể cả Admin). | High |
+| US-002 | Là Admin, tôi muốn tìm kiếm audit log theo nhiều tiêu chí, để điều tra sự cố nhanh. | AC1: Filter: User, Entity type, Action (CREATE/UPDATE/DELETE), Date range, IP. AC2: Full-text search trong entity ID. AC3: Kết quả phân trang, 50 items/trang. AC4: Sort theo timestamp DESC mặc định. AC5: Response < 2 giây với index tốt. | High |
+| US-003 | Là Admin, tôi muốn nhận alert khi phát hiện hành vi bất thường, để phản ứng kịp thời trước khi thiệt hại lan rộng. | AC1: Rule 1: Login từ IP chưa từng thấy → MEDIUM alert. AC2: Rule 2: Export > 100 records sensitive data trong 10 phút → HIGH alert. AC3: Rule 3: Thay đổi lương > 50% trong 1 lần → HIGH alert. AC4: Rule 4: 5 lần sai password liên tiếp → MEDIUM alert. AC5: Alert format: Rule triggered, user, timestamp, detail, severity. AC6: Notification: in-app + email cho tất cả Admin. | High |
+| US-004 | Là Compliance Officer, tôi muốn xem ai đã truy cập dữ liệu lương trong tháng qua, để chuẩn bị cho kiểm toán nội bộ. | AC1: Filter audit log: entityType = PayrollRun/Payslip, action = VIEW/READ, date range. AC2: Kết quả: User | Action | Entity ID | Timestamp | IP. AC3: Export CSV với filter đã áp dụng. AC4: Tổng số records trong filter visible. | High |
+| US-005 | Là Admin, tôi muốn xem tất cả sessions đang active và có thể revoke session của user cụ thể, để xử lý khi phát hiện account bị compromise. | AC1: /sessions → list: User | Login time | IP | Browser | Last active. AC2: Filter theo user hoặc IP. AC3: [Revoke Session] → invalidate token ngay lập tức. AC4: User bị revoke → redirect về login khi request tiếp theo. AC5: Audit log ghi: "Session revoked by Admin [id]". | Medium |
 
 ---
 
-## 8. Business Rules
+## 4. Yêu cầu phi chức năng
 
-- Heartbeat chỉ ghi khi user đang active (có interaction).
-- Audit log không bao giờ bị xóa (immutable).
-- Anomaly detection là non-blocking (không ảnh hưởng đến performance).
-- CRITICAL anomaly: gửi email + in-app notification ngay lập tức.
-- Retention: activity logs giữ 90 ngày, audit logs giữ 2 năm.
-- Export audit: chỉ Admin và chỉ được export theo khoảng ngày tối đa 90 ngày/lần.
+| Loại | Yêu cầu | KPI | Ngưỡng |
+|---|---|---|---|
+| Coverage | % actions có audit log | Coverage | 100% cho AUDITED_MODELS |
+| Performance | Ghi audit log không làm chậm response | Overhead | < 5ms per request |
+| Retention | Lưu audit log | Retention | Tối thiểu 2 năm |
+| Immutability | Audit log không thể xóa/sửa | 100% | Không có DELETE API cho AuditLog |
+| Anomaly latency | Phát hiện anomaly và gửi alert | Latency | < 30 giây sau khi anomaly xảy ra |
+
+---
+
+## 5. Thiết kế & UX
+
+### 5.1 Kiến trúc 4 lớp Activity Tracking
+
+```
+Layer 1 — Foundation
+  AsyncLocalStorage: inject { userId, workspaceId, requestId, ip } vào mọi request
+  withContext(handler): wrapper bắt buộc trên API routes
+
+Layer 2 — Compliance
+  UserSession: ghi login/logout, device info
+  ApiAccessLog: mỗi API request → ghi route, method, status, duration
+
+Layer 3 — Activity
+  Heartbeat endpoint: client ping /api/activity/heartbeat mỗi 30 giây
+  UserActivity: last_seen, active_minutes_today
+
+Layer 4 — Intelligence
+  AnomalyDetection service: evaluate rules sau mỗi action
+  AnomalyAlert: persist alert + notify Admin
+```
+
+### 5.2 Luồng màn hình
+
+**Luồng 1: Tìm kiếm Audit Log**
+
+```
+/admin/audit-logs
+→ Filter bar: User | Entity type | Action | Date range | IP
+→ [Search] → GET /api/admin/audit-logs?filters...
+→ Table: Timestamp | User | Action | Entity | Changes summary | IP
+→ Click row → Drawer: JSON diff oldValue vs newValue (highlighted)
+→ [Export CSV]
+```
+
+**Luồng 2: Anomaly Alert**
+
+```
+[Background service chạy sau mỗi action]
+→ Evaluate rules: nếu match → tạo AnomalyAlert
+→ Notify all Admin: in-app + email
+→ Admin click notification → /admin/anomalies/:id
+→ Xem detail: rule, user, evidence, timestamp
+→ [Mark as reviewed] | [Revoke session] | [Disable account]
+```
+
+---
+
+## 6. Business Rules
+
+### BR-001 — Audit log là immutable
+
+Không có endpoint DELETE hoặc UPDATE cho AuditLog. Chỉ có INSERT. Nếu cần "undo" → tạo record reverse action mới.
+
+### BR-002 — Context injection bắt buộc trên API routes
+
+Mọi API route PHẢI sử dụng `withContext(handler)` wrapper. Route nào không có → request bị reject với 500 error + alert cho Admin.
+
+### BR-003 — Anomaly rules được evaluate async
+
+Anomaly detection chạy async sau khi response đã trả về client. Không block request chính. Nếu anomaly service lỗi → log error nhưng không ảnh hưởng main flow.
+
+### BR-004 — Session revoke ngay lập tức
+
+Khi Admin revoke session → token bị blacklist trong Redis với TTL = còn lại của token. Request tiếp theo với token đó → 401 Unauthorized, ngay cả khi JWT chưa hết hạn.
+
+### BR-005 — Heartbeat xác định "đang online"
+
+User được coi là "online" nếu có heartbeat trong vòng 90 giây (3 × 30s interval). Sau 90 giây không có heartbeat → trạng thái OFFLINE.
+
+### BR-006 — IP lạ definition
+
+IP được coi là "lạ" nếu user chưa từng login từ IP đó trong 30 ngày gần nhất. IP quen → không trigger anomaly dù login nhiều lần.
+
+---
+
+## 7. Phân quyền
+
+| Hành động | Employee | Manager | HR Admin | Admin |
+|---|---|---|---|---|
+| Xem audit log của bản thân | ✅ | ✅ | ✅ | ✅ |
+| Xem audit log toàn hệ thống | ❌ | ❌ | 👁 (HR data only) | ✅ |
+| Xem Anomaly Alerts | ❌ | ❌ | ❌ | ✅ |
+| Mark anomaly as reviewed | ❌ | ❌ | ❌ | ✅ |
+| Xem User Sessions | ❌ | ❌ | ❌ | ✅ |
+| Revoke session | ❌ | ❌ | ❌ | ✅ |
+| Xem API Access Logs | ❌ | ❌ | ❌ | ✅ |
+| Export Audit Log | ❌ | ❌ | ✅ (HR data) | ✅ |
+| Cấu hình Anomaly Rules | ❌ | ❌ | ❌ | ✅ |

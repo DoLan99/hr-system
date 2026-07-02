@@ -1,145 +1,145 @@
-# PRD-03: Phòng ban, Chức vụ & Team
+# PRD-03 — Phòng ban, Chức vụ & Team
 
-**Module:** Departments / Roles / Teams  
-**Phiên bản:** 1.0  
-**Ngày:** 2026-06-30  
+> **Product Requirements Document**
+> Version 1.0 · 02/07/2026 · Status: IN REVIEW
 
----
-
-## 1. Mục tiêu
-
-Quản lý cơ cấu tổ chức của doanh nghiệp bao gồm: phòng ban phân cấp, chức vụ với yêu cầu kỹ năng, và team linh hoạt (cross-functional).
-
----
-
-## 2. Người dùng liên quan
-
-| Người dùng | Quyền |
+| Trường | Giá trị |
 |---|---|
-| Admin | CRUD đầy đủ phòng ban, chức vụ, team |
-| Manager | Xem cơ cấu, xem danh sách nhân viên trong phòng ban mình |
-| Employee | Xem cơ cấu tổ chức |
+| Module | Departments / Roles / Teams |
+| Phiên bản | v1.0 |
+| Trạng thái | IN REVIEW |
+| Ngày tạo | 02/07/2026 |
+| Cập nhật lần cuối | 02/07/2026 |
+| Stakeholders | PO, Dev, HR Admin, Manager |
 
 ---
 
-## 3. Luồng chức năng
+## 1. Tổng quan sản phẩm (Overview)
 
-### 3.1 Quản lý Phòng ban (Department)
+### 1.1 Bối cảnh & Vấn đề
 
-```
-Admin vào /departments
-    → Xem cây phòng ban (tree view)
-    → Tạo phòng ban gốc: POST /api/departments { name, parentId: null }
-    → Tạo phòng ban con: POST /api/departments { name, parentId }
-    → Cập nhật: PUT /api/departments/[id]
-    → Xóa: DELETE /api/departments/[id]
-        → Cảnh báo nếu còn nhân viên trong phòng ban
-        → Không cho xóa nếu có phòng ban con
-```
+Cơ cấu tổ chức là nền tảng để phân quyền và routing thông báo trong toàn hệ thống. Khi không có cơ cấu rõ ràng trong hệ thống: không biết ai quản lý ai, phép ai gửi cho ai duyệt, báo cáo nhân viên thuộc về phòng ban nào.
 
-**Thông tin phòng ban:**
-- Tên phòng ban
-- Phòng ban cha (parent department)
-- Mô tả
-- Trưởng phòng (manager: FK → Employee)
-- Số lượng nhân viên (computed)
+### 1.2 Mục tiêu sản phẩm (Goals)
 
-### 3.2 Quản lý Chức vụ (Role)
+- Admin thiết lập cơ cấu tổ chức (phòng ban, chức vụ, team) phản ánh đúng thực tế công ty.
+- Hệ thống tự động routing: đơn nghỉ phép, workflow approval theo cây tổ chức.
+- Manager của phòng ban nhận đúng thông báo liên quan đến team mình.
 
-```
-Admin vào /roles
-    → Danh sách chức vụ trong workspace
-    → Tạo chức vụ: POST /api/roles { name, departmentId, level }
-    → Gán yêu cầu kỹ năng cho chức vụ:
-        POST /api/role-skill-requirements
-        { roleId, skillId, requiredLevel (1-5) }
-    → Xem gap kỹ năng giữa nhân viên và yêu cầu chức vụ
-    → Cập nhật / xóa yêu cầu kỹ năng:
-        PUT/DELETE /api/role-skill-requirements/[id]
-```
+### 1.3 Phạm vi (Scope)
 
-**Thông tin chức vụ:**
-- Tên chức vụ
-- Phòng ban (departmentId)
-- Level/cấp bậc (numeric)
-- Mô tả, trách nhiệm
-- Danh sách yêu cầu kỹ năng (skills + level tối thiểu)
+**Trong phạm vi:** CRUD phòng ban phân cấp, CRUD chức vụ với yêu cầu kỹ năng, CRUD team linh hoạt (cross-functional).
 
-### 3.3 Quản lý Team
-
-```
-Admin / Manager vào Settings → Teams
-    → Tạo team: POST /api/teams { name, description, leaderId }
-    → Thêm thành viên: PUT /api/teams/[id] { memberIds: [...] }
-    → Xem team và thành viên
-    → Giải thể team: DELETE /api/teams/[id]
-```
-
-**Đặc điểm team:**
-- Team là cross-functional (nhân viên từ nhiều phòng ban khác nhau)
-- Mỗi team có 1 Team Lead
-- 1 nhân viên có thể thuộc nhiều team
-- Team được gắn vào Sprint / Project để phân công task
+**Ngoài phạm vi:** Sơ đồ tổ chức dạng visual org chart (v2), phân quyền phức tạp theo địa điểm/chi nhánh (v2).
 
 ---
 
-## 4. API Endpoints
+## 2. Người dùng mục tiêu (Target Users)
 
-### Departments
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| GET | `/api/departments` | Danh sách phòng ban (tree hoặc flat) |
-| POST | `/api/departments` | Tạo phòng ban mới |
-| GET | `/api/departments/[id]` | Chi tiết phòng ban + nhân viên |
-| PUT | `/api/departments/[id]` | Cập nhật phòng ban |
-| DELETE | `/api/departments/[id]` | Xóa phòng ban |
+### 2.1 Personas
 
-### Roles
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| GET | `/api/roles` | Danh sách chức vụ |
-| POST | `/api/roles` | Tạo chức vụ |
-| GET | `/api/roles/[id]` | Chi tiết chức vụ |
-| PUT | `/api/roles/[id]` | Cập nhật chức vụ |
-| DELETE | `/api/roles/[id]` | Xóa chức vụ |
-| GET/POST | `/api/role-skill-requirements` | Yêu cầu kỹ năng của chức vụ |
-| PUT/DELETE | `/api/role-skill-requirements/[id]` | Sửa/xóa yêu cầu |
+| Persona | Mô tả | Nhu cầu chính | Pain Point |
+|---|---|---|---|
+| **HR Admin** | Duy trì cơ cấu tổ chức chính xác, cập nhật khi công ty thay đổi. | CRUD nhanh, không bị lỗi khi rename hay chuyển người. | Không có hệ thống → phải cập nhật thủ công nhiều chỗ khi tái cơ cấu. |
+| **Manager** | Biết ai trong team của mình, cấu trúc báo cáo là thế nào. | Xem danh sách nhân viên phòng ban, xem cây tổ chức. | Phải hỏi HR mới biết ai mới vào phòng ban. |
 
-### Teams
-| Method | Endpoint | Mô tả |
+### 2.2 User Journey
+
+**HR Admin — Thiết lập cơ cấu lần đầu:**
+
+| Bước | Hành động | Mục tiêu |
 |---|---|---|
-| GET | `/api/teams` | Danh sách team |
-| POST | `/api/teams` | Tạo team |
-| GET | `/api/teams/[id]` | Chi tiết team + thành viên |
-| PUT | `/api/teams/[id]` | Cập nhật team / thêm thành viên |
-| DELETE | `/api/teams/[id]` | Giải thể team |
+| 1 | Vào /departments → Tạo phòng ban gốc (Kỹ thuật, Marketing...) | Thiết lập tầng 1 |
+| 2 | Tạo phòng ban con (Frontend, Backend trong Kỹ thuật) | Cấu trúc phân cấp |
+| 3 | Vào /roles → Tạo chức vụ cho từng phòng ban | Gán chức danh |
+| 4 | Gán yêu cầu kỹ năng cho từng chức vụ | Định nghĩa tiêu chuẩn |
+| 5 | Tạo team cross-functional | Team linh hoạt |
 
 ---
 
-## 5. Màn hình UI
+## 3. Yêu cầu chức năng (Functional Requirements)
 
-| Route | Màn hình |
-|---|---|
-| `/departments` | Cây phòng ban + danh sách chức vụ |
-| `/roles` | Danh sách chức vụ + skill requirements |
+### 3.1 Danh sách tính năng
+
+| ID | Tính năng | Mô tả | Độ ưu tiên | SP |
+|---|---|---|---|---|
+| FR-001 | CRUD Phòng ban | Tạo, sửa, xóa phòng ban; hỗ trợ phân cấp (parent-child) | Must Have | 5 |
+| FR-002 | Xem cây phòng ban | Tree view thể hiện cấu trúc phân cấp | Must Have | 3 |
+| FR-003 | CRUD Chức vụ | Tạo, sửa, xóa chức vụ gắn với phòng ban | Must Have | 3 |
+| FR-004 | Gán yêu cầu kỹ năng cho chức vụ | Link chức vụ với kỹ năng yêu cầu + level tối thiểu | Should Have | 5 |
+| FR-005 | CRUD Team | Tạo team cross-functional, thêm/xóa thành viên | Must Have | 5 |
+| FR-006 | Gán nhân viên vào phòng ban/chức vụ/team | Quản lý từ trang Employee hoặc từ trang phòng ban | Must Have | 3 |
+
+### 3.2 User Stories
+
+| ID | User Story | Acceptance Criteria | Priority |
+|---|---|---|---|
+| US-001 | Là HR Admin, tôi muốn tạo cấu trúc phòng ban phân cấp, để phản ánh đúng cơ cấu tổ chức thực tế của công ty. | AC1: Tạo phòng ban với: Tên (bắt buộc), Mô tả, Phòng ban cha (tuỳ chọn), Trưởng phòng (FK → Employee). AC2: Tree view hiển thị đúng cấu trúc phân cấp. AC3: Không giới hạn số cấp phòng ban. | High |
+| US-002 | Là HR Admin, tôi muốn xóa phòng ban, để dọn dẹp khi tái cơ cấu, nhưng hệ thống phải cảnh báo nếu còn người trong đó. | AC1: Không cho xóa phòng ban đang có nhân viên — hiển thị "Còn X nhân viên". AC2: Không cho xóa phòng ban đang có phòng ban con. AC3: Sau khi xóa thành công: phòng ban biến mất khỏi tree. | High |
+| US-003 | Là HR Admin, tôi muốn tạo chức vụ và gán yêu cầu kỹ năng, để hệ thống Skills có thể tính gap kỹ năng của nhân viên. | AC1: Tạo chức vụ: Tên, Phòng ban, Level (numeric), Mô tả. AC2: Gán kỹ năng yêu cầu: chọn Skill + Level tối thiểu (1-5). AC3: Xem danh sách yêu cầu kỹ năng của chức vụ dạng bảng. | High |
+| US-004 | Là Manager, tôi muốn tạo team cross-functional, để quản lý nhóm dự án không theo phòng ban. | AC1: Tạo team: Tên, Mô tả, Team Lead (FK → Employee). AC2: Thêm thành viên từ bất kỳ phòng ban nào. AC3: 1 nhân viên có thể thuộc nhiều team. AC4: Xóa team: cảnh báo nếu team đang có sprint active. | Medium |
+
+---
+
+## 4. Yêu cầu phi chức năng
+
+| Loại | Yêu cầu | KPI |
+|---|---|---|
+| Performance | Tree view phòng ban load nhanh | < 1 giây với ≤ 100 phòng ban |
+| Data Integrity | Không orphan node trong tree | Cascade check trước khi xóa |
+
+---
+
+## 5. Thiết kế & UX
+
+### 5.1 Luồng màn hình
+
+**Luồng 1: Tạo phòng ban**
+
+```
+/departments → [+ Thêm phòng ban]
+→ Form: Tên* | Mô tả | Phòng ban cha | Trưởng phòng
+→ [Lưu] → Hiển thị trong tree
+```
+
+**Luồng 2: Gán yêu cầu kỹ năng cho chức vụ**
+
+```
+/roles → Click chức vụ → Tab "Kỹ năng yêu cầu"
+→ [+ Thêm yêu cầu] → Chọn Skill | Level tối thiểu
+→ Lưu → POST /api/role-skill-requirements
+```
 
 ---
 
 ## 6. Business Rules
 
-- Phòng ban có thể lồng nhau nhiều cấp (không giới hạn depth trong v1).
-- Không thể xóa phòng ban đang có nhân viên hoặc phòng ban con.
-- Không thể xóa chức vụ đang được nhân viên giữ.
-- Team không bắt buộc gắn với phòng ban.
-- Yêu cầu kỹ năng của chức vụ (role-skill-requirements) được dùng để tính gap kỹ năng trong module Skills.
+### BR-001 — Không xóa phòng ban đang có người hoặc phòng ban con
+
+Trước khi xóa phòng ban: kiểm tra (1) không còn nhân viên nào thuộc phòng ban này, (2) không có phòng ban con. Vi phạm một trong hai → từ chối xóa với thông báo rõ ràng.
+
+### BR-002 — Không xóa chức vụ đang được nhân viên giữ
+
+Chức vụ đang có nhân viên giữ không thể xóa. Admin phải chuyển nhân viên sang chức vụ khác trước.
+
+### BR-003 — Team là cross-functional
+
+Team không bắt buộc gắn với phòng ban. 1 nhân viên có thể thuộc nhiều team cùng lúc. Không giới hạn số lượng team một người thuộc về.
+
+### BR-004 — Trưởng phòng phải là nhân viên trong workspace
+
+Trưởng phòng (manager của department) phải là Employee đang ACTIVE trong cùng workspace.
 
 ---
 
-## 7. Điều kiện lỗi
+## 7. Phân quyền
 
-| Tình huống | Xử lý |
-|---|---|
-| Xóa phòng ban có nhân viên | 409 — "Phòng ban còn nhân viên, không thể xóa" |
-| Xóa phòng ban có phòng ban con | 409 — "Cần xóa phòng ban con trước" |
-| Tên phòng ban trùng | 409 — "Tên phòng ban đã tồn tại" |
-| Xóa chức vụ đang có nhân viên | 409 — "Chức vụ đang có nhân viên sử dụng" |
+| Hành động | Employee | Manager | HR Admin | Admin |
+|---|---|---|---|---|
+| Xem cây phòng ban | ✅ | ✅ | ✅ | ✅ |
+| Tạo / Sửa / Xóa phòng ban | ❌ | ❌ | ✅ | ✅ |
+| Tạo / Sửa / Xóa chức vụ | ❌ | ❌ | ✅ | ✅ |
+| Gán yêu cầu kỹ năng | ❌ | ❌ | ✅ | ✅ |
+| Tạo team | ❌ | ✅ | ✅ | ✅ |
+| Thêm/xóa thành viên team | ❌ | ✅ (team của mình) | ✅ | ✅ |
+| Xóa team | ❌ | ✅ (team của mình) | ✅ | ✅ |

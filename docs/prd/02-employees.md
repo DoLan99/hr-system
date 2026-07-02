@@ -1,183 +1,233 @@
-# PRD-02: Quản lý Nhân viên (Employees)
+# PRD-02 — Quản lý Nhân viên (Employees)
 
-**Module:** Employees  
-**Phiên bản:** 1.0  
-**Ngày:** 2026-06-30  
+> **Product Requirements Document**
+> Version 1.0 · 02/07/2026 · Status: IN REVIEW
 
----
-
-## 1. Mục tiêu
-
-Cung cấp hệ thống quản lý hồ sơ nhân viên toàn diện: tạo mới, cập nhật thông tin cá nhân, theo dõi trạng thái làm việc, gán phòng ban/chức vụ/team, quản lý kỹ năng và xem thống kê hiệu suất.
-
----
-
-## 2. Người dùng liên quan
-
-| Người dùng | Quyền |
+| Trường | Giá trị |
 |---|---|
-| Admin | CRUD đầy đủ tất cả nhân viên |
-| Manager | Xem + chỉnh sửa nhân viên trong phòng ban mình |
-| Employee | Xem và cập nhật hồ sơ cá nhân của mình |
+| Module | Employee Management |
+| Phiên bản | v1.0 |
+| Trạng thái | IN REVIEW |
+| Ngày tạo | 02/07/2026 |
+| Cập nhật lần cuối | 02/07/2026 |
+| Stakeholders | PO, Dev, HR Admin, Manager |
 
 ---
 
-## 3. Luồng chức năng
+## 1. Tổng quan sản phẩm (Overview)
 
-### 3.1 Tạo nhân viên mới
+### 1.1 Bối cảnh & Vấn đề
 
-```
-Admin vào /employees → Click "Thêm nhân viên"
-    → Điền thông tin cơ bản:
-        - Họ tên (bắt buộc)
-        - Email (bắt buộc, unique)
-        - Số điện thoại
-        - Ngày vào làm
-        - Mã nhân viên (tự động generate hoặc nhập tay)
-    → Gán Phòng ban (Department)
-    → Gán Chức vụ (Role)
-    → Gán Team (tuỳ chọn)
-    → POST /api/employees
-    → Hệ thống tạo Employee record
-    → Gửi invitation email (qua Clerk) nếu cần đăng nhập
-```
+Hồ sơ nhân viên là nền tảng của toàn bộ hệ thống HR — mọi module khác (chấm công, nghỉ phép, lương, đánh giá hiệu suất) đều liên kết đến Employee. Hiện tại nhiều doanh nghiệp vừa và nhỏ lưu hồ sơ nhân viên rải rác trên Excel, Google Sheet hoặc email — dẫn đến thiếu đồng nhất, khó tra cứu, không có audit trail khi có thay đổi.
 
-### 3.2 Xem & Tìm kiếm danh sách nhân viên
+Vấn đề cụ thể:
+- Không có nguồn dữ liệu nhân viên tập trung, cập nhật theo thời gian thực.
+- Khó theo dõi lịch sử thay đổi phòng ban, chức vụ của nhân viên.
+- Không có cách nào xem thống kê hiệu suất của nhân viên từ một chỗ.
 
-```
-Truy cập /employees
-    → GET /api/employees (với filters: department, status, search)
-    → Hiển thị bảng: tên, mã NV, phòng ban, chức vụ, trạng thái
-    → Filter: Phòng ban, Trạng thái (active/inactive/probation)
-    → Tìm kiếm theo tên / email / mã NV
-    → Sort theo ngày vào làm / tên
-```
+### 1.2 Mục tiêu sản phẩm (Goals)
 
-### 3.3 Xem chi tiết & Cập nhật hồ sơ
+**Mục tiêu kinh doanh:**
+- Số hóa 100% hồ sơ nhân viên, không còn phụ thuộc Excel.
+- Giảm thời gian HR tìm kiếm thông tin nhân viên xuống < 30 giây.
+- Mọi thay đổi hồ sơ đều có audit trail đầy đủ.
 
-```
-Click vào nhân viên → /employees/[id]
-    → GET /api/employees/[id]
-    → Hiển thị tabs:
-        Tab 1 - Thông tin cá nhân:
-            - Họ tên, email, phone, địa chỉ, CCCD
-            - Ngày sinh, giới tính
-            - Ngày vào làm, loại hợp đồng
-        Tab 2 - Tổ chức:
-            - Phòng ban, Chức vụ, Team
-            - Cấp quản lý trực tiếp
-        Tab 3 - Kỹ năng:
-            - Danh sách kỹ năng và level
-        Tab 4 - Thống kê:
-            - GET /api/employees/[id]/stats
-            - Số task hoàn thành, tổng giờ làm, điểm KPI
-    → Admin/Manager chỉnh sửa → PUT /api/employees/[id]
-```
+**Mục tiêu người dùng:**
+- Admin tạo và quản lý nhân viên nhanh chóng không cần kỹ năng kỹ thuật.
+- Nhân viên tự xem và cập nhật thông tin cá nhân của mình.
+- Manager xem được thống kê hiệu suất nhân viên trực thuộc.
 
-### 3.4 Upload & Quản lý ảnh đại diện
+### 1.3 Phạm vi (Scope)
 
-```
-Vào hồ sơ nhân viên → Click avatar
-    → Chọn file ảnh (JPG/PNG, max 5MB)
-    → POST /api/employees/[id]/photos
-    → Upload lên Drive / Storage
-    → Cập nhật photoUrl trong Employee record
-    → Hiển thị ảnh mới
-```
+**Trong phạm vi:**
+- CRUD hồ sơ nhân viên
+- Upload ảnh đại diện
+- Gán phòng ban, chức vụ, team, manager trực tiếp
+- Xem thống kê hiệu suất cá nhân
+- Tìm kiếm, filter, sắp xếp danh sách nhân viên
+- Vô hiệu hóa / đánh dấu nghỉ việc
+- Auto-generate mã nhân viên
 
-### 3.5 Nhân viên tự xem hồ sơ
-
-```
-Nhân viên đăng nhập → GET /api/employees/me
-    → Xem thông tin cá nhân của mình
-    → Cập nhật một số trường được phép (phone, địa chỉ, avatar)
-```
-
-### 3.6 Preview mã nhân viên
-
-```
-Khi tạo nhân viên mới → GET /api/employees/code-preview
-    → Hệ thống generate mã NV tiếp theo (format: NV001, NV002...)
-    → Hiển thị preview để admin xác nhận
-```
-
-### 3.7 Vô hiệu hóa / Nghỉ việc
-
-```
-Admin chọn nhân viên → "Vô hiệu hóa" hoặc "Đánh dấu nghỉ việc"
-    → PUT /api/employees/[id] { status: "INACTIVE" | "TERMINATED" }
-    → Nhân viên không còn đăng nhập được
-    → Dữ liệu lịch sử vẫn được giữ nguyên
-    → Task đang assign được chuyển về "Unassigned"
-```
+**Ngoài phạm vi:**
+- Hợp đồng lao động (module riêng)
+- Payslip (module Payments)
+- Lịch sử kỹ năng (module Skills)
 
 ---
 
-## 4. API Endpoints
+## 2. Người dùng mục tiêu (Target Users)
 
-| Method | Endpoint | Mô tả |
+### 2.1 Personas
+
+| Persona | Mô tả | Nhu cầu chính | Pain Point |
+|---|---|---|---|
+| **HR Admin** | Phụ trách quản lý hồ sơ toàn bộ nhân viên công ty. Không nhất thiết có kỹ năng kỹ thuật. | CRUD nhân viên nhanh, không sai sót; tìm kiếm dễ; biết ngay ai đang ở phòng ban nào. | Dữ liệu rải rác, phải hỏi nhiều người mới có đủ thông tin; không biết khi nào thông tin bị outdated. |
+| **Manager / Team Lead** | Quản lý trực tiếp một nhóm nhân viên. | Xem hồ sơ và hiệu suất nhân viên trong team. | Phải nhờ HR tra cứu từng người; không có cái nhìn tổng quan về team nhanh. |
+| **Employee (Nhân viên)** | Người dùng cuối, muốn kiểm tra thông tin cá nhân của mình trong hệ thống. | Xem hồ sơ cá nhân, cập nhật SĐT, ảnh đại diện. | Không biết HR đang lưu thông tin gì về mình, không cập nhật được khi có thay đổi. |
+
+### 2.2 User Journey
+
+**HR Admin — Thêm nhân viên mới:**
+
+| Bước | Hành động | Mục tiêu |
 |---|---|---|
-| GET | `/api/employees` | Danh sách nhân viên (filter, search, paginate) |
-| POST | `/api/employees` | Tạo nhân viên mới |
-| GET | `/api/employees/me` | Thông tin nhân viên hiện tại |
-| GET | `/api/employees/code-preview` | Preview mã nhân viên tiếp theo |
-| GET | `/api/employees/[id]` | Chi tiết nhân viên |
-| PUT | `/api/employees/[id]` | Cập nhật thông tin |
-| DELETE | `/api/employees/[id]` | Xóa nhân viên (soft delete) |
-| GET/POST | `/api/employees/[id]/photos` | Upload ảnh đại diện |
-| GET | `/api/employees/[id]/skills` | Danh sách kỹ năng nhân viên |
-| GET | `/api/employees/[id]/stats` | Thống kê hiệu suất nhân viên |
+| 1 | Vào /employees → Click "Thêm nhân viên" | Mở form tạo mới |
+| 2 | Điền họ tên, email, SĐT, ngày vào làm | Nhập thông tin cơ bản |
+| 3 | Chọn phòng ban, chức vụ, team, manager | Gán cơ cấu tổ chức |
+| 4 | Preview mã nhân viên tự động | Xác nhận mã |
+| 5 | Submit → Hệ thống gửi lời mời qua email | Hoàn tất tạo hồ sơ |
 
----
+**HR Admin — Nhân viên nghỉ việc:**
 
-## 5. Màn hình UI
-
-| Route | Màn hình |
-|---|---|
-| `/employees` | Danh sách nhân viên |
-| `/employees/[id]` | Hồ sơ chi tiết nhân viên |
-
----
-
-## 6. Data Model (Employee)
-
-| Trường | Kiểu | Mô tả |
+| Bước | Hành động | Mục tiêu |
 |---|---|---|
-| `id` | UUID | Primary key |
-| `clerkUserId` | String | ID từ Clerk (nullable - chưa có tài khoản) |
-| `employeeCode` | String | Mã nhân viên (unique trong workspace) |
-| `fullName` | String | Họ và tên |
-| `email` | String | Email (unique) |
-| `phone` | String | Số điện thoại |
-| `avatar` | String | URL ảnh đại diện |
-| `dateOfBirth` | Date | Ngày sinh |
-| `gender` | Enum | MALE / FEMALE / OTHER |
-| `joinDate` | Date | Ngày vào làm |
-| `contractType` | Enum | FULL_TIME / PART_TIME / CONTRACT / PROBATION |
-| `status` | Enum | ACTIVE / INACTIVE / TERMINATED |
-| `departmentId` | UUID | FK → Department |
-| `roleId` | UUID | FK → Role |
-| `managerId` | UUID | FK → Employee (self-reference) |
-| `workspaceId` | UUID | FK → Workspace |
+| 1 | Vào hồ sơ nhân viên → "Đánh dấu nghỉ việc" | Khởi động luồng off-boarding |
+| 2 | Nhập ngày nghỉ việc, lý do | Ghi nhận thông tin |
+| 3 | Hệ thống cảnh báo tài sản chưa trả, task chưa xong | Xử lý tồn đọng |
+| 4 | Xác nhận → Status = TERMINATED | Hoàn tất |
+
+**Nhân viên — Xem hồ sơ cá nhân:**
+
+| Bước | Hành động | Mục tiêu |
+|---|---|---|
+| 1 | Click avatar → "Hồ sơ của tôi" | Xem thông tin |
+| 2 | Xem thông tin, phát hiện sai sót | Kiểm tra |
+| 3 | Cập nhật SĐT hoặc ảnh đại diện | Cập nhật cho đúng |
 
 ---
 
-## 7. Business Rules
+## 3. Yêu cầu chức năng (Functional Requirements)
 
-- Mã nhân viên unique trong cùng workspace.
-- Email unique toàn hệ thống (liên kết với Clerk account).
-- Nhân viên TERMINATED không thể đăng nhập nhưng dữ liệu không bị xóa cứng.
-- Khi xóa nhân viên: soft delete (isDeleted = true), không xóa khỏi DB.
-- Chỉ Admin mới được tạo / xóa nhân viên.
-- Employee chỉ được chỉnh sửa hồ sơ của chính mình (các trường được phép).
+### 3.1 Danh sách tính năng
+
+| ID | Tính năng | Mô tả | Độ ưu tiên | SP |
+|---|---|---|---|---|
+| FR-001 | Tạo nhân viên mới | Form điền đầy đủ thông tin cá nhân + tổ chức | Must Have | 5 |
+| FR-002 | Xem danh sách nhân viên | Bảng danh sách với filter, search, sort, paginate | Must Have | 3 |
+| FR-003 | Xem & Cập nhật hồ sơ chi tiết | Tabs: thông tin cá nhân, tổ chức, kỹ năng, thống kê | Must Have | 5 |
+| FR-004 | Upload ảnh đại diện | Upload JPG/PNG, resize, lưu lên storage | Must Have | 2 |
+| FR-005 | Xem hồ sơ cá nhân (self) | Nhân viên xem thông tin của mình qua /api/employees/me | Must Have | 2 |
+| FR-006 | Auto-generate mã nhân viên | Preview và tự động tạo mã NV theo format cấu hình | Must Have | 2 |
+| FR-007 | Vô hiệu hóa tài khoản | Đánh dấu INACTIVE, block đăng nhập | Must Have | 3 |
+| FR-008 | Đánh dấu nghỉ việc | Đánh dấu TERMINATED với ngày nghỉ + lý do | Must Have | 3 |
+| FR-009 | Xem thống kê hiệu suất | Số task hoàn thành, tổng giờ làm, KPI từ /employees/[id]/stats | Should Have | 5 |
+| FR-010 | Xuất danh sách nhân viên | Export CSV/Excel với filter hiện tại | Should Have | 3 |
+| FR-011 | Nhập danh sách nhân viên (import) | Upload Excel để tạo nhiều nhân viên cùng lúc | Nice to Have | 8 |
+
+### 3.2 User Stories
+
+| ID | User Story | Acceptance Criteria | Priority |
+|---|---|---|---|
+| US-001 | Là HR Admin, tôi muốn tạo hồ sơ nhân viên mới, để hệ thống biết nhân viên này tồn tại và các module khác có thể liên kết. | AC1: Form bắt buộc: Họ tên, Email. Tùy chọn: SĐT, ngày sinh, CCCD, ngày vào làm, loại hợp đồng. AC2: Email unique — hiển thị lỗi nếu đã tồn tại. AC3: Sau khi tạo thành công: hiển thị thông báo, redirect sang hồ sơ nhân viên vừa tạo. AC4: Hệ thống tự gợi ý mã nhân viên tiếp theo. | High |
+| US-002 | Là HR Admin, tôi muốn tìm kiếm và lọc danh sách nhân viên, để nhanh chóng tìm người cần tra cứu mà không phải cuộn cả trang. | AC1: Search theo tên, email, mã nhân viên — realtime, không cần nhấn Enter. AC2: Filter: Phòng ban, Chức vụ, Trạng thái (active/inactive/terminated), Team. AC3: Sort: Tên A-Z, Ngày vào làm mới nhất/cũ nhất. AC4: Paginate 20 người/trang, có tổng số kết quả. | High |
+| US-003 | Là HR Admin, tôi muốn cập nhật thông tin phòng ban và chức vụ của nhân viên, để hồ sơ phản ánh đúng cơ cấu tổ chức hiện tại. | AC1: Trong tab "Tổ chức": chọn được Phòng ban, Chức vụ, Team, Manager trực tiếp. AC2: Lưu thành công → hiển thị thông báo xác nhận. AC3: Thay đổi được ghi vào Audit Log (ai sửa, sửa cái gì, lúc mấy giờ). | High |
+| US-004 | Là nhân viên, tôi muốn upload ảnh đại diện, để đồng nghiệp nhận ra tôi trong hệ thống. | AC1: Upload file JPG/PNG, tối đa 5MB. AC2: Hiển thị preview trước khi lưu. AC3: Ảnh được resize về 200×200 px. AC4: File quá 5MB → hiển thị lỗi ngay khi chọn file. | Medium |
+| US-005 | Là nhân viên, tôi muốn xem thông tin của mình, để kiểm tra hệ thống ghi đúng chưa và cập nhật khi có thay đổi. | AC1: /api/employees/me trả về thông tin của nhân viên đang đăng nhập. AC2: Nhân viên có thể cập nhật: SĐT, địa chỉ, ảnh đại diện. AC3: Nhân viên KHÔNG thể tự sửa: tên, email, phòng ban, chức vụ (chỉ Admin). | High |
+| US-006 | Là HR Admin, tôi muốn đánh dấu nhân viên nghỉ việc, để hệ thống vô hiệu hóa tài khoản nhưng vẫn giữ dữ liệu lịch sử. | AC1: Chọn ngày nghỉ việc + lý do (bắt buộc). AC2: Hệ thống hiển thị cảnh báo: Còn X tài sản chưa trả, Y task đang mở. AC3: Xác nhận → Status = TERMINATED, Clerk account bị vô hiệu hóa. AC4: Dữ liệu (task history, time logs, leave) vẫn giữ nguyên. | High |
+| US-007 | Là Manager, tôi muốn xem thống kê hiệu suất của nhân viên trực thuộc, để có cơ sở đánh giá khách quan trong kỳ review. | AC1: Tab "Thống kê" trong hồ sơ nhân viên hiển thị: số task hoàn thành trong kỳ, tổng giờ làm, tỷ lệ on-time, điểm KPI gần nhất. AC2: Lọc được theo kỳ (tháng, quý). AC3: Load trong < 3 giây. | Medium |
 
 ---
 
-## 8. Điều kiện lỗi
+## 4. Yêu cầu phi chức năng (Non-Functional Requirements)
 
-| Tình huống | Xử lý |
-|---|---|
-| Email đã tồn tại | 409 Conflict — "Email đã được sử dụng" |
-| Mã NV trùng | 409 Conflict — "Mã nhân viên đã tồn tại" |
-| Xóa nhân viên đang có task active | Cảnh báo, yêu cầu chuyển task trước |
-| Upload ảnh quá size | 400 — "Ảnh tối đa 5MB" |
+| Loại | Yêu cầu | KPI / Ngưỡng |
+|---|---|---|
+| Performance | Trang danh sách nhân viên tải nhanh dù có hàng trăm nhân viên. | < 2 giây với dataset ≤ 500 nhân viên. Paginate server-side. |
+| Security | Nhân viên chỉ xem được dữ liệu của mình. Admin xem toàn bộ. | Phân quyền server-side, không chỉ frontend. 100% thay đổi có audit log. |
+| Data Integrity | Mã nhân viên và email không được trùng lặp trong cùng workspace. | DB unique constraint + validation tầng API. |
+| Usability | HR Admin không có kỹ năng kỹ thuật hoàn thành tạo nhân viên không cần hướng dẫn. | Tạo nhân viên hoàn thành trong ≤ 5 thao tác chính. |
+
+---
+
+## 5. Thiết kế & UX
+
+### 5.1 Luồng màn hình
+
+**Luồng 1: Tạo nhân viên mới**
+
+```
+/employees
+→ [Thêm nhân viên]
+→ Form: Thông tin cá nhân (tên*, email*, SĐT, ngày sinh, CCCD)
+→ Form: Thông tin tổ chức (phòng ban, chức vụ, team, manager, ngày vào làm, loại HĐ)
+→ Preview mã NV (GET /api/employees/code-preview)
+→ [Lưu] → POST /api/employees
+→ Trang hồ sơ vừa tạo
+→ (Tuỳ chọn) Gửi lời mời email
+```
+
+**Luồng 2: Nhân viên nghỉ việc**
+
+```
+/employees/[id]
+→ [⋮ Menu] → "Đánh dấu nghỉ việc"
+→ Modal: Ngày nghỉ việc*, Lý do*, Ghi chú
+→ Cảnh báo: Tài sản chưa trả / Task đang mở
+→ [Xác nhận] → PUT /api/employees/[id] { status: TERMINATED }
+→ Thông báo thành công
+```
+
+**Luồng 3: Xem & Cập nhật hồ sơ**
+
+```
+/employees → Click vào nhân viên → /employees/[id]
+    Tab "Cá nhân": Họ tên, email, SĐT, ngày sinh, địa chỉ, CCCD
+    Tab "Tổ chức": Phòng ban, chức vụ, team, manager, ngày vào làm
+    Tab "Kỹ năng": Danh sách kỹ năng (link sang PRD-09)
+    Tab "Thống kê": KPI, task count, hours (link sang PRD-17)
+→ [Chỉnh sửa] → Inline edit → [Lưu]
+```
+
+---
+
+## 6. Business Rules
+
+### BR-001 — Email unique toàn hệ thống
+
+Email nhân viên phải unique trong cùng workspace. Một email không thể gắn với 2 Employee record trong cùng workspace.
+
+### BR-002 — Mã nhân viên unique trong workspace
+
+Mã nhân viên (employeeCode) unique trong từng workspace. Format mặc định: `NV001`, `NV002`, ... Admin có thể cấu hình prefix.
+
+### BR-003 — Không xóa cứng
+
+Nhân viên không bao giờ bị xóa cứng khỏi DB. Chỉ soft delete (isDeleted = true) hoặc đổi status = TERMINATED. Mọi dữ liệu lịch sử vẫn được giữ nguyên.
+
+### BR-004 — Nhân viên TERMINATED bị khóa đăng nhập
+
+Khi status = TERMINATED: Clerk account bị disable. Nhân viên không thể đăng nhập. Dữ liệu vẫn có thể tra cứu bởi Admin.
+
+### BR-005 — Phân quyền cập nhật hồ sơ
+
+Nhân viên chỉ cập nhật được: SĐT, địa chỉ, ảnh đại diện. Tất cả các trường khác (tên, email, phòng ban, chức vụ, status) chỉ Admin/HR mới được sửa.
+
+### BR-006 — Cảnh báo khi off-board
+
+Khi đánh dấu TERMINATED, hệ thống phải hiển thị cảnh báo nếu nhân viên đang có:
+- Tài sản được cấp phát chưa trả (Inventory)
+- Task đang IN_PROGRESS hoặc PENDING_REVIEW
+- Đơn nghỉ phép đang PENDING
+
+Admin phải xử lý hoặc bỏ qua cảnh báo một cách có chủ đích.
+
+### BR-007 — Task của nhân viên TERMINATED
+
+Sau khi TERMINATED, các task đang IN_PROGRESS của nhân viên đó được chuyển về BACKLOG và assigned = null. Cần Manager tái phân công.
+
+---
+
+## 7. Phân quyền
+
+| Hành động | Employee (bản thân) | Manager (team) | HR Admin | Admin |
+|---|---|---|---|---|
+| Xem danh sách nhân viên | ❌ | 👁 team | ✅ | ✅ |
+| Xem hồ sơ chi tiết | 👁 của mình | 👁 team | ✅ | ✅ |
+| Tạo nhân viên mới | ❌ | ❌ | ✅ | ✅ |
+| Sửa thông tin cá nhân | ✅ (SĐT, ảnh) | ❌ | ✅ | ✅ |
+| Sửa thông tin tổ chức | ❌ | ❌ | ✅ | ✅ |
+| Upload ảnh đại diện | ✅ (của mình) | ❌ | ✅ | ✅ |
+| Vô hiệu hóa tài khoản | ❌ | ❌ | ✅ | ✅ |
+| Đánh dấu nghỉ việc | ❌ | ❌ | ✅ | ✅ |
+| Xem thống kê hiệu suất | 👁 của mình | ✅ team | ✅ | ✅ |
+| Export danh sách | ❌ | ❌ | ✅ | ✅ |

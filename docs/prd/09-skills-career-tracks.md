@@ -1,224 +1,188 @@
-# PRD-09: Kỹ năng & Lộ trình nghề nghiệp (Skills & Career Tracks)
+# PRD-09 — Kỹ năng & Lộ trình nghề nghiệp
 
-**Module:** Skills / Career Tracks / Employee Skills  
-**Phiên bản:** 1.0  
-**Ngày:** 2026-06-30  
+> **Product Requirements Document**
+> Version 1.0 · 02/07/2026 · Status: IN REVIEW
 
----
-
-## 1. Mục tiêu
-
-Xây dựng hệ thống quản lý kỹ năng nhân viên, định nghĩa lộ trình thăng tiến (career track) theo từng ngành nghề, so sánh gap kỹ năng giữa nhân viên và yêu cầu vị trí, AI hỗ trợ đề xuất learning path.
-
----
-
-## 2. Người dùng liên quan
-
-| Người dùng | Quyền |
+| Trường | Giá trị |
 |---|---|
-| Admin | CRUD Skills, Career Tracks, Career Levels |
-| Manager | Gán kỹ năng cho nhân viên, xem gap report |
-| Employee | Khai báo kỹ năng của mình, xem career path |
+| Module | Skills / Career Tracks / Employee Skills |
+| Phiên bản | v1.0 |
+| Trạng thái | IN REVIEW |
+| Ngày tạo | 02/07/2026 |
+| Cập nhật lần cuối | 02/07/2026 |
+| Stakeholders | PO, Dev, HR Admin, Manager, Employee |
 
 ---
 
-## 3. Luồng chức năng
+## 1. Tổng quan sản phẩm (Overview)
 
-### 3.1 Quản lý Kỹ năng (Skills)
+### 1.1 Bối cảnh & Vấn đề
+
+Công ty không có bức tranh rõ ràng về năng lực nhân sự: không biết ai có kỹ năng gì, kỹ năng đang ở level nào, gap với yêu cầu chức vụ là bao nhiêu. Hậu quả:
+- Khi có dự án cần kỹ năng đặc biệt → phải hỏi từng người thủ công.
+- Nhân viên không biết cần học gì để thăng tiến.
+- HR không có dữ liệu để lập kế hoạch training.
+
+### 1.2 Mục tiêu sản phẩm (Goals)
+
+- Xây dựng danh mục kỹ năng (Skill Catalog) toàn công ty.
+- Nhân viên/Manager đánh giá level kỹ năng của từng người.
+- Hệ thống tính skill gap dựa trên yêu cầu chức vụ (xem PRD-03).
+- Định nghĩa lộ trình nghề nghiệp (Career Track) với các milestone rõ ràng.
+
+### 1.3 Phạm vi (Scope)
+
+**Trong phạm vi:** Skill Catalog CRUD, đánh giá kỹ năng nhân viên (self + manager), tính skill gap, Career Track với milestones.
+
+**Ngoài phạm vi:** Tích hợp hệ thống LMS (v2), AI gợi ý khóa học (v2), chứng chỉ từ bên ngoài (v2).
+
+---
+
+## 2. Người dùng mục tiêu (Target Users)
+
+### 2.1 Personas
+
+| Persona | Mô tả | Nhu cầu chính | Pain Point |
+|---|---|---|---|
+| **HR Admin** | Xây dựng danh mục kỹ năng, định nghĩa career track, lập kế hoạch training. | Skill map toàn công ty, báo cáo gap. | Không có dữ liệu → lập kế hoạch training dựa trên cảm tính. |
+| **Manager** | Đánh giá kỹ năng team, biết ai có thể nhận task nào. | Xem skill matrix của team, tìm người phù hợp task. | Phải hỏi trực tiếp hoặc đoán khi phân công task cần kỹ năng đặc biệt. |
+| **Employee** | Biết mình đang ở đâu trong lộ trình, cần học gì tiếp theo. | Xem skill profile bản thân, xem career track, thấy gap. | Không biết tiêu chuẩn thăng tiến → không có định hướng học tập. |
+
+### 2.2 User Journey
+
+**HR Admin — Xây dựng Skill Catalog:**
+
+| Bước | Hành động | Mục tiêu |
+|---|---|---|
+| 1 | Vào Skills → [+ Tạo danh mục kỹ năng] (nhóm: Technical/Soft/Management) | Phân loại kỹ năng |
+| 2 | Tạo từng Skill trong danh mục, định nghĩa levels 1-5 | Danh mục kỹ năng chuẩn |
+| 3 | Gán kỹ năng yêu cầu cho từng chức vụ (xem PRD-03 FR-004) | Tiêu chuẩn chức vụ |
+| 4 | Tạo Career Track: các bước thăng tiến từ Junior → Senior | Lộ trình rõ ràng |
+
+**Employee — Xem skill gap và lộ trình:**
+
+| Bước | Hành động | Mục tiêu |
+|---|---|---|
+| 1 | Vào Profile → Tab "Kỹ năng" | Xem skill profile |
+| 2 | Xem danh sách kỹ năng: current level vs required level | Nhận ra gap |
+| 3 | Click vào Career Track của mình → xem milestones | Hiểu lộ trình |
+| 4 | Xem gap: kỹ năng nào cần cải thiện để lên level tiếp theo | Lập kế hoạch học |
+
+---
+
+## 3. Yêu cầu chức năng (Functional Requirements)
+
+### 3.1 Danh sách tính năng
+
+| ID | Tính năng | Mô tả | Độ ưu tiên | SP |
+|---|---|---|---|---|
+| FR-001 | CRUD Skill Catalog | Tạo, sửa, xóa kỹ năng với danh mục (Technical/Soft/Management) | Must Have | 3 |
+| FR-002 | Định nghĩa levels | Mỗi kỹ năng có 5 levels, mỗi level có mô tả rõ ràng | Must Have | 5 |
+| FR-003 | Đánh giá kỹ năng nhân viên | Manager/HR gán level kỹ năng cho nhân viên; nhân viên self-assess | Must Have | 8 |
+| FR-004 | Tính Skill Gap | So sánh kỹ năng hiện tại vs yêu cầu chức vụ → gap report | Must Have | 8 |
+| FR-005 | Skill Matrix Team | Manager xem ma trận kỹ năng của cả team | Should Have | 5 |
+| FR-006 | CRUD Career Track | Tạo lộ trình nghề nghiệp: các bước/milestones từ junior đến senior | Should Have | 8 |
+| FR-007 | Gán Career Track cho nhân viên | Nhân viên được gán vào career track phù hợp | Should Have | 3 |
+| FR-008 | Milestone progress | Hiển thị nhân viên đang ở milestone nào trong career track | Should Have | 5 |
+| FR-009 | Báo cáo skill gap toàn công ty | HR xem heat map: kỹ năng nào đang thiếu nhiều nhất | Nice to Have | 8 |
+
+### 3.2 User Stories
+
+| ID | User Story | Acceptance Criteria | Priority |
+|---|---|---|---|
+| US-001 | Là HR Admin, tôi muốn tạo danh mục kỹ năng có phân loại và mô tả từng level, để toàn công ty dùng cùng 1 tiêu chuẩn đánh giá. | AC1: Tạo Skill: Tên*, Danh mục (Technical/Soft/Management/Other), Mô tả tổng quan. AC2: Gán mô tả cho từng level 1-5 (VD: Level 1 = "Biết cơ bản", Level 5 = "Chuyên gia, có thể mentor"). AC3: Có thể deactivate skill (không xóa) nếu đang được nhân viên sử dụng. | High |
+| US-002 | Là Manager, tôi muốn đánh giá level kỹ năng cho từng thành viên team, để có dữ liệu chính xác thay vì chỉ self-report. | AC1: Vào Profile nhân viên → Tab Kỹ năng → [Đánh giá]. AC2: Chọn Skill + Level (1-5) + Ghi chú tuỳ chọn. AC3: Bản ghi lưu: skill, level, assessorId, assessedAt. AC4: Lịch sử đánh giá: xem được các lần đánh giá trước. AC5: Manager chỉ đánh giá được nhân viên trong team của mình. | High |
+| US-003 | Là Employee, tôi muốn tự đánh giá kỹ năng của bản thân, để tham khảo cho performance review. | AC1: Nhân viên có thể self-assess tất cả kỹ năng (không giới hạn). AC2: Self-assessment được đánh dấu khác biệt với manager-assessment. AC3: Khi xem gap: hiển thị cả 2 nguồn (self vs manager) nếu có. | Medium |
+| US-004 | Là HR Admin, tôi muốn xem báo cáo skill gap của từng nhân viên so với chức vụ, để lập kế hoạch training đúng hướng. | AC1: Chọn nhân viên → Skill Gap Report: bảng Kỹ năng | Required Level | Current Level | Gap. AC2: Gap = Required − Current (âm = đủ, dương = thiếu). AC3: Highlight các kỹ năng có gap > 1. AC4: Filter theo phòng ban, chức vụ. | High |
+| US-005 | Là Manager, tôi muốn xem skill matrix của cả team, để phân công task phù hợp với kỹ năng thực tế. | AC1: Bảng ma trận: cột = Kỹ năng, hàng = Nhân viên, ô = Level (màu: đỏ/vàng/xanh). AC2: Filter theo danh mục kỹ năng. AC3: Hover vào ô → xem chi tiết level + ghi chú. | Medium |
+| US-006 | Là HR Admin, tôi muốn tạo Career Track với các milestones rõ ràng, để nhân viên biết con đường thăng tiến. | AC1: Career Track: Tên*, Phòng ban (tuỳ chọn), Mô tả. AC2: Milestones: Tên milestone, Chức vụ tương ứng, Yêu cầu kỹ năng tối thiểu (link tới skill requirement của chức vụ). AC3: Thứ tự milestone có thể sắp xếp lại. | Medium |
+| US-007 | Là Employee, tôi muốn xem mình đang ở milestone nào và còn thiếu gì để lên milestone tiếp theo, để có kế hoạch phát triển. | AC1: Trang Career Track: timeline với milestone hiện tại được highlight. AC2: Mỗi milestone: % hoàn thành (dựa trên % kỹ năng đạt yêu cầu). AC3: Nút [Xem gap chi tiết] → xem kỹ năng cần cải thiện để đạt milestone tiếp. | Medium |
+
+---
+
+## 4. Yêu cầu phi chức năng
+
+| Loại | Yêu cầu | KPI | Ngưỡng |
+|---|---|---|---|
+| Performance | Skill matrix load nhanh dù nhiều kỹ năng | Load time | < 2 giây với ≤ 50 kỹ năng × 30 người |
+| Data integrity | Không xóa skill đang được gán cho nhân viên | Cascade check | Bắt buộc trước khi xóa |
+| Usability | Level description rõ ràng để tránh bias khi đánh giá | N/A | Mỗi level phải có mô tả ≥ 1 câu |
+
+---
+
+## 5. Thiết kế & UX
+
+### 5.1 Luồng màn hình
+
+**Luồng 1: Đánh giá kỹ năng nhân viên**
 
 ```
-Admin vào /skills → Tab "Quản lý kỹ năng"
-    → Tạo kỹ năng: POST /api/skills
-        {
-          name: "React",
-          category: "Frontend",
-          description: "...",
-          levelDescriptions: {
-            1: "Biết cơ bản",
-            2: "Có thể làm việc độc lập",
-            3: "Thành thạo",
-            4: "Chuyên gia",
-            5: "Mentor được người khác"
-          }
-        }
-    → Cập nhật / xóa: PUT/DELETE /api/skills/[id]
+/employees/:id → Tab "Kỹ năng" → [+ Đánh giá kỹ năng]
+→ Chọn Skill (search/filter theo danh mục)
+→ Chọn Level 1-5 (hiển thị mô tả level để tham khảo)
+→ Ghi chú (tuỳ chọn) → [Lưu]
+→ POST /api/employee-skills { employeeId, skillId, level, note }
+→ Skill xuất hiện trong profile nhân viên
 ```
 
-### 3.2 Tạo Career Track & Level
+**Luồng 2: Xem Skill Gap**
 
 ```
-Admin vào /skills → Tab "Career Tracks"
-    → Tạo Career Track: POST /api/career-tracks
-        { name: "Frontend Developer", description }
-    → Tạo Level trong track: POST /api/career-tracks/[id]/levels
-        { name: "Junior", order: 1, description, salaryRange }
-    → Gán kỹ năng yêu cầu cho level:
-        POST /api/career-tracks/[id]/levels/[levelId]/skills
-        { skillId, requiredLevel: 3 }
-    → Cập nhật / xóa level: PUT/DELETE /api/career-tracks/[id]/levels/[levelId]
+/employees/:id → Tab "Kỹ năng" → Tab "Skill Gap"
+→ Hệ thống tự tính: employee.role.skillRequirements vs employee.skills
+→ Bảng gap: Kỹ năng | Required | Current | Gap
+→ [Export PDF/CSV]
 ```
 
-**Ví dụ Career Track "Frontend Developer":**
-```
-Level 1: Junior Frontend
-    - HTML/CSS: level 2
-    - JavaScript: level 2
-    - React: level 2
-
-Level 2: Mid Frontend  
-    - JavaScript: level 3
-    - React: level 3
-    - TypeScript: level 2
-    - Git: level 3
-
-Level 3: Senior Frontend
-    - React: level 4
-    - TypeScript: level 3
-    - Performance Optimization: level 3
-    - System Design: level 2
-```
-
-### 3.3 Nhân viên khai báo kỹ năng
+**Luồng 3: Career Track Progress**
 
 ```
-Nhân viên vào hồ sơ → Tab "Kỹ năng"
-    → Thêm kỹ năng: POST /api/employee-skills
-        { skillId, level: 3, yearsOfExperience: 2 }
-    → Cập nhật level: PUT /api/employee-skills/[id]
-    → Xóa kỹ năng: DELETE /api/employee-skills/[id]
-```
-
-**Hoặc Manager gán kỹ năng cho nhân viên:**
-```
-Manager vào hồ sơ nhân viên → Tab "Kỹ năng"
-    → POST /api/employees/[id]/skills { skillId, level, verifiedByManager: true }
-```
-
-### 3.4 Phân tích Gap kỹ năng
-
-```
-Nhân viên / Manager:
-    → Vào /skills → "Phân tích Gap"
-    → Chọn nhân viên + Career Track Target
-    → GET /api/skills/career-path?employeeId=&targetLevelId=
-    → Hệ thống so sánh:
-        - Kỹ năng nhân viên hiện tại vs Yêu cầu level target
-        - Hiển thị: ✅ Đạt | ⚠️ Chưa đủ level | ❌ Chưa có
-    → Tính % sẵn sàng cho vị trí
-```
-
-### 3.5 AI đề xuất Learning Task
-
-```
-Dựa trên gap kỹ năng:
-    → GET /api/skills/learning-task?employeeId=&skillId=&targetLevel=
-    → AI phân tích gap + tạo danh sách task học:
-        - Khóa học đề xuất
-        - Tài liệu đọc
-        - Project thực hành
-        - Mentor nội bộ
-    → Có thể tạo task học từ đề xuất này
-```
-
-### 3.6 Skill Load (Capacity theo kỹ năng)
-
-```
-Manager / Admin:
-    → GET /api/capacity/skill-load
-    → Xem: Skill nào đang thiếu người?
-    → Heatmap: kỹ năng vs số người có
-    → So sánh với demand từ task backlog
-    → Phát hiện bottleneck kỹ năng trong team
+/employees/:id → Tab "Career Track"
+→ Hiển thị career track được gán
+→ Timeline: Milestone 1 (✓) → Milestone 2 (hiện tại, 60%) → Milestone 3 (locked)
+→ Click milestone → xem yêu cầu kỹ năng và trạng thái hiện tại
 ```
 
 ---
 
-## 4. API Endpoints
+## 6. Business Rules
 
-### Skills
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| GET/POST | `/api/skills` | Danh sách, tạo kỹ năng |
-| GET/PUT/DELETE | `/api/skills/[id]` | Chi tiết, cập nhật, xóa |
-| GET | `/api/skills/career-path` | Phân tích career path + gap |
-| GET | `/api/skills/learning-task` | AI đề xuất task học |
+### BR-001 — Không xóa Skill đang được sử dụng
 
-### Career Tracks
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| GET/POST | `/api/career-tracks` | Danh sách, tạo track |
-| GET/PUT/DELETE | `/api/career-tracks/[id]` | Chi tiết track |
-| GET/POST | `/api/career-tracks/[id]/levels` | Levels của track |
-| GET/PUT/DELETE | `/api/career-tracks/[id]/levels/[levelId]` | Chi tiết level |
-| GET/POST | `/api/career-tracks/[id]/levels/[levelId]/skills` | Kỹ năng yêu cầu |
+Skill đang được gán cho ít nhất 1 nhân viên hoặc đang là yêu cầu của chức vụ → không thể xóa. Chỉ được deactivate (ẩn khỏi danh sách tạo mới, giữ dữ liệu lịch sử).
 
-### Employee Skills
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| GET/POST | `/api/employee-skills` | Kỹ năng nhân viên |
-| PUT/DELETE | `/api/employee-skills/[id]` | Cập nhật, xóa |
-| GET/POST | `/api/employees/[id]/skills` | Kỹ năng của nhân viên cụ thể |
+### BR-002 — Đánh giá Manager ưu tiên hơn Self-Assessment
 
-### Role Skill Requirements
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| GET/POST | `/api/role-skill-requirements` | Yêu cầu kỹ năng của chức vụ |
-| PUT/DELETE | `/api/role-skill-requirements/[id]` | Sửa, xóa |
+Khi tính Skill Gap và Career Track progress: nếu có cả self-assessment và manager-assessment → dùng manager-assessment. Self-assessment chỉ hiển thị tham khảo.
+
+### BR-003 — Level kỹ năng từ 1 đến 5
+
+Level hợp lệ: 1 (Cơ bản) → 5 (Chuyên gia). Không có level 0 hoặc level trên 5. Gap âm (current > required) = vượt yêu cầu → không cần action.
+
+### BR-004 — Milestone progress tính theo kỹ năng
+
+```
+milestone_progress (%) = (số kỹ năng đạt yêu cầu / tổng kỹ năng yêu cầu) × 100
+```
+Kỹ năng "đạt" = current level ≥ required level của milestone đó.
+
+### BR-005 — Manager chỉ đánh giá được nhân viên trong team
+
+Manager chỉ có thể thêm/sửa skill assessment cho nhân viên thuộc phòng ban của mình. HR Admin có thể đánh giá tất cả.
 
 ---
 
-## 5. Màn hình UI
+## 7. Phân quyền
 
-| Route | Màn hình |
-|---|---|
-| `/skills` | Quản lý skills + career tracks + gap analysis |
-
----
-
-## 6. Data Model
-
-**Skill:**
-| Trường | Kiểu | Mô tả |
-|---|---|---|
-| `id` | UUID | PK |
-| `name` | String | Tên kỹ năng |
-| `category` | String | Nhóm (Frontend/Backend/Soft skill...) |
-| `description` | String | Mô tả |
-| `levelDescriptions` | JSON | Mô tả từng level 1-5 |
-
-**EmployeeSkill:**
-| Trường | Kiểu | Mô tả |
-|---|---|---|
-| `id` | UUID | PK |
-| `employeeId` | UUID | FK → Employee |
-| `skillId` | UUID | FK → Skill |
-| `level` | Int | 1-5 |
-| `yearsOfExperience` | Float | Số năm kinh nghiệm |
-| `verifiedByManager` | Boolean | Manager xác nhận |
-| `verifiedAt` | DateTime | Ngày xác nhận |
-
-**CareerTrack:**
-| Trường | Kiểu | Mô tả |
-|---|---|---|
-| `id` | UUID | PK |
-| `name` | String | Tên track |
-| `description` | String | Mô tả |
-
-**CareerLevel:**
-| Trường | Kiểu | Mô tả |
-|---|---|---|
-| `id` | UUID | PK |
-| `trackId` | UUID | FK → CareerTrack |
-| `name` | String | Tên level |
-| `order` | Int | Thứ tự (1, 2, 3...) |
-| `salaryRange` | JSON | { min, max, currency } |
-
----
-
-## 7. Business Rules
-
-- Level kỹ năng từ 1 đến 5 (không thể 0 hoặc > 5).
-- 1 nhân viên + 1 skill = 1 record (không duplicate).
-- Career Track level phải có order duy nhất trong cùng track.
-- Kỹ năng khai báo bởi chính nhân viên cần Manager verify để có trọng số cao hơn trong gap analysis.
-- Kỹ năng xóa khỏi hệ thống: soft delete, vẫn giữ employee-skill records.
+| Hành động | Employee | Manager | HR Admin | Admin |
+|---|---|---|---|---|
+| Xem Skill Catalog | ✅ | ✅ | ✅ | ✅ |
+| Tạo / Sửa / Xóa Skill | ❌ | ❌ | ✅ | ✅ |
+| Self-assess kỹ năng bản thân | ✅ | ✅ | ✅ | ✅ |
+| Đánh giá kỹ năng nhân viên khác | ❌ | ✅ (team của mình) | ✅ | ✅ |
+| Xem skill profile nhân viên khác | ❌ | ✅ (team của mình) | ✅ | ✅ |
+| Xem Skill Matrix team | ❌ | ✅ (team của mình) | ✅ | ✅ |
+| Tạo / Sửa Career Track | ❌ | ❌ | ✅ | ✅ |
+| Gán Career Track cho nhân viên | ❌ | ❌ | ✅ | ✅ |
+| Xem Career Track bản thân | ✅ | ✅ | ✅ | ✅ |
+| Báo cáo skill gap toàn công ty | ❌ | ❌ | ✅ | ✅ |

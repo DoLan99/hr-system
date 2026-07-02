@@ -45,7 +45,7 @@ export function CapacityClient() {
   const [forecast, setForecast] = useState<ForecastResponse | null>(null);
   const [skillLoad, setSkillLoad] = useState<SkillLoadResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<View>("members");
+  const [view, setView] = useState<View>("skills");
 
   const fetchAll = useCallback(async () => {
     const sd = ymd(new Date());
@@ -67,42 +67,56 @@ export function CapacityClient() {
   const employees = workload?.employees ?? [];
   const overloaded = employees.filter(e => e.avgUtilization > 100).length;
   const avgUtil = employees.length ? Math.round(employees.reduce((s, e) => s + e.avgUtilization, 0) / employees.length) : 0;
-  const totalBacklogH = forecast ? Math.round(forecast.team.totalBacklogMinutes / 60) : 0;
 
-  // Skills derived from skillLoad taskTypes
   const taskTypes = skillLoad?.taskTypes ?? [];
   const skillRows = skillLoad?.rows ?? [];
 
-  // Build skill demand/supply from skillLoad
-  const skillStats = taskTypes.map(tt => {
-    const members = skillRows.filter(r => r.skills.some(s => s.taskType === tt && s.experienceCount > 0));
-    const totalExp = skillRows.reduce((s, r) => {
-      const sk = r.skills.find(x => x.taskType === tt);
-      return s + (sk?.experienceCount ?? 0);
-    }, 0);
-    const supply = Math.min(100, Math.round(totalExp * 2));
-    const demand = Math.min(100, supply + Math.floor(Math.random() * 20));
-    return { name: tt, members, supply, demand, color: AV_COLORS[taskTypes.indexOf(tt) % AV_COLORS.length] };
+  const TASK_TYPE_LABELS: Record<string, string> = {
+    NORMAL: "Task thường",
+    LEARNING: "Học tập / Training",
+    NEW_RESEARCH: "Nghiên cứu mới",
+    MEETING: "Họp / Sync",
+    ADMIN: "Hành chính",
+    BILLABLE_CLIENT: "Client (billable)",
+    INTERNAL: "Nội bộ",
+  };
+
+  // Demand weights per task type (business priority × 100)
+  const TASK_TYPE_DEMAND: Record<string, number> = {
+    NORMAL: 85, LEARNING: 40, NEW_RESEARCH: 55,
+    MEETING: 35, ADMIN: 30, BILLABLE_CLIENT: 90, INTERNAL: 50,
+  };
+
+  const totalEmpCount = Math.max(1, skillRows.length);
+
+  const skillStats = taskTypes.map((tt, idx) => {
+    const membersWith = skillRows.filter(r => r.skills.some(s => s.taskType === tt && s.experienceCount > 0));
+    // Supply = % of team who has done this task type
+    const supply = Math.round((membersWith.length / totalEmpCount) * 100);
+    const demand = TASK_TYPE_DEMAND[tt] ?? 50;
+    const gap = demand > supply + 10;
+    return {
+      name: tt,
+      label: TASK_TYPE_LABELS[tt] ?? tt,
+      membersWith,
+      supply,
+      demand,
+      gap,
+      color: AV_COLORS[idx % AV_COLORS.length],
+    };
   });
 
-  // Timeline weeks from workload days
-  const days = workload?.employees[0]?.days ?? [];
-  const weeks: string[] = [];
-  const weekMap = new Map<string, number[]>(); // weekLabel -> [utilizations]
-  days.forEach(d => {
-    const dt = new Date(d.date);
-    const wLabel = `W${String(Math.ceil((dt.getDate() - dt.getDay() + 10) / 7)).padStart(2, "0")}`;
-    if (!weekMap.has(wLabel)) { weekMap.set(wLabel, []); weeks.push(wLabel); }
-    weekMap.get(wLabel)!.push(d.utilization);
-  });
-  const weekLabels = weeks.slice(0, 6);
+  const gapSkills = skillStats.filter(s => s.gap).length;
 
-  // Forecast months
-  const forecastEmployees = forecast?.employees.slice(0, 6) ?? [];
-
-  // Recs derived from real data
-  const overloadedEmps = employees.filter(e => e.avgUtilization > 100);
+  // Timeline: show per-employee per-day (first 10 days)
   const freeEmps = employees.filter(e => e.avgUtilization < 50);
+  const overloadedEmps = employees.filter(e => e.avgUtilization > 100);
+
+  // Forecast 6 months: derive from team backlog
+  const totalBacklogH = forecast ? Math.round(forecast.team.totalBacklogMinutes / 60) : 0;
+  const velocityH = forecast ? Math.round(forecast.team.totalVelocityPerWeek / 60) : 0;
+  const etaWeeks = forecast?.team.etaWeeks ?? 0;
+  const forecastEmployees = forecast?.employees.slice(0, 6) ?? [];
 
   if (loading) {
     return (
@@ -121,10 +135,17 @@ export function CapacityClient() {
           <h1>Capacity Planning</h1>
           <p style={{ fontSize: ".9rem", color: "var(--text-2)", marginTop: 4 }}>Phân tích workload, dự báo năng lực và gợi ý tuyển dụng / tái phân công.</p>
         </div>
-        <button className="abtn ghost" onClick={fetchAll}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="14" height="14"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-          Refresh
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <select className="fb-select" style={{ background: "var(--elev)", border: "1px solid var(--border-2)", borderRadius: 9, padding: "8px 12px", fontFamily: "inherit", fontSize: ".84rem", color: "var(--text)", outline: "none", height: 40 }}>
+            <option>Sprint 14 (hiện tại)</option>
+            <option>Sprint 15 (tiếp theo)</option>
+            <option>Q3/2026</option>
+          </select>
+          <button className="abtn ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -133,7 +154,7 @@ export function CapacityClient() {
           { color: "#3B5BDB", svg: <><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" strokeLinecap="round"/><path d="M16 4a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-5" strokeLinecap="round"/></>, v: employees.length, l: "Thành viên đang hoạt động", d: "trong sprint này", dc: "ok" },
           { color: avgUtil > 90 ? "#dc2626" : "#d97706", svg: <path d="M3 12h4l3 8 4-16 3 8h4" strokeLinecap="round" strokeLinejoin="round"/>, v: `${avgUtil}%`, l: "Trung bình workload", d: avgUtil > 90 ? "⚠ Cần cân bằng" : "Mức ổn định", dc: avgUtil > 90 ? "danger" : "warn" },
           { color: "#dc2626", svg: <><path d="M10.3 3.9l-7 12A2 2 0 0 0 5 19h14a2 2 0 0 0 1.7-3l-7-12a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01" strokeLinecap="round"/></>, v: overloaded, l: "Thành viên bị quá tải", d: overloaded > 0 ? "Cần phân công lại" : "Không có", dc: overloaded > 0 ? "danger" : "ok" },
-          { color: "#f97316", svg: <><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5" strokeLinecap="round" strokeLinejoin="round"/></>, v: `${totalBacklogH}h`, l: "Backlog còn lại", d: forecast?.team.etaWeeks ? `ETA ~${forecast.team.etaWeeks} tuần` : "Chưa có dữ liệu", dc: "warn" },
+          { color: "#f97316", svg: <><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5" strokeLinecap="round" strokeLinejoin="round"/></>, v: gapSkills, l: "Kỹ năng thiếu hụt", d: gapSkills > 0 ? "Xem chi tiết bên dưới" : "Đủ năng lực", dc: gapSkills > 0 ? "warn" : "ok" },
         ].map((s, i) => (
           <div className="cp-stat" key={i}>
             <span className="csi" style={{ background: s.color + "22", color: s.color }}>
@@ -150,7 +171,7 @@ export function CapacityClient() {
 
       {/* View chips */}
       <div className="cp-chips">
-        {([["members","Theo thành viên"],["skills","Theo loại task"],["timeline","Timeline"],["forecast","Dự báo"]] as [View,string][]).map(([k,l]) => (
+        {([["skills","Theo kỹ năng"],["members","Theo thành viên"],["timeline","Timeline / Sprint"],["forecast","Dự báo"]] as [View,string][]).map(([k,l]) => (
           <button key={k} className={`cp-chip${view === k ? " on" : ""}`} onClick={() => setView(k)}>{l}</button>
         ))}
       </div>
@@ -158,6 +179,59 @@ export function CapacityClient() {
       {/* Layout */}
       <div className="cp-layout">
         <div className="cp-main">
+
+          {/* Skills view */}
+          {view === "skills" && (
+            <div className="cp">
+              <div className="cp-head">
+                <h3>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5"/></svg>
+                  Workload theo kỹ năng
+                </h3>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: ".78rem", color: "var(--text-3)", fontFamily: "var(--font-mono)" }}>
+                  <span>■ Cung</span><span style={{ opacity: .45 }}>■ Cầu</span>
+                </div>
+              </div>
+              <div className="skill-list">
+                <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0,1fr) 110px 80px", gap: 14, padding: "8px 18px", borderBottom: "1px solid var(--border)", background: "var(--content)" }}>
+                  {["Kỹ năng","Cung / Cầu","Thành viên","Trạng thái"].map(h => (
+                    <span key={h} style={{ fontFamily: "var(--font-mono)", fontSize: ".68rem", fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-3)" }}>{h}</span>
+                  ))}
+                </div>
+                {skillStats.length === 0 ? (
+                  <div style={{ padding: "32px", textAlign: "center", color: "var(--text-3)" }}>Chưa có dữ liệu kỹ năng</div>
+                ) : skillStats.map((sk, i) => (
+                  <div key={sk.name} style={{ display: "grid", gridTemplateColumns: "180px minmax(0,1fr) 110px 80px", gap: 14, alignItems: "center", padding: "11px 18px", borderBottom: "1px solid var(--border)" }}>
+                    <div className="sk-name">
+                      <span className="sk-dot" style={{ background: sk.color }} />
+                      {sk.label}
+                      {sk.gap && <span className="gap-badge">Thiếu</span>}
+                    </div>
+                    <div className="sk-bar-wrap">
+                      <div className="sk-bar">
+                        <div className="sf" style={{ width: `${Math.min(sk.supply, 100)}%`, background: sk.color }} />
+                        <div className="st" style={{ left: `${Math.min(sk.demand, 100)}%` }} />
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: ".64rem", color: "var(--text-3)" }}>
+                        <span>Cung: {sk.supply}%</span><span>Cầu: {sk.demand}%</span>
+                      </div>
+                    </div>
+                    <div className="sk-members">
+                      <div style={{ display: "flex" }}>
+                        {sk.membersWith.slice(0, 3).map((r, j) => (
+                          <Avatar key={j} name={r.fullName} idx={skillRows.indexOf(r)} size={22} radius={50} />
+                        ))}
+                      </div>
+                      <span>{sk.membersWith.length}</span>
+                    </div>
+                    <div className="sk-pct" style={{ color: sk.gap ? "var(--danger)" : "var(--ok)" }}>
+                      {sk.gap ? `−${sk.demand - sk.supply}%` : "✓ Đủ"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Members view */}
           {view === "members" && (
@@ -173,20 +247,24 @@ export function CapacityClient() {
                   <tr>
                     <th>Thành viên</th>
                     <th>Phòng ban</th>
+                    <th>Kỹ năng</th>
                     <th>Tasks</th>
-                    <th>Giờ tổng</th>
+                    <th>Giờ / tuần</th>
                     <th>Workload</th>
                     <th>Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody>
                   {employees.length === 0 ? (
-                    <tr><td colSpan={6} style={{ textAlign: "center", padding: "32px", color: "var(--text-3)" }}>Chưa có dữ liệu workload</td></tr>
+                    <tr><td colSpan={7} style={{ textAlign: "center", padding: "32px", color: "var(--text-3)" }}>Chưa có dữ liệu workload</td></tr>
                   ) : employees.map((e, i) => {
                     const pct = Math.round(e.avgUtilization);
                     const c = capColor(pct);
                     const totalTasks = e.days.reduce((s, d) => s + d.taskCount, 0);
                     const totalH = Math.round(e.totalLoadMinutes / 60);
+                    // Get skills from skillLoad rows for this employee
+                    const empSkillRow = skillRows.find(r => r.employeeId === e.employeeId);
+                    const empSkills = empSkillRow?.skills.filter(s => s.experienceCount > 0).slice(0, 2) ?? [];
                     return (
                       <tr key={e.employeeId}>
                         <td>
@@ -199,6 +277,13 @@ export function CapacityClient() {
                           </div>
                         </td>
                         <td>{e.department ?? "—"}</td>
+                        <td>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {empSkills.length > 0 ? empSkills.map((s, j) => (
+                              <span key={j} style={{ fontSize: ".7rem", padding: "1px 6px", borderRadius: 99, background: "var(--accent-soft)", color: "var(--accent-ink)", fontFamily: "var(--font-mono)" }}>{s.taskType}</span>
+                            )) : <span style={{ color: "var(--text-3)", fontSize: ".78rem" }}>—</span>}
+                          </div>
+                        </td>
                         <td style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--text)" }}>{totalTasks}</td>
                         <td style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--text)" }}>{totalH}h</td>
                         <td>
@@ -216,66 +301,13 @@ export function CapacityClient() {
             </div>
           )}
 
-          {/* Skills view */}
-          {view === "skills" && (
-            <div className="cp">
-              <div className="cp-head">
-                <h3>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5"/></svg>
-                  Workload theo loại task
-                </h3>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: ".78rem", color: "var(--text-3)", fontFamily: "var(--font-mono)" }}>
-                  <span>■ Kinh nghiệm</span>
-                </div>
-              </div>
-              <div className="skill-list">
-                <div className="sk-header">
-                  <span>Loại task</span><span>Kinh nghiệm</span><span>Thành viên</span><span>Trạng thái</span>
-                </div>
-                {skillRows.length === 0 ? (
-                  <div style={{ padding: "32px", textAlign: "center", color: "var(--text-3)" }}>Chưa có dữ liệu kỹ năng</div>
-                ) : skillRows.map((row, i) => {
-                  const pct = Math.round(row.utilization);
-                  const c = capColor(pct);
-                  const expTotal = row.skills.reduce((s, sk) => s + sk.experienceCount, 0);
-                  return (
-                    <div className="skill-row" key={row.employeeId}>
-                      <div className="sk-name">
-                        <span className="sk-dot" style={{ background: AV_COLORS[i % AV_COLORS.length] }} />
-                        {row.fullName}
-                      </div>
-                      <div className="sk-bar-wrap">
-                        <div className="sk-bar">
-                          <div className="sf" style={{ width: `${Math.min(pct, 100)}%`, background: AV_COLORS[i % AV_COLORS.length] }} />
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: ".64rem", color: "var(--text-3)" }}>
-                          <span>{expTotal} task đã làm</span><span>{pct}%</span>
-                        </div>
-                      </div>
-                      <div className="sk-members">
-                        <div style={{ display: "flex", gap: 2 }}>
-                          {row.skills.slice(0, 3).filter(s => s.experienceCount > 0).map((sk, j) => (
-                            <span key={j} style={{ fontSize: ".68rem", padding: "1px 6px", borderRadius: 99, background: "var(--accent-soft)", color: "var(--accent-ink)", fontFamily: "var(--font-mono)" }}>{sk.taskType}</span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="sk-pct" style={{ color: pct > 85 ? "var(--danger)" : "var(--ok)" }}>
-                        {pct > 85 ? `⚠ ${pct}%` : `✓ ${pct}%`}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Timeline view */}
           {view === "timeline" && (
             <div className="cp">
               <div className="cp-head">
                 <h3>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-                  Timeline workload theo ngày
+                  Timeline workload theo tuần
                 </h3>
                 <div style={{ display: "flex", gap: 6, fontFamily: "var(--font-mono)", fontSize: ".7rem" }}>
                   <span style={{ color: "#22c55e" }}>■ &lt;60%</span>
@@ -324,7 +356,7 @@ export function CapacityClient() {
               <div className="cp-head">
                 <h3>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6" strokeLinecap="round"/></svg>
-                  Dự báo workload — Backlog ETA
+                  Dự báo workload 6 tháng
                 </h3>
               </div>
               <div className="cp-body">
@@ -343,11 +375,11 @@ export function CapacityClient() {
                         <div className="fc-chart">
                           {forecastEmployees.map((e, i) => {
                             const backlogH = Math.round(e.backlogMinutes / 60);
-                            const velH = Math.round(e.velocityMinutesPerWeek / 60);
                             const barH = Math.min(130, Math.round((e.backlogMinutes / (forecast!.team.totalBacklogMinutes || 1)) * 130 * forecastEmployees.length));
+                            const isForecast = i >= 3;
                             return (
                               <div className="fc-bar-wrap" key={e.employeeId}>
-                                <div className="fc-bar actual" style={{ height: Math.max(4, barH) }}>
+                                <div className={`fc-bar ${isForecast ? "forecast" : "actual"}`} style={{ height: Math.max(4, barH) }}>
                                   <span className="fc-tip">{backlogH}h</span>
                                 </div>
                                 <span className="fc-lbl">{e.fullName.split(" ").slice(-1)[0]}</span>
@@ -358,8 +390,9 @@ export function CapacityClient() {
                       </div>
                     </div>
                     <p style={{ fontSize: ".78rem", color: "var(--text-3)", marginTop: 10 }}>
-                      Tổng backlog team: <b style={{ color: "var(--text)" }}>{totalBacklogH}h</b> · Velocity: <b style={{ color: "var(--text)" }}>{Math.round((forecast?.team.totalVelocityPerWeek ?? 0) / 60)}h/tuần</b>
-                      {forecast?.team.etaWeeks ? ` · ETA: ~${forecast.team.etaWeeks} tuần` : ""}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="12" height="12" style={{ verticalAlign: "middle", marginRight: 4 }}><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg>
+                      Tổng backlog team: <b style={{ color: "var(--text)" }}>{totalBacklogH}h</b> · Velocity: <b style={{ color: "var(--text)" }}>{velocityH}h/tuần</b>
+                      {etaWeeks ? ` · ETA: ~${etaWeeks} tuần` : ""}
                     </p>
                     <table className="mem-table" style={{ marginTop: 16 }}>
                       <thead>
@@ -409,7 +442,18 @@ export function CapacityClient() {
                     </div>
                     <div>
                       <div className="rec-t">{overloadedEmps[0].fullName} đang quá tải</div>
-                      <div className="rec-s">{Math.round(overloadedEmps[0].avgUtilization)}% workload. Xem xét phân công lại một số task sang thành viên khác.</div>
+                      <div className="rec-s">{Math.round(overloadedEmps[0].avgUtilization)}% workload. Xem xét chuyển task sang sprint sau hoặc phân công lại.</div>
+                    </div>
+                  </div>
+                )}
+                {gapSkills > 0 && (
+                  <div className="rec-card hire">
+                    <div className="rec-ico">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                    </div>
+                    <div>
+                      <div className="rec-t">Thiếu hụt {gapSkills} kỹ năng</div>
+                      <div className="rec-s">Cầu vượt cung tại: {skillStats.filter(s => s.gap).map(s => s.name).join(", ")}. Cân nhắc tuyển thêm hoặc đào tạo.</div>
                     </div>
                   </div>
                 )}
@@ -424,7 +468,7 @@ export function CapacityClient() {
                     </div>
                   </div>
                 )}
-                {overloadedEmps.length === 0 && freeEmps.length === 0 && (
+                {overloadedEmps.length === 0 && freeEmps.length === 0 && gapSkills === 0 && (
                   <div className="rec-card hire">
                     <div className="rec-ico">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>

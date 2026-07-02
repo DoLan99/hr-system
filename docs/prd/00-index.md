@@ -54,6 +54,13 @@
 | 18 | Activity Tracking, Audit & Anomaly | [18-activity-audit-anomaly.md](./18-activity-audit-anomaly.md) | ✅ |
 | 19 | Billing & Gói dịch vụ | [19-billing-plans.md](./19-billing-plans.md) | ✅ |
 | 20 | Admin Panel & Super Admin | [20-admin-super-admin.md](./20-admin-super-admin.md) | ✅ |
+| 21 | Tự động tính KPI nhân viên | [21-kpi-auto-scoring.md](./21-kpi-auto-scoring.md) | ✅ |
+| 22 | Task Templates, Suggestions & Estimate Flags | [22-task-templates-suggestions.md](./22-task-templates-suggestions.md) | ✅ |
+| 23 | Development Goals & Career Path Tự động | [23-development-goals-career-path.md](./23-development-goals-career-path.md) | ✅ |
+| 24 | Work Rules & System Labels | [24-work-rules-system-labels.md](./24-work-rules-system-labels.md) | ✅ |
+| 25 | External Integrations & Webhooks | [25-external-integrations-webhooks.md](./25-external-integrations-webhooks.md) | ✅ |
+| 26 | Capacity Planning Chi tiết | [26-capacity-planning-detail.md](./26-capacity-planning-detail.md) | ✅ |
+| 27 | Dashboard Homepage | [27-dashboard-homepage.md](./27-dashboard-homepage.md) | ✅ |
 
 ---
 

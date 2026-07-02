@@ -1,216 +1,198 @@
-# PRD-07: Time Logs & Sprints
+# PRD-07 — Time Logs & Sprints
 
-**Module:** Time Logs / Sprints  
-**Phiên bản:** 1.0  
-**Ngày:** 2026-06-30  
+> **Product Requirements Document**
+> Version 1.0 · 02/07/2026 · Status: IN REVIEW
 
----
-
-## 1. Mục tiêu
-
-**Time Logs:** Ghi nhận chính xác thời gian làm việc theo từng task, làm cơ sở tính lương OT, đo năng suất và báo cáo hiệu suất.
-
-**Sprints:** Tổ chức công việc theo chu kỳ sprint (Agile/Scrum), giúp team lập kế hoạch, theo dõi tiến độ và retrospective sau mỗi sprint.
-
----
-
-## 2. Người dùng liên quan
-
-| Người dùng | Quyền |
+| Trường | Giá trị |
 |---|---|
-| Employee | Xem time log của mình, start/stop qua task |
-| Manager | Xem time log của team, tạo và quản lý sprint |
-| Admin | Xem toàn bộ time log, xuất báo cáo, quản lý sprint |
+| Module | Time Logs / Sprints |
+| Phiên bản | v1.0 |
+| Trạng thái | IN REVIEW |
+| Ngày tạo | 02/07/2026 |
+| Cập nhật lần cuối | 02/07/2026 |
+| Stakeholders | PO, Dev, Manager, Employee |
 
 ---
 
-## 3. Time Logs — Luồng chức năng
+## 1. Tổng quan sản phẩm (Overview)
 
-### 3.1 Ghi nhận tự động qua Task
+### 1.1 Bối cảnh & Vấn đề
 
-```
-Nhân viên click "Bắt đầu" trong task
-    → POST /api/tasks/[id]/start
-    → Tạo TimeLog { taskId, employeeId, startTime: now, status: RUNNING }
-    → Chỉ có 1 time log RUNNING tại một thời điểm / người
-    → Nhân viên click "Dừng"
-    → POST /api/tasks/[id]/stop
-    → Cập nhật TimeLog { endTime: now, duration: seconds, status: STOPPED }
-```
+Team phát triển sản phẩm làm việc theo sprint (Scrum/Kanban). Để biết năng suất thực tế và ước lượng công việc tốt hơn, cần:
+- Theo dõi thời gian (time log) thực tế cho từng task.
+- Tổ chức công việc theo sprint có thời hạn rõ ràng.
+- So sánh estimated vs actual effort sau mỗi sprint.
 
-### 3.2 Ghi thủ công
+Không có công cụ → Manager không biết task nào chiếm nhiều thời gian nhất, không biết sprint đang cháy deadline hay không.
 
-```
-Nhân viên vào /time-logs → "Ghi thủ công"
-    → POST /api/time-logs
-        { taskId, startTime, endTime, description }
-    → Dùng khi quên start timer hoặc làm việc offline
-```
+### 1.2 Mục tiêu sản phẩm (Goals)
 
-### 3.3 Xem time log đang chạy
+- Nhân viên bấm timer khi bắt đầu/dừng làm task → time log tự động.
+- Manager tạo sprint, kéo task vào sprint, theo dõi progress.
+- Dashboard sprint: velocity, burndown chart, remaining effort.
 
-```
-GET /api/time-logs/running
-    → Trả về time log RUNNING của người dùng hiện tại
-    → Hiển thị trên header/dashboard: "Đang làm: [Task name] - 1h 23m"
-    → Có thể dừng từ bất kỳ đâu trong app
-```
+### 1.3 Phạm vi (Scope)
 
-### 3.4 Xem lịch sử & Báo cáo
+**Trong phạm vi:** Timer start/stop theo task, manual time entry, sprint CRUD, task assignment to sprint, sprint report (velocity, burndown), time report per person/task.
 
-```
-/time-logs → Xem lịch sử
-    → Filter: Khoảng thời gian, Task, Project, Sprint
-    → Groupby: Theo ngày / Task / Sprint
-    → Tổng giờ làm theo kỳ
-    → So sánh actual vs estimated
-    → Xuất CSV / Excel
-```
-
-### 3.5 Chỉnh sửa Time Log
-
-```
-Nhân viên xem time log → Click "Chỉnh sửa"
-    → PUT /api/time-logs/[id] { startTime, endTime, description }
-    → Chỉ chỉnh sửa được log của mình trong 24h
-    → Sau 24h: cần Manager/Admin duyệt
-```
+**Ngoài phạm vi:** Pomodoro timer (v2), Jira import (v2), billing by time (xem PRD-10), OKR linking (xem PRD-17).
 
 ---
 
-## 4. Sprints — Luồng chức năng
+## 2. Người dùng mục tiêu (Target Users)
 
-### 4.1 Tạo Sprint
+### 2.1 Personas
 
-```
-Manager vào /sprints → "Tạo Sprint mới"
-    → POST /api/sprints
-        {
-          name: "Sprint 1 - Tháng 7",
-          startDate: "2026-07-01",
-          endDate: "2026-07-14",
-          goal: "Hoàn thành module login và dashboard"
-        }
-    → Sprint ở trạng thái PLANNED
-```
+| Persona | Mô tả | Nhu cầu chính | Pain Point |
+|---|---|---|---|
+| **Manager / Team Lead** | Lập kế hoạch sprint, phân công task, theo dõi tiến độ. | Biết team đang dùng thời gian vào đâu, sprint có đúng tiến độ không. | Phải hỏi từng người để biết task đang ở đâu; ước lượng sprint tiếp theo không có dữ liệu. |
+| **Employee (Developer)** | Làm task trong sprint, log thời gian thực tế. | Bấm timer dễ, xem time log của mình. | Phải tự ghi chú giờ làm, dễ quên; không biết mình đang under/over-allocated. |
+| **HR Admin** | Xem báo cáo effort tổng hợp theo phòng ban tháng. | Báo cáo effort để tính productivity, đối chiếu lương OT. | Không có dữ liệu → không tính được năng suất thực tế. |
 
-### 4.2 Thêm Task vào Sprint
+### 2.2 User Journey
 
-```
-Từ Sprint board hoặc Task detail:
-    → Kéo thả task vào sprint (drag & drop)
-    → Hoặc: PUT /api/tasks/[id] { sprintId }
-    → Task hiển thị trong sprint backlog
-    → Cập nhật Sprint capacity (tổng estimated hours)
-```
+**Manager — Tạo và quản lý Sprint:**
 
-### 4.3 Bắt đầu Sprint
-
-```
-Manager click "Bắt đầu Sprint"
-    → PUT /api/sprints/[id] { status: "ACTIVE" }
-    → Chỉ 1 sprint ACTIVE tại một thời điểm (per team)
-    → Sprint board hiển thị Kanban: TODO / IN_PROGRESS / DONE
-```
-
-### 4.4 Theo dõi Sprint
-
-```
-/sprints → Chọn sprint đang ACTIVE
-    → Burndown chart: công việc còn lại theo ngày
-    → Velocity: so sánh với sprint trước
-    → Thành viên: ai đang làm gì
-    → Tasks by status
-    → Cảnh báo: tasks sắp hết deadline
-```
-
-### 4.5 Kết thúc Sprint
-
-```
-Manager click "Kết thúc Sprint"
-    → PUT /api/sprints/[id] { status: "COMPLETED" }
-    → Hệ thống hỏi: chuyển task chưa xong vào đâu?
-        - Sprint tiếp theo
-        - Backlog
-    → Tự động chuyển task chưa DONE theo lựa chọn
-    → Tạo Sprint Summary: velocity, % hoàn thành, thời gian thực
-```
-
-### 4.6 Sprint Backlog
-
-```
-Backlog: Danh sách task chưa có sprint
-    → Manager kéo task từ backlog vào sprint
-    → Hoặc tạo task trực tiếp trong sprint
-    → Ước tính story points / giờ làm
-```
-
----
-
-## 5. API Endpoints
-
-### Time Logs
-| Method | Endpoint | Mô tả |
+| Bước | Hành động | Mục tiêu |
 |---|---|---|
-| GET | `/api/time-logs` | Danh sách time logs (filter) |
-| POST | `/api/time-logs` | Tạo time log thủ công |
-| GET | `/api/time-logs/running` | Time log đang chạy |
-| GET | `/api/time-logs/[id]` | Chi tiết |
-| PUT | `/api/time-logs/[id]` | Chỉnh sửa |
-| DELETE | `/api/time-logs/[id]` | Xóa |
+| 1 | Vào /sprints → [+ New Sprint] → Đặt tên, ngày bắt đầu/kết thúc, goal | Khởi tạo sprint |
+| 2 | Kéo task từ Backlog vào Sprint | Scope sprint |
+| 3 | Sprint bắt đầu → Mở [Start Sprint] | Kích hoạt sprint |
+| 4 | Trong sprint: xem burndown chart, theo dõi remaining | Quản lý tiến độ |
+| 5 | Cuối sprint: [Complete Sprint] → Xem sprint report | Review & retrospective |
 
-### Sprints
-| Method | Endpoint | Mô tả |
+**Employee — Log thời gian làm việc:**
+
+| Bước | Hành động | Mục tiêu |
 |---|---|---|
-| GET | `/api/sprints` | Danh sách sprints |
-| POST | `/api/sprints` | Tạo sprint |
-| GET | `/api/sprints/[id]` | Chi tiết sprint + tasks |
-| PUT | `/api/sprints/[id]` | Cập nhật sprint (bắt đầu, kết thúc) |
-| DELETE | `/api/sprints/[id]` | Xóa sprint |
+| 1 | Mở task đang làm → [Start Timer] | Bắt đầu đếm giờ |
+| 2 | Làm việc; timer chạy nền | Theo dõi thực tế |
+| 3 | [Stop Timer] khi tạm dừng hoặc xong | Dừng đếm, lưu time log |
+| 4 | Xem tổng thời gian đã log trên task | Kiểm tra actual vs estimate |
 
 ---
 
-## 6. Màn hình UI
+## 3. Yêu cầu chức năng (Functional Requirements)
 
-| Route | Màn hình |
-|---|---|
-| `/time-logs` | Lịch sử time logs + báo cáo giờ làm |
-| `/sprints` | Sprint board + backlog |
+### 3.1 Danh sách tính năng
 
----
+| ID | Tính năng | Mô tả | Độ ưu tiên | SP |
+|---|---|---|---|---|
+| FR-001 | Timer Start/Stop | Bấm timer trên task; hệ thống tạo TimeLog entry với startedAt/endedAt | Must Have | 5 |
+| FR-002 | Manual Time Entry | Nhập giờ thủ công: chọn task, ngày, số giờ, mô tả | Must Have | 3 |
+| FR-003 | Xem time logs của task | Danh sách time logs trên task: ai log, bao nhiêu giờ, khi nào | Must Have | 3 |
+| FR-004 | Xem time logs cá nhân | Nhân viên xem time logs của bản thân theo ngày/tuần | Must Have | 3 |
+| FR-005 | CRUD Sprint | Tạo, sửa, xóa sprint: tên, ngày BD/KT, goal, status (PLANNING/ACTIVE/COMPLETED) | Must Have | 5 |
+| FR-006 | Gán task vào Sprint | Kéo/thả hoặc dropdown gán task vào sprint; bỏ task khỏi sprint | Must Have | 5 |
+| FR-007 | Start / Complete Sprint | Chuyển sprint PLANNING → ACTIVE → COMPLETED; task chưa done tự động vào sprint tiếp | Must Have | 8 |
+| FR-008 | Burndown chart | Biểu đồ remaining story points mỗi ngày của sprint hiện tại | Should Have | 8 |
+| FR-009 | Sprint velocity report | Velocity = total SP done mỗi sprint theo team; chart theo thời gian | Should Have | 5 |
+| FR-010 | Time report theo người | HR/Manager xem tổng giờ log của từng người theo tuần/tháng | Should Have | 5 |
+| FR-011 | Export time report | Export CSV/Excel time report | Should Have | 3 |
 
-## 7. Data Model
+### 3.2 User Stories
 
-**TimeLog:**
-| Trường | Kiểu | Mô tả |
-|---|---|---|
-| `id` | UUID | Primary key |
-| `taskId` | UUID | FK → Task |
-| `employeeId` | UUID | FK → Employee |
-| `startTime` | DateTime | Thời điểm bắt đầu |
-| `endTime` | DateTime | Thời điểm kết thúc |
-| `duration` | Int | Số giây |
-| `description` | String | Ghi chú |
-| `status` | Enum | RUNNING / STOPPED |
-
-**Sprint:**
-| Trường | Kiểu | Mô tả |
-|---|---|---|
-| `id` | UUID | Primary key |
-| `name` | String | Tên sprint |
-| `goal` | String | Mục tiêu sprint |
-| `startDate` | Date | Ngày bắt đầu |
-| `endDate` | Date | Ngày kết thúc |
-| `status` | Enum | PLANNED / ACTIVE / COMPLETED / CANCELLED |
-| `workspaceId` | UUID | FK → Workspace |
+| ID | User Story | Acceptance Criteria | Priority |
+|---|---|---|---|
+| US-001 | Là Employee, tôi muốn bấm Start Timer khi bắt đầu làm một task, để hệ thống tự động tính giờ thay vì tôi phải tự ghi. | AC1: Task board/detail có nút [Start Timer]. AC2: Khi bấm: timer icon chạy, thời gian hiển thị real-time. AC3: Chỉ có 1 timer active tại 1 thời điểm — bấm Start timer mới sẽ tự dừng timer cũ. AC4: [Stop Timer] → tạo TimeLog: taskId, userId, startedAt, endedAt, duration (minutes). | High |
+| US-002 | Là Employee, tôi muốn nhập time log thủ công cho ngày hôm qua, vì tôi quên bấm timer nhưng đã làm việc. | AC1: Form manual entry: Chọn task, Ngày (datepicker), Số giờ (input số), Mô tả (tuỳ chọn). AC2: Validate: số giờ phải > 0 và ≤ 24. AC3: Manual entry hiển thị khác với timer entry (badge "Manual"). AC4: Được edit/delete time log do chính mình tạo trong vòng 7 ngày. | High |
+| US-003 | Là Manager, tôi muốn tạo sprint với ngày bắt đầu và mục tiêu, để team biết scope và deadline. | AC1: Tạo sprint: Tên*, Ngày bắt đầu*, Ngày kết thúc*, Sprint Goal (tuỳ chọn), Team. AC2: Mặc định status = PLANNING. AC3: Không thể tạo sprint với ngày kết thúc < ngày bắt đầu. AC4: Có thể có nhiều sprint tồn tại nhưng chỉ 1 sprint ACTIVE mỗi team tại cùng thời điểm. | High |
+| US-004 | Là Manager, tôi muốn kéo task vào sprint và bắt đầu sprint, để team biết chính thức sprint đã khởi động. | AC1: Sprint backlog: list tasks chưa được gán sprint. AC2: Kéo/thả hoặc nút [Add to Sprint] trên task. AC3: [Start Sprint] chỉ xuất hiện khi sprint có ít nhất 1 task. AC4: Start Sprint: status PLANNING → ACTIVE, lưu actualStartDate. | High |
+| US-005 | Là Manager, tôi muốn xem burndown chart của sprint hiện tại, để biết team đang đúng tiến độ hay đang cháy deadline. | AC1: Trục X: ngày trong sprint. Trục Y: remaining story points. AC2: Đường lý tưởng (ideal burndown) = SP giảm đều mỗi ngày. AC3: Đường thực tế = SP thực sự còn lại mỗi ngày. AC4: Khi task status chuyển DONE: SP của task bị trừ khỏi remaining. | Medium |
+| US-006 | Là Manager, tôi muốn hoàn thành sprint và chuyển task chưa xong sang sprint tiếp theo, để không mất backlog. | AC1: [Complete Sprint] → modal: "X task chưa hoàn thành. Chuyển vào: [Sprint tiếp | Backlog]". AC2: Sau complete: status → COMPLETED, lưu actualEndDate. AC3: Sprint report tự động tạo: tổng SP planned / done / carried over. AC4: Velocity được cập nhật trong dashboard. | Medium |
+| US-007 | Là HR Admin, tôi muốn xem báo cáo thời gian làm việc của từng nhân viên theo tháng, để đối chiếu khi tính lương OT. | AC1: Filter: Tháng + Nhân viên/Phòng ban. AC2: Bảng: Nhân viên | Tổng giờ | Breakdown theo task/project. AC3: Export CSV. AC4: Tổng giờ OT = total time logged − (ngày công chuẩn × 8 giờ). | Medium |
 
 ---
 
-## 8. Business Rules
+## 4. Yêu cầu phi chức năng
 
-- Không thể có 2 time log RUNNING cùng lúc cho 1 nhân viên.
-- Không thể tạo sprint với startDate > endDate.
-- Sprint không thể xóa nếu đang ACTIVE.
-- Khi kết thúc sprint, task DONE không được chuyển sprint.
-- Time log không thể có duration âm (endTime >= startTime).
-- Chỉnh sửa time log sau 24h cần Manager approve.
+| Loại | Yêu cầu | KPI | Ngưỡng |
+|---|---|---|---|
+| Performance | Burndown chart tính toán nhanh | Load time | < 2 giây |
+| Accuracy | Timer chính xác, không mất data khi tab đóng | Timer loss | 0% (lưu startedAt server-side) |
+| Concurrency | Nhiều người cùng log time | Concurrent | ≥ 200 đồng thời |
+| Data retention | Giữ time log tối thiểu 3 năm | Retention | 36 tháng |
+
+---
+
+## 5. Thiết kế & UX
+
+### 5.1 Luồng màn hình
+
+**Luồng 1: Timer trên Task**
+
+```
+Task Card / Task Detail → [▶ Start Timer]
+  → POST /api/time-logs/start { taskId }
+  → Timer icon chạy trong header (global)
+  → [■ Stop] → POST /api/time-logs/stop { timeLogId }
+  → Hiển thị: "Đã log 1h 23m"
+```
+
+**Luồng 2: Sprint Flow**
+
+```
+/sprints → [+ New Sprint]
+  → Tạo sprint PLANNING
+  → Drag tasks từ Backlog vào Sprint
+  → [Start Sprint] → ACTIVE
+    → Burndown chart hiển thị
+    → Team làm task, cập nhật status
+  → [Complete Sprint] → COMPLETED
+    → Chọn nơi chứa task chưa done
+    → Sprint Report tự động
+```
+
+### 5.2 Màn hình chính
+
+| Màn hình | Route | Mô tả |
+|---|---|---|
+| Sprint Board | `/sprints` | Danh sách sprints, board hiện tại |
+| Sprint Detail | `/sprints/:id` | Task list, burndown chart, progress |
+| My Time Logs | `/time-logs` | Nhân viên xem time logs của mình |
+| Time Report | `/reports/time` | HR/Manager xem báo cáo effort |
+
+---
+
+## 6. Business Rules
+
+### BR-001 — Chỉ 1 timer active mỗi người tại một thời điểm
+
+Khi user bấm Start Timer trên task B trong khi đang có timer chạy cho task A → hệ thống tự động dừng timer task A (tạo TimeLog với endedAt = now) rồi mới bắt đầu timer task B. Không để 2 timer chạy song song.
+
+### BR-002 — Chỉ 1 Sprint ACTIVE mỗi team
+
+Mỗi team chỉ có tối đa 1 sprint ở trạng thái ACTIVE tại cùng thời điểm. Để start sprint mới, phải complete sprint cũ trước.
+
+### BR-003 — Task chưa done khi Complete Sprint
+
+Khi complete sprint, các task chưa ở trạng thái DONE phải được chuyển vào: (1) Sprint tiếp theo nếu có, hoặc (2) Backlog. Không tự động xóa hoặc đánh dấu CANCELLED.
+
+### BR-004 — Không thể xóa TimeLog sau 7 ngày
+
+Time log chỉ được chỉnh sửa/xóa trong vòng 7 ngày kể từ ngày tạo. Sau 7 ngày → chỉ HR Admin mới có quyền sửa (với audit trail).
+
+### BR-005 — Velocity tính trên Sprint COMPLETED
+
+Velocity chỉ tính cho sprint đã COMPLETED. Sprint đang ACTIVE không tính vào velocity chart. Công thức: `velocity = sum(storyPoints của task DONE trong sprint)`.
+
+### BR-006 — Burndown cập nhật real-time khi task chuyển DONE
+
+Khi nhân viên chuyển task sang DONE, remaining SP trên burndown chart giảm ngay lập tức (không chờ đến cuối ngày).
+
+---
+
+## 7. Phân quyền
+
+| Hành động | Employee | Manager | HR Admin | Admin |
+|---|---|---|---|---|
+| Start/stop timer bản thân | ✅ | ✅ | ✅ | ✅ |
+| Manual time entry bản thân | ✅ | ✅ | ✅ | ✅ |
+| Sửa/xóa time log bản thân (≤7 ngày) | ✅ | ✅ | ✅ | ✅ |
+| Sửa time log bất kỳ (>7 ngày) | ❌ | ❌ | ✅ | ✅ |
+| Xem time logs của team | ❌ | ✅ (team của mình) | ✅ | ✅ |
+| Tạo / Start / Complete Sprint | ❌ | ✅ | ✅ | ✅ |
+| Xóa Sprint | ❌ | ✅ (PLANNING only) | ✅ | ✅ |
+| Xem burndown chart | ✅ (sprint của mình) | ✅ | ✅ | ✅ |
+| Xem time report tất cả nhân viên | ❌ | 👁 (team của mình) | ✅ | ✅ |
+| Export time report | ❌ | ✅ (team của mình) | ✅ | ✅ |
