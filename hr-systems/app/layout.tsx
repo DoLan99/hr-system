@@ -63,7 +63,7 @@ export const metadata: Metadata = {
 };
 
 // Chạy trước React hydration để tránh flash of light theme.
-// Đọc localStorage và áp class 'dark' lên <html> nếu cần.
+// Đọc localStorage và áp class 'dark' + data-theme lên <html>.
 const themeInitScript = `
 (function() {
   try {
@@ -73,6 +73,7 @@ const themeInitScript = `
       ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
       : theme;
     if (resolved === 'dark') document.documentElement.classList.add('dark');
+    document.documentElement.setAttribute('data-theme', resolved);
   } catch (e) {}
 })();
 `;
